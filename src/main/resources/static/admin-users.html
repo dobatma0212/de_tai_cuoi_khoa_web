@@ -617,7 +617,6 @@
                             <option value="ROLE_VENDOR">Nhà bán hàng (VENDOR)</option>
                             <option value="ROLE_SHIPPER">Giao hàng (SHIPPER)</option>
                             <option value="ROLE_USER">Khách hàng (USER)</option>
-                            <option value="ROLE_GUEST">Khách vãng lai (GUEST)</option>
                         </select>
                     </div>
 
@@ -824,7 +823,6 @@
                                     <option value="ROLE_SHIPPER">Giao hàng (ROLE_SHIPPER)</option>
                                     <option value="ROLE_MANAGER">Quản lý (ROLE_MANAGER)</option>
                                     <option value="ROLE_ADMIN" id="option-create-admin">Quản trị viên (ROLE_ADMIN)</option>
-                                    <option value="ROLE_GUEST">Khách vãng lai (ROLE_GUEST)</option>
                                 </select>
                             </div>
                             <div class="col-md-6 form-group">
@@ -897,7 +895,6 @@
                                     <option value="ROLE_SHIPPER">Giao hàng (ROLE_SHIPPER)</option>
                                     <option value="ROLE_MANAGER">Quản lý (ROLE_MANAGER)</option>
                                     <option value="ROLE_ADMIN" id="option-edit-admin">Quản trị viên (ROLE_ADMIN)</option>
-                                    <option value="ROLE_GUEST">Khách vãng lai (ROLE_GUEST)</option>
                                 </select>
                             </div>
                             <div class="col-md-6 form-group">
@@ -1102,6 +1099,13 @@
         // Authentication & Authorization Helpers
         // ----------------------------------------------------
         function getToken() {
+            const scRaw = localStorage.getItem('sc_auth');
+            if (scRaw) {
+                try {
+                    const parsed = JSON.parse(scRaw);
+                    if (parsed && parsed.token) return parsed.token;
+                } catch (e) {}
+            }
             return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
         }
 
@@ -1111,7 +1115,11 @@
         }
 
         function checkAuth() {
-            const storedUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info');
+            let storedUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info');
+            if (!storedUser) {
+                const scRaw = localStorage.getItem('sc_auth');
+                if (scRaw) storedUser = scRaw;
+            }
             if (storedUser) {
                 try {
                     currentUser = JSON.parse(storedUser);
@@ -1206,6 +1214,7 @@
                             return;
                         }
 
+                        localStorage.setItem('sc_auth', JSON.stringify(data));
                         localStorage.setItem('jwt_token', data.token);
                         localStorage.setItem('user_info', JSON.stringify(data));
                         currentUser = data;
@@ -1230,15 +1239,13 @@
         }
 
         function logout() {
+            localStorage.removeItem('sc_auth');
             localStorage.removeItem('jwt_token');
             localStorage.removeItem('user_info');
             sessionStorage.removeItem('jwt_token');
             sessionStorage.removeItem('user_info');
             currentUser = null;
-            updateAuthUI();
-            showToast('Đã đăng xuất khỏi hệ thống!', 'info');
-            loadStats();
-            loadUsers();
+            window.location.href = '/index.html';
         }
 
         // ----------------------------------------------------
@@ -1818,14 +1825,14 @@
         }
 
         function getRoleBadge(role) {
-            if (!role) return `<span class="badge-role role-guest">GUEST</span>`;
+            if (!role) return `<span class="badge-role role-user"><i class="fa fa-user"></i> USER</span>`;
             const r = role.toUpperCase();
             if (r.includes('ADMIN')) return `<span class="badge-role role-admin"><i class="fa fa-shield"></i> ADMIN</span>`;
             if (r.includes('MANAGER')) return `<span class="badge-role role-manager"><i class="fa fa-briefcase"></i> MANAGER</span>`;
             if (r.includes('VENDOR')) return `<span class="badge-role role-vendor"><i class="fa fa-shopping-bag"></i> VENDOR</span>`;
             if (r.includes('SHIPPER')) return `<span class="badge-role role-shipper"><i class="fa fa-truck"></i> SHIPPER</span>`;
             if (r.includes('USER')) return `<span class="badge-role role-user"><i class="fa fa-user"></i> USER</span>`;
-            return `<span class="badge-role role-guest">${escapeHtml(role)}</span>`;
+            return `<span class="badge-role role-user"><i class="fa fa-user"></i> ${escapeHtml(role)}</span>`;
         }
 
         function getStatusBadge(status) {

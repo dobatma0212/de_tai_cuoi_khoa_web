@@ -76,6 +76,10 @@ public class UserServiceImpl implements UserService {
 
         Role assignedRole = resolveRole(request.getRole());
 
+        if (assignedRole.getName() == RoleType.ROLE_GUEST) {
+            throw new IllegalArgumentException("Không thể tạo tài khoản với vai trò Khách vãng lai (GUEST) vì khách vãng lai không sử dụng tài khoản!");
+        }
+
         // Manager không được quyền tạo tài khoản có vai trò ADMIN
         if (!isUserAdmin(currentUser) && assignedRole.getName() == RoleType.ROLE_ADMIN) {
             throw new SecurityException("Quản lý (Manager) không có quyền tạo tài khoản Quản trị viên (ADMIN)!");
@@ -132,6 +136,9 @@ public class UserServiceImpl implements UserService {
         // Cập nhật vai trò
         if (request.getRole() != null && !request.getRole().isBlank()) {
             Role newRole = resolveRole(request.getRole());
+            if (newRole.getName() == RoleType.ROLE_GUEST) {
+                throw new IllegalArgumentException("Không thể gán vai trò Khách vãng lai (GUEST) cho tài khoản!");
+            }
             // Manager không được quyền gán vai trò ADMIN cho bất kỳ ai
             if (!isCurrentAdmin && newRole.getName() == RoleType.ROLE_ADMIN) {
                 throw new SecurityException("Quản lý (Manager) không có quyền gán vai trò ADMIN!");
