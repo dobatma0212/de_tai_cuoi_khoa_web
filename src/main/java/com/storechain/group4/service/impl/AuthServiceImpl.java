@@ -98,6 +98,11 @@ public class AuthServiceImpl implements AuthService {
                 normalizedRole = "ROLE_" + normalizedRole;
             }
 
+            // Chặn tuyệt đối việc tự đăng ký quyền ADMIN hoặc MANAGER qua cổng public
+            if ("ROLE_ADMIN".equals(normalizedRole) || "ROLE_MANAGER".equals(normalizedRole)) {
+                return ApiResponse.error("Không thể tự đăng ký tài khoản với vai trò Quản trị viên (ADMIN) hoặc Quản lý (MANAGER)!");
+            }
+
             try {
                 RoleType roleType = RoleType.valueOf(normalizedRole);
                 assignedRole = roleRepository.findByName(roleType)
@@ -109,13 +114,17 @@ public class AuthServiceImpl implements AuthService {
             }
         }
 
+        String fullName = (registerRequest.getFullName() != null && !registerRequest.getFullName().trim().isBlank())
+                ? registerRequest.getFullName().trim()
+                : registerRequest.getUsername().trim();
+
         User user = User.builder()
-                .username(registerRequest.getUsername())
-                .email(registerRequest.getEmail())
+                .username(registerRequest.getUsername().trim())
+                .email(registerRequest.getEmail().trim())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .fullName(registerRequest.getFullName())
-                .phone(registerRequest.getPhone())
-                .avatarUrl(registerRequest.getAvatarUrl())
+                .fullName(fullName)
+                .phone(registerRequest.getPhone() != null ? registerRequest.getPhone().trim() : null)
+                .avatarUrl(registerRequest.getAvatarUrl() != null ? registerRequest.getAvatarUrl().trim() : null)
                 .status("active")
                 .role(assignedRole)
                 .build();
