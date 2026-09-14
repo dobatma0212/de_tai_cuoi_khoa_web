@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
-    // Ngưỡng "bán trên 10 sản phẩm" theo yêu cầu trang chủ
+    // Ngưỡng "bán từ 10 sản phẩm trở lên" theo yêu cầu trang chủ
     private static final int MIN_SOLD_QUANTITY = 10;
 
     private final ProductRepository productRepository;
@@ -22,7 +22,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<ProductHomeResponse> getBestSellingProducts() {
         return productRepository
-                .findBySoldQuantityGreaterThanOrderBySoldQuantityDesc(MIN_SOLD_QUANTITY)
+                .findBySoldQuantityGreaterThanEqualOrderBySoldQuantityDesc(MIN_SOLD_QUANTITY)
                 .stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());

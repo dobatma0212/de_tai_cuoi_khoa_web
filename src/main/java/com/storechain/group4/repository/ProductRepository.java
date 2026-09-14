@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    // Lấy các sản phẩm đã bán trên "soldQuantity" sản phẩm, sắp xếp giảm dần theo số lượng bán
-    List<Product> findBySoldQuantityGreaterThanOrderBySoldQuantityDesc(Integer soldQuantity);
+    // Lấy các sản phẩm đã bán từ "soldQuantity" sản phẩm trở lên, sắp xếp giảm dần theo số lượng bán
+    List<Product> findBySoldQuantityGreaterThanEqualOrderBySoldQuantityDesc(Integer soldQuantity);
 }
