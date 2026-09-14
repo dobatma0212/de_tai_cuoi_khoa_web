@@ -67,13 +67,25 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Các endpoint công khai (Authentication, Public APIs, Swagger/Doc nếu có)
+                        // 1. Tài nguyên tĩnh và giao diện web (HTML, CSS, JS, Images, Fonts)
+                        .requestMatchers(
+                                "/",
+                                "/*.html",
+                                "/css/**",
+                                "/js/**",
+                                "/img/**",
+                                "/fonts/**",
+                                "/sass/**",
+                                "/favicon.ico"
+                        ).permitAll()
+
+                        // 2. Các endpoint công khai
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/test/all").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Phân quyền theo Role
+                        // 3. Phân quyền theo Role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR", "ADMIN")
