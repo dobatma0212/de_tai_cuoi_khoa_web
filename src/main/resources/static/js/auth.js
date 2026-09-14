@@ -30,11 +30,25 @@
     // ============ Quản lý phiên đăng nhập (localStorage) ============
     function saveSession(jwtResponse) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(jwtResponse));
+        if (jwtResponse && jwtResponse.token) {
+            localStorage.setItem("jwt_token", jwtResponse.token);
+            localStorage.setItem("user_info", JSON.stringify(jwtResponse));
+        }
     }
 
     function getSession() {
         var raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return null;
+        if (!raw) {
+            var alt = localStorage.getItem("user_info");
+            if (alt) {
+                try {
+                    return JSON.parse(alt);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
         try {
             return JSON.parse(raw);
         } catch (e) {
@@ -44,11 +58,29 @@
 
     function clearSession() {
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("user_info");
+        sessionStorage.removeItem("jwt_token");
+        sessionStorage.removeItem("user_info");
     }
 
     function isLoggedIn() {
         var s = getSession();
-        return !!(s && s.token);
+        return !!(s && (s.token || localStorage.getItem("jwt_token")));
+    }
+
+    function isAdminOrManager(session) {
+        if (!session) session = getSession();
+        if (!session) return false;
+        var r = (session.role || "").toUpperCase();
+        if (r.includes("ADMIN") || r.includes("MANAGER")) return true;
+        if (Array.isArray(session.roles)) {
+            return session.roles.some(function (role) {
+                var ro = (role || "").toUpperCase();
+                return ro.includes("ADMIN") || ro.includes("MANAGER");
+            });
+        }
+        return false;
     }
 
     function logout() {
@@ -64,18 +96,25 @@
 
         if (!desktopLink && !mobileLink) return;
 
-        if (session && session.token) {
+        if (session && (session.token || localStorage.getItem("jwt_token"))) {
             var displayName = session.fullName || session.username || "Tài khoản";
+            var adminBtnHtml = "";
+            if (isAdminOrManager(session)) {
+                adminBtnHtml = '<a href="/admin-users.html" class="auth-admin-btn" style="color: #ffffff; background: #e53637; padding: 3px 10px; border-radius: 4px; font-weight: 700; margin-right: 12px; font-size: 13px; text-decoration: none; display: inline-block;"><i class="fa fa-cogs" aria-hidden="true"></i> Quản trị Users</a>';
+            }
 
             if (desktopLink) {
                 desktopLink.innerHTML =
+                    adminBtnHtml +
                     '<i class="fa fa-user-circle-o" aria-hidden="true"></i> Xin chào, ' + escapeHtml(displayName) +
-                    ' <span class="auth-logout-link" id="btnLogoutDesktop">(Đăng xuất)</span>';
+                    ' <span class="auth-logout-link" id="btnLogoutDesktop" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 desktopLink.removeAttribute("href");
             }
             if (mobileLink) {
-                mobileLink.innerHTML = 'Xin chào, ' + escapeHtml(displayName) +
-                    ' <span class="auth-logout-link" id="btnLogoutMobile">(Đăng xuất)</span>';
+                mobileLink.innerHTML =
+                    adminBtnHtml +
+                    'Xin chào, ' + escapeHtml(displayName) +
+                    ' <span class="auth-logout-link" id="btnLogoutMobile" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 mobileLink.removeAttribute("href");
             }
 
@@ -142,10 +181,12 @@
         getSession: getSession,
         clearSession: clearSession,
         isLoggedIn: isLoggedIn,
+        isAdminOrManager: isAdminOrManager,
         logout: logout,
         showAlert: showAlert,
         hideAlert: hideAlert,
-        startResendCountdown: startResendCountdown
+        startResendCountdown: startResendCountdown,
+        updateHeaderAuthUI: updateHeaderAuthUI
     };
 
     document.addEventListener("DOMContentLoaded", updateHeaderAuthUI);

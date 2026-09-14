@@ -274,9 +274,14 @@
             var alertBox = document.getElementById("loginAlert");
             var submitBtn = document.getElementById("loginSubmitBtn");
 
-            // Nếu đã đăng nhập rồi thì chuyển thẳng về trang chủ
+            // Nếu đã đăng nhập rồi: Admin/Manager vào trang quản trị, User vào trang chủ
             if (window.ScAuth.isLoggedIn()) {
-                window.location.href = "/index.html";
+                var currentSession = window.ScAuth.getSession();
+                if (window.ScAuth.isAdminOrManager(currentSession)) {
+                    window.location.href = "/admin-users.html";
+                } else {
+                    window.location.href = "/index.html";
+                }
                 return;
             }
 
@@ -300,10 +305,15 @@
                     password: password
                 }).then(function (res) {
                     window.ScAuth.saveSession(res.data);
-                    window.ScAuth.showAlert(alertBox, "Đăng nhập thành công! Đang chuyển hướng...", "success");
+                    var isAdmin = window.ScAuth.isAdminOrManager(res.data);
+                    var redirectUrl = isAdmin ? "/admin-users.html" : "/index.html";
+                    var msg = isAdmin 
+                        ? "Đăng nhập thành công! Đang chuyển hướng đến Trang Quản Trị..." 
+                        : "Đăng nhập thành công! Đang chuyển hướng...";
+                    window.ScAuth.showAlert(alertBox, msg, "success");
                     setTimeout(function () {
-                        window.location.href = "/index.html";
-                    }, 800);
+                        window.location.href = redirectUrl;
+                    }, 600);
                 }).catch(function (err) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = "Đăng nhập";
