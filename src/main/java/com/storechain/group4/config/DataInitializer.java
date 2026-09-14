@@ -26,6 +26,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         initRoles();
         initDefaultAdmin();
+        initDefaultManager();
     }
 
     private void initRoles() {
@@ -62,6 +63,26 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(admin);
             log.info("Tạo tài khoản Admin mặc định: username = admin, password = admin123, email = admin@storechain.com");
+        }
+    }
+
+    private void initDefaultManager() {
+        if (!userRepository.existsByUsername("manager")) {
+            Role managerRole = roleRepository.findByName(RoleType.ROLE_MANAGER)
+                    .orElseThrow(() -> new RuntimeException("Role MANAGER không tồn tại"));
+
+            User manager = User.builder()
+                    .username("manager")
+                    .email("manager@storechain.com")
+                    .password(passwordEncoder.encode("manager123"))
+                    .fullName("Quản lý cửa hàng")
+                    .phone("0987654321")
+                    .status("active")
+                    .role(managerRole)
+                    .build();
+
+            userRepository.save(manager);
+            log.info("Tạo tài khoản Manager mặc định: username = manager, password = manager123, email = manager@storechain.com");
         }
     }
 }
