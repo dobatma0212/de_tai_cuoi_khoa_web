@@ -1,7 +1,6 @@
 package com.storechain.group4;
 
 import com.storechain.group4.dto.CreateUserRequest;
-import com.storechain.group4.dto.UpdateUserRequest;
 import com.storechain.group4.dto.UserResponseDto;
 import com.storechain.group4.model.Role;
 import com.storechain.group4.model.RoleType;
