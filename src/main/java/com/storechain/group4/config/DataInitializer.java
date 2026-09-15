@@ -2,8 +2,10 @@ package com.storechain.group4.config;
 
 import com.storechain.group4.model.Role;
 import com.storechain.group4.model.RoleType;
+import com.storechain.group4.model.Transporter;
 import com.storechain.group4.model.User;
 import com.storechain.group4.repository.RoleRepository;
+import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +13,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 
 @Component
@@ -21,6 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
+    private final TransporterRepository transporterRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -29,6 +33,7 @@ public class DataInitializer implements CommandLineRunner {
         initDefaultAdmin();
         initDefaultManager();
         initDefaultCategories();
+        initDefaultTransporters();
     }
 
     private void initRoles() {
@@ -157,6 +162,44 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
 
             log.info("Khởi tạo danh mục mặc định thành công (Thời trang nam, Thời trang nữ, Phụ kiện...)");
+        }
+    }
+
+    private void initDefaultTransporters() {
+        if (transporterRepository.count() == 0) {
+            transporterRepository.save(Transporter.builder()
+                    .name("Giao Hàng Nhanh (GHN)")
+                    .phone("1900 636677")
+                    .email("support@ghn.vn")
+                    .baseFee(new BigDecimal("25000.00"))
+                    .status("active")
+                    .build());
+
+            transporterRepository.save(Transporter.builder()
+                    .name("Giao Hàng Tiết Kiệm (GHTK)")
+                    .phone("1900 6092")
+                    .email("cskh@giaohangtietkiem.vn")
+                    .baseFee(new BigDecimal("20000.00"))
+                    .status("active")
+                    .build());
+
+            transporterRepository.save(Transporter.builder()
+                    .name("Viettel Post")
+                    .phone("1900 8095")
+                    .email("cskh@viettelpost.com.vn")
+                    .baseFee(new BigDecimal("30000.00"))
+                    .status("active")
+                    .build());
+
+            transporterRepository.save(Transporter.builder()
+                    .name("J&T Express")
+                    .phone("1900 1088")
+                    .email(null)
+                    .baseFee(new BigDecimal("22000.00"))
+                    .status("inactive")
+                    .build());
+
+            log.info("Khởi tạo đơn vị vận chuyển mặc định thành công (GHN, GHTK, Viettel Post, J&T)");
         }
     }
 }
