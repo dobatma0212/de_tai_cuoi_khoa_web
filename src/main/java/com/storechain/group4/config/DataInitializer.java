@@ -20,6 +20,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final com.storechain.group4.repository.CategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -27,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
         initRoles();
         initDefaultAdmin();
         initDefaultManager();
+        initDefaultCategories();
     }
 
     private void initRoles() {
@@ -83,6 +85,78 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(manager);
             log.info("Tạo tài khoản Manager mặc định: username = manager, password = manager123, email = manager@storechain.com");
+        }
+    }
+
+    private void initDefaultCategories() {
+        if (categoryRepository.count() == 0) {
+            // Danh mục gốc 1: Thời trang nam
+            com.storechain.group4.model.Category men = categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Thời trang nam")
+                    .slug("thoi-trang-nam")
+                    .imageUrl("/img/categories/cat-1.jpg")
+                    .sortOrder(1)
+                    .status("active")
+                    .build());
+
+            categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Áo thun nam")
+                    .slug("ao-thun-nam")
+                    .parent(men)
+                    .sortOrder(1)
+                    .status("active")
+                    .build());
+
+            categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Áo sơ mi nam")
+                    .slug("ao-so-mi-nam")
+                    .parent(men)
+                    .sortOrder(2)
+                    .status("active")
+                    .build());
+
+            categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Quần jean nam")
+                    .slug("quan-jean-nam")
+                    .parent(men)
+                    .sortOrder(3)
+                    .status("active")
+                    .build());
+
+            categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Quần tây nam")
+                    .slug("quan-tay-nam")
+                    .parent(men)
+                    .sortOrder(4)
+                    .status("active")
+                    .build());
+
+            // Danh mục gốc 2: Phụ kiện
+            com.storechain.group4.model.Category accessories = categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Phụ kiện thời trang")
+                    .slug("phu-kien-thoi-trang")
+                    .imageUrl("/img/categories/cat-3.jpg")
+                    .sortOrder(3)
+                    .status("active")
+                    .build());
+
+            categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Giày dép thời trang")
+                    .slug("giay-dep-thoi-trang")
+                    .parent(accessories)
+                    .sortOrder(1)
+                    .status("active")
+                    .build());
+
+            categoryRepository.save(com.storechain.group4.model.Category.builder()
+                    .name("Thắt lưng & Ví da")
+                    .slug("that-lung-vi-da")
+                    .parent(accessories)
+                    .sortOrder(2)
+                    .status("active")
+                    .build());
+
+            log.info("Khởi tạo danh mục mặc định thành công (Thời trang nam, Thời trang nữ, Phụ kiện...)");
         }
     }
 }

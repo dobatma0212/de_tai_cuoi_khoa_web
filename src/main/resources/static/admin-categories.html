@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Quản lý Danh mục sản phẩm - Male Fashion Admin">
+    <meta name="keywords" content="Male_Fashion, admin, category, management">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Quản lý Danh mục | Male-Fashion Admin</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Css Styles -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
+    <link rel="stylesheet" href="/css/magnific-popup.css" type="text/css">
+    <link rel="stylesheet" href="/css/nice-select.css" type="text/css">
+    <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+    <style>
+        /* Card thống kê */
+        .admin-stat-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 22px 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #111111;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .admin-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-stat-card.stat-primary { border-left-color: #e53637; }
+        .admin-stat-card.stat-success { border-left-color: #28a745; }
+        .admin-stat-card.stat-warning { border-left-color: #ffc107; }
+        .admin-stat-card.stat-info { border-left-color: #17a2b8; }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .stat-primary .stat-icon { background: #ffeaea; color: #e53637; }
+        .stat-success .stat-icon { background: #eafaf1; color: #28a745; }
+        .stat-warning .stat-icon { background: #fff8e1; color: #ff9800; }
+        .stat-info .stat-icon { background: #e8f7fa; color: #17a2b8; }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111111;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888888;
+            font-weight: 600;
+        }
+
+        /* Bộ lọc */
+        .filter-panel {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .filter-input-group {
+            position: relative;
+        }
+
+        .filter-input-group input {
+            height: 46px;
+            width: 100%;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            padding-left: 42px;
+            padding-right: 36px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-input-group input:focus {
+            border-color: #e53637;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        .filter-input-group .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888888;
+        }
+
+        .filter-input-group .clear-search {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #aaa;
+            font-size: 16px;
+            display: none;
+        }
+
+        .filter-select {
+            height: 46px;
+            width: 100%;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            padding: 0 14px;
+            font-size: 14px;
+            color: #333333;
+            background-color: #ffffff;
+            outline: none;
+        }
+
+        .filter-select:focus {
+            border-color: #e53637;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        /* Bảng dữ liệu */
+        .admin-table-container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .table-responsive {
+            margin-bottom: 0;
+        }
+
+        .admin-table {
+            margin-bottom: 0;
+        }
+
+        .admin-table thead th {
+            background: #111111;
+            color: #ffffff;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 16px 14px;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .admin-table tbody td {
+            vertical-align: middle;
+            padding: 14px;
+            font-size: 14px;
+            border-top: 1px solid #f0f0f0;
+            color: #333333;
+        }
+
+        .admin-table tbody tr:hover {
+            background-color: #fcfcfc;
+        }
+
+        /* Category item visual */
+        .cat-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+
+        .cat-thumb-placeholder {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            background: #f1f3f5;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 18px;
+        }
+
+        .cat-name-link {
+            font-weight: 700;
+            color: #111111;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+
+        .cat-name-link:hover {
+            color: #e53637;
+            text-decoration: none;
+        }
+
+        .slug-badge {
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            background: #f1f3f5;
+            color: #495057;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .parent-badge {
+            background: #e9ecef;
+            color: #495057;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .parent-root-badge {
+            background: #e8f4fd;
+            color: #0288d1;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* Status badges */
+        .badge-status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .badge-status-active:hover {
+            background-color: #c8e6c9;
+        }
+
+        .badge-status-inactive {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .badge-status-inactive:hover {
+            background-color: #ffcdd2;
+        }
+
+        /* Action buttons */
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            border: 1px solid #e1e1e1;
+            background: #ffffff;
+            color: #555555;
+            transition: all 0.2s;
+            margin: 0 2px;
+            cursor: pointer;
+        }
+
+        .btn-action:hover {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+        }
+
+        .btn-action.btn-delete:hover {
+            border-color: #e53637;
+            background: #e53637;
+            color: #ffffff;
+        }
+
+        .btn-action.btn-edit:hover {
+            border-color: #0288d1;
+            background: #0288d1;
+            color: #ffffff;
+        }
+
+        /* Nút chính */
+        .btn-male-fashion {
+            background: #111111;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 20px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .btn-male-fashion:hover {
+            background: #e53637;
+            color: #ffffff;
+        }
+
+        /* Phân trang */
+        .pagination-container {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #f0f0f0;
+            background: #ffffff;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: #777777;
+        }
+
+        .pagination-buttons .btn {
+            height: 36px;
+            min-width: 36px;
+            padding: 0 10px;
+            margin: 0 2px;
+            border-radius: 4px;
+            border: 1px solid #e1e1e1;
+            background: #ffffff;
+            color: #111111;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .pagination-buttons .btn.active {
+            background: #111111;
+            border-color: #111111;
+            color: #ffffff;
+        }
+
+        .pagination-buttons .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Toasts */
+        #toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 99999;
+            min-width: 320px;
+            max-width: 420px;
+        }
+
+        .custom-toast {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #111111;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .custom-toast.toast-success { border-left-color: #28a745; }
+        .custom-toast.toast-danger { border-left-color: #dc3545; }
+        .custom-toast.toast-warning { border-left-color: #ffc107; }
+        .custom-toast.toast-info { border-left-color: #17a2b8; }
+
+        .toast-icon { font-size: 20px; }
+        .toast-success .toast-icon { color: #28a745; }
+        .toast-danger .toast-icon { color: #dc3545; }
+        .toast-warning .toast-icon { color: #ffc107; }
+        .toast-info .toast-icon { color: #17a2b8; }
+
+        .toast-message { font-size: 14px; font-weight: 600; color: #222222; flex-grow: 1; }
+        .toast-close { cursor: pointer; color: #999; font-size: 16px; }
+
+        /* Modal styling */
+        .modal-header {
+            background: #111111;
+            color: #ffffff;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            padding: 16px 20px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .modal-header .close {
+            color: #ffffff;
+            opacity: 0.8;
+            outline: none;
+        }
+
+        .modal-content {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group label {
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #111111;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            height: 44px;
+            border-radius: 4px;
+            border: 1px solid #e1e1e1;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            border-color: #e53637;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        .img-preview-box {
+            width: 80px;
+            height: 80px;
+            border: 1px dashed #ccc;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .img-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .detail-label { font-weight: 600; color: #666666; }
+        .detail-value { font-weight: 700; color: #111111; text-align: right; }
+    </style>
+</head>
+
+<body>
+    <!-- Page Preloder -->
+    <div id="preloder">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
+
+    <!-- Offcanvas Menu Begin -->
+    <div class="offcanvas-menu-overlay"></div>
+    <div class="offcanvas-menu-wrapper">
+        <div class="offcanvas__option">
+            <div class="offcanvas__links" id="mobile-auth-section">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+        <div id="mobile-menu-wrap"></div>
+        <div class="offcanvas__text">
+            <p>Hệ thống Quản lý Chuỗi Cửa hàng - Male Fashion</p>
+        </div>
+    </div>
+    <!-- Offcanvas Menu End -->
+
+    <!-- Header Section Begin -->
+    <header class="header">
+        <div class="header__top">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="header__top__left">
+                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin & Manager)</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <div class="header__top__links" id="auth-user-info">
+                                <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                                <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__logo">
+                        <a href="/index.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <nav class="header__menu mobile-menu">
+                        <ul>
+                            <li><a href="/index.html">Trang chủ</a></li>
+                            <li><a href="/shop.html">Cửa hàng</a></li>
+                            <li><a href="/admin-users.html">Quản lý Users</a></li>
+                            <li class="active"><a href="/admin-categories.html">Quản lý Danh mục</a></li>
+                            <li><a href="/contact.html">Liên hệ</a></li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__nav__option text-right">
+                        <span class="badge badge-danger p-2" id="role-indicator" style="font-size: 12px; letter-spacing: 0.5px;">
+                            <i class="fa fa-lock"></i> KHÁCH
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas__open"><i class="fa fa-bars"></i></div>
+        </div>
+    </header>
+    <!-- Header Section End -->
+
+    <!-- Breadcrumb Section Begin -->
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Quản lý Danh mục (Category)</h4>
+                        <div class="breadcrumb__links">
+                            <a href="/index.html">Trang chủ</a>
+                            <a href="#">Quản trị viên & Quản lý</a>
+                            <span>Danh sách Danh mục sản phẩm</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Breadcrumb Section End -->
+
+    <!-- Main Content Section Begin -->
+    <section class="admin-category-section spad pt-4">
+        <div class="container">
+
+            <!-- Thống kê tổng quan (Statistics Cards) -->
+            <div class="row">
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-primary">
+                        <div>
+                            <div class="stat-number" id="stat-total">0</div>
+                            <div class="stat-label">Tổng danh mục</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-folder-open"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-success">
+                        <div>
+                            <div class="stat-number" id="stat-active">0</div>
+                            <div class="stat-label">Đang hoạt động</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-warning">
+                        <div>
+                            <div class="stat-number" id="stat-inactive">0</div>
+                            <div class="stat-label">Tạm ngừng</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-pause-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-info">
+                        <div>
+                            <div class="stat-number" id="stat-roots">0</div>
+                            <div class="stat-label">Danh mục gốc</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-sitemap"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thanh tìm kiếm và Bộ lọc -->
+            <div class="filter-panel">
+                <div class="row align-items-center">
+                    <!-- Ô tìm kiếm từ khóa -->
+                    <div class="col-lg-4 col-md-6 mb-3 mb-lg-0">
+                        <div class="filter-input-group">
+                            <i class="fa fa-search search-icon"></i>
+                            <input type="text" id="filter-keyword" placeholder="Tìm theo tên danh mục, slug...">
+                            <span class="clear-search" id="clear-search-btn" onclick="clearSearch()">&times;</span>
+                        </div>
+                    </div>
+
+                    <!-- Lọc theo danh mục cha -->
+                    <div class="col-lg-2 col-md-3 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-parent" onchange="onFilterChange()">
+                            <option value="">-- Tất cả cấp bậc --</option>
+                            <option value="ROOT">Chỉ danh mục gốc</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo trạng thái -->
+                    <div class="col-lg-2 col-md-3 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-status" onchange="onFilterChange()">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive">Tạm ngừng</option>
+                        </select>
+                    </div>
+
+                    <!-- Sắp xếp -->
+                    <div class="col-lg-2 col-md-6 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-sort" onchange="onFilterChange()">
+                            <option value="sortOrder-asc">Thứ tự tăng dần</option>
+                            <option value="sortOrder-desc">Thứ tự giảm dần</option>
+                            <option value="id-desc">Mới nhất trước</option>
+                            <option value="id-asc">Cũ nhất trước</option>
+                            <option value="name-asc">Tên danh mục A-Z</option>
+                        </select>
+                    </div>
+
+                    <!-- Nút Thêm mới -->
+                    <div class="col-lg-2 col-md-6 col-6 text-right">
+                        <button class="btn-male-fashion w-100" onclick="openCreateModal()">
+                            <i class="fa fa-plus-circle mr-1"></i> Thêm mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng danh mục sản phẩm -->
+            <div class="admin-table-container">
+                <div class="table-responsive">
+                    <table class="table admin-table text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Ảnh</th>
+                                <th>Tên danh mục</th>
+                                <th>Slug</th>
+                                <th>Danh mục cha</th>
+                                <th>Thứ tự</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th class="text-right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-table-body">
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                                    <div>Đang tải danh sách danh mục...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Phân trang -->
+                <div class="pagination-container" id="pagination-container" style="display: none;">
+                    <div class="pagination-info" id="pagination-info">
+                        Hiển thị 0 - 0 trong tổng số 0 danh mục
+                    </div>
+                    <div class="pagination-buttons" id="pagination-buttons">
+                        <!-- Nút trang được sinh động bởi JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    <!-- Main Content Section End -->
+
+    <!-- Modal Thêm / Cập nhật Danh mục -->
+    <div class="modal fade" id="categoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalTitle">Thêm Danh Mục Mới</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="categoryForm" onsubmit="saveCategory(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="cat-id">
+
+                        <div class="form-group">
+                            <label for="cat-name">Tên danh mục <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="cat-name" placeholder="VD: Áo thun nam, Quần jean, Sơ mi..." required oninput="handleNameInput(this.value)">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cat-slug">Đường dẫn Slug <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="cat-slug" placeholder="VD: ao-thun-nam" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="regenerateSlug()" title="Tạo lại slug tự động">
+                                        <i class="fa fa-refresh"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Đường dẫn duy nhất (Unique), tự động sinh từ tên tiếng Việt không dấu.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cat-parent">Danh mục cha (Parent)</label>
+                            <select class="form-control" id="cat-parent">
+                                <option value="">-- Là danh mục gốc (NULL) --</option>
+                            </select>
+                            <small class="form-text text-muted">Để trống nếu muốn đây là danh mục gốc cao nhất.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cat-image">URL Hình ảnh</label>
+                            <input type="text" class="form-control" id="cat-image" placeholder="VD: /img/categories/cat-1.jpg hoặc link https://..." oninput="handleImagePreview(this.value)">
+                            <div class="img-preview-box" id="img-preview-box">
+                                <i class="fa fa-image text-muted"></i>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="cat-sort">Thứ tự sắp xếp (Sort)</label>
+                                    <input type="number" class="form-control" id="cat-sort" value="0" min="0">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label for="cat-status">Trạng thái</label>
+                                    <select class="form-control" id="cat-status">
+                                        <option value="active">Đang hoạt động (active)</option>
+                                        <option value="inactive">Tạm ngừng (inactive)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn-male-fashion" id="btn-save-category">
+                            <i class="fa fa-check mr-1"></i> Lưu thông tin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Chi tiết Danh mục -->
+    <div class="modal fade" id="categoryDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa fa-info-circle mr-1"></i> Chi Tiết Danh Mục</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="category-detail-content">
+                    <!-- Chi tiết nạp bởi JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-dark" id="btn-edit-from-detail">
+                        <i class="fa fa-pencil mr-1"></i> Chỉnh sửa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Xóa Danh mục -->
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title text-white"><i class="fa fa-exclamation-triangle mr-1"></i> Xác Nhận Xóa Danh Mục</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fa fa-trash text-danger fa-4x mb-3"></i>
+                    <h5>Bạn có chắc chắn muốn xóa danh mục này?</h5>
+                    <p class="text-muted mt-2 mb-0">Danh mục: <strong id="delete-cat-name" class="text-dark">...</strong></p>
+                    <small class="text-danger d-block mt-2" id="delete-cat-warning">Lưu ý: Hành động này không thể hoàn tác!</small>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Hủy bỏ</button>
+                    <button type="button" class="btn btn-danger px-4" id="btn-confirm-delete" onclick="executeDelete()">
+                        <i class="fa fa-trash mr-1"></i> Xác nhận Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Đăng nhập Nhanh -->
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa fa-lock mr-1"></i> Đăng nhập Quản trị</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="adminLoginForm" onsubmit="handleLogin(event)">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Tên đăng nhập / Email</label>
+                            <input type="text" class="form-control" id="login-username" required placeholder="admin hoặc manager">
+                        </div>
+                        <div class="form-group">
+                            <label>Mật khẩu</label>
+                            <input type="password" class="form-control" id="login-password" required placeholder="Mật khẩu">
+                        </div>
+                        <div class="mt-3">
+                            <p class="mb-1 text-muted" style="font-size: 13px;">Tài khoản thử nghiệm có sẵn:</p>
+                            <button type="button" class="btn btn-sm btn-outline-danger mb-1 mr-1" onclick="quickFillLogin('admin', 'admin123')">
+                                <i class="fa fa-user"></i> Admin (admin123)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary mb-1" onclick="quickFillLogin('manager', 'manager123')">
+                                <i class="fa fa-user"></i> Manager (manager123)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn-male-fashion" id="btn-submit-login">
+                            <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Js Plugins -->
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/jquery.nicescroll.min.js"></script>
+    <script src="/js/jquery.magnific-popup.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/main.js"></script>
+
+    <!-- Category Management Logic -->
+    <script>
+        let currentUser = null;
+        let currentPage = 0;
+        let pageSize = 10;
+        let totalPages = 0;
+        let totalElements = 0;
+        let searchTimeout = null;
+        let currentlyEditingCatId = null;
+        let deletingCatId = null;
+        let rootCategoriesList = [];
+
+        const API_BASE = '/api/admin/categories';
+        const AUTH_API = '/api/auth/login';
+
+        $(document).ready(function () {
+            checkAuth();
+            setupSearchDebounce();
+            loadStats();
+            loadRootCategoriesFilter();
+            loadCategories();
+        });
+
+        // Auth Helpers
+        function getToken() {
+            const scRaw = localStorage.getItem('sc_auth');
+            if (scRaw) {
+                try {
+                    const parsed = JSON.parse(scRaw);
+                    if (parsed && parsed.token) return parsed.token;
+                } catch (e) {}
+            }
+            return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+        }
+
+        function checkAuth() {
+            let storedUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info');
+            if (!storedUser) {
+                const scRaw = localStorage.getItem('sc_auth');
+                if (scRaw) storedUser = scRaw;
+            }
+            if (storedUser) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                } catch (e) {
+                    currentUser = null;
+                }
+            }
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            const authContainer = $('#auth-user-info');
+            const roleIndicator = $('#role-indicator');
+
+            if (currentUser && getToken()) {
+                const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
+                const isAdmin = roleName.includes('ADMIN');
+                const isManager = roleName.includes('MANAGER');
+
+                roleIndicator.removeClass('badge-danger badge-primary badge-dark')
+                    .addClass(isAdmin ? 'badge-danger' : 'badge-primary')
+                    .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : (isManager ? 'MANAGER' : roleName)}`);
+
+                const authHtml = `
+                    <span class="text-white mr-3">
+                        <i class="fa fa-user-circle text-danger mr-1"></i>
+                        Xin chào, <strong>${currentUser.fullName || currentUser.username}</strong>
+                    </span>
+                    <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
+                        <i class="fa fa-sign-out mr-1"></i> Đăng xuất
+                    </button>
+                `;
+                authContainer.html(authHtml);
+            } else {
+                roleIndicator.removeClass('badge-danger badge-primary').addClass('badge-dark')
+                    .html(`<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP`);
+                authContainer.html(`
+                    <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                    <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()">Đăng nhập</button>
+                `);
+            }
+        }
+
+        function openLoginModal() {
+            $('#loginModal').modal('show');
+        }
+
+        function quickFillLogin(user, pass) {
+            $('#login-username').val(user);
+            $('#login-password').val(pass);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = $('#login-username').val().trim();
+            const password = $('#login-password').val().trim();
+            const submitBtn = $('#btn-submit-login');
+
+            submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang đăng nhập...');
+
+            $.ajax({
+                url: AUTH_API,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ username: username, password: password }),
+                success: function (res) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
+                    const data = res.data || res;
+                    const token = data.token || data.accessToken;
+                    const userObj = {
+                        userId: data.id || data.userId,
+                        username: data.username,
+                        email: data.email,
+                        fullName: data.fullName || data.username,
+                        role: data.role || (data.roles ? data.roles[0] : 'ROLE_ADMIN')
+                    };
+
+                    localStorage.setItem('jwt_token', token);
+                    localStorage.setItem('user_info', JSON.stringify(userObj));
+                    localStorage.setItem('sc_auth', JSON.stringify({ token: token, user: userObj }));
+                    currentUser = userObj;
+
+                    $('#loginModal').modal('hide');
+                    updateAuthUI();
+                    showToast('Đăng nhập thành công với vai trò ' + userObj.role, 'success');
+                    loadStats();
+                    loadCategories();
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
+                    const msg = xhr.responseJSON?.message || 'Đăng nhập thất bại. Kiểm tra lại thông tin!';
+                    showToast(msg, 'danger');
+                }
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_info');
+            localStorage.removeItem('sc_auth');
+            sessionStorage.clear();
+            currentUser = null;
+            updateAuthUI();
+            showToast('Đã đăng xuất khỏi hệ thống', 'info');
+            loadCategories();
+        }
+
+        // Stats loader
+        function loadStats() {
+            $.ajax({
+                url: `${API_BASE}/stats`,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res.data) {
+                        $('#stat-total').text(res.data.totalCategories || 0);
+                        $('#stat-active').text(res.data.activeCategories || 0);
+                        $('#stat-inactive').text(res.data.inactiveCategories || 0);
+                        $('#stat-roots').text(res.data.rootCategories || 0);
+                    }
+                },
+                error: function () {
+                    // Fallback from public if unauthenticated
+                }
+            });
+        }
+
+        // Load root categories into filters & parent selects
+        function loadRootCategoriesFilter() {
+            $.ajax({
+                url: `/api/public/categories/roots`,
+                type: 'GET',
+                success: function (res) {
+                    if (res.data) {
+                        rootCategoriesList = res.data;
+                        const filterParent = $('#filter-parent');
+                        filterParent.find('option:not(:first):not(:nth-child(2))').remove();
+
+                        res.data.forEach(cat => {
+                            filterParent.append(`<option value="${cat.id}">[Gốc] ${cat.name}</option>`);
+                        });
+                    }
+                }
+            });
+        }
+
+        function populateParentSelect(excludeId = null) {
+            const select = $('#cat-parent');
+            select.empty();
+            select.append('<option value="">-- Là danh mục gốc (NULL) --</option>');
+
+            $.ajax({
+                url: `/api/public/categories`,
+                type: 'GET',
+                success: function (res) {
+                    if (res.data) {
+                        res.data.forEach(cat => {
+                            if (excludeId && cat.id === excludeId) return;
+                            const prefix = cat.parentId ? '— ' : '';
+                            select.append(`<option value="${cat.id}">${prefix}${cat.name} (${cat.slug})</option>`);
+                        });
+                    }
+                }
+            });
+        }
+
+        // Search & Filter
+        function setupSearchDebounce() {
+            $('#filter-keyword').on('input', function () {
+                const val = $(this).val();
+                if (val.length > 0) {
+                    $('#clear-search-btn').show();
+                } else {
+                    $('#clear-search-btn').hide();
+                }
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function () {
+                    currentPage = 0;
+                    loadCategories();
+                }, 400);
+            });
+        }
+
+        function clearSearch() {
+            $('#filter-keyword').val('');
+            $('#clear-search-btn').hide();
+            currentPage = 0;
+            loadCategories();
+        }
+
+        function onFilterChange() {
+            currentPage = 0;
+            loadCategories();
+        }
+
+        // Data Loader
+        function loadCategories() {
+            const tbody = $('#category-table-body');
+            tbody.html(`
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fa fa-spinner fa-spin fa-2x mb-3 text-danger"></i>
+                        <div>Đang tải dữ liệu...</div>
+                    </td>
+                </tr>
+            `);
+
+            const keyword = $('#filter-keyword').val().trim();
+            const status = $('#filter-status').val();
+            const parentFilter = $('#filter-parent').val();
+            const sortVal = $('#filter-sort').val().split('-');
+            const sortBy = sortVal[0] || 'sortOrder';
+            const sortDir = sortVal[1] || 'asc';
+
+            let parentId = null;
+            let onlyRoots = null;
+            if (parentFilter === 'ROOT') {
+                onlyRoots = true;
+            } else if (parentFilter) {
+                parentId = parentFilter;
+            }
+
+            const params = {
+                page: currentPage,
+                size: pageSize,
+                sortBy: sortBy,
+                sortDir: sortDir
+            };
+            if (keyword) params.keyword = keyword;
+            if (status) params.status = status;
+            if (parentId) params.parentId = parentId;
+            if (onlyRoots !== null) params.onlyRoots = onlyRoots;
+
+            $.ajax({
+                url: API_BASE,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                data: params,
+                success: function (res) {
+                    if (res.data && res.data.content) {
+                        renderTable(res.data.content);
+                        totalElements = res.data.totalElements;
+                        totalPages = res.data.totalPages;
+                        renderPagination();
+                    } else {
+                        renderEmptyTable('Không có dữ liệu danh mục');
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        tbody.html(`
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="fa fa-lock fa-3x text-danger mb-3"></i>
+                                    <h5>Yêu cầu quyền Quản trị viên (ADMIN) hoặc Quản lý (MANAGER)</h5>
+                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản có thẩm quyền để quản lý danh mục.</p>
+                                    <button class="btn btn-male-fashion" onclick="openLoginModal()">
+                                        <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                        $('#pagination-container').hide();
+                    } else {
+                        renderEmptyTable('Đã xảy ra lỗi khi tải danh mục: ' + (xhr.responseJSON?.message || 'Lỗi server'));
+                    }
+                }
+            });
+        }
+
+        function renderTable(categories) {
+            const tbody = $('#category-table-body');
+            tbody.empty();
+
+            if (!categories || categories.length === 0) {
+                renderEmptyTable('Không tìm thấy danh mục nào phù hợp với bộ lọc');
+                return;
+            }
+
+            categories.forEach(cat => {
+                const imgHtml = cat.imageUrl
+                    ? `<img src="${cat.imageUrl}" alt="${cat.name}" class="cat-thumb" onerror="this.onerror=null;this.src='/img/icon/heart.png';">`
+                    : `<span class="cat-thumb-placeholder"><i class="fa fa-folder"></i></span>`;
+
+                const parentBadgeHtml = cat.parentId
+                    ? `<span class="parent-badge"><i class="fa fa-level-up"></i> ${cat.parentName || ('ID: ' + cat.parentId)}</span>`
+                    : `<span class="parent-root-badge"><i class="fa fa-star"></i> Danh mục gốc</span>`;
+
+                const statusBadge = cat.status === 'active'
+                    ? `<span class="badge-status-active" onclick="toggleStatus(${cat.id}, 'inactive')" title="Bấm để chuyển sang tạm ngừng"><i class="fa fa-check-circle mr-1"></i> Hoạt động</span>`
+                    : `<span class="badge-status-inactive" onclick="toggleStatus(${cat.id}, 'active')" title="Bấm để kích hoạt lại"><i class="fa fa-ban mr-1"></i> Tạm ngừng</span>`;
+
+                const row = `
+                    <tr>
+                        <td><strong>#${cat.id}</strong></td>
+                        <td>${imgHtml}</td>
+                        <td>
+                            <a href="javascript:void(0)" onclick="viewDetail(${cat.id})" class="cat-name-link">
+                                ${cat.name}
+                            </a>
+                            ${cat.childrenCount > 0 ? `<small class="text-muted d-block"><i class="fa fa-code-fork mr-1"></i>${cat.childrenCount} danh mục con</small>` : ''}
+                        </td>
+                        <td><span class="slug-badge">${cat.slug}</span></td>
+                        <td>${parentBadgeHtml}</td>
+                        <td><span class="badge badge-light px-2 py-1 font-weight-bold">${cat.sortOrder}</span></td>
+                        <td>${statusBadge}</td>
+                        <td><small class="text-muted">${cat.createdAt ? cat.createdAt.substring(0, 16) : 'N/A'}</small></td>
+                        <td class="text-right">
+                            <button class="btn-action" onclick="viewDetail(${cat.id})" title="Xem chi tiết">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button class="btn-action btn-edit" onclick="openEditModal(${cat.id})" title="Chỉnh sửa">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="confirmDelete(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', ${cat.childrenCount})" title="Xóa">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+
+            $('#pagination-container').show();
+        }
+
+        function renderEmptyTable(msg) {
+            $('#category-table-body').html(`
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="fa fa-folder-open-o fa-3x mb-3 text-muted"></i>
+                        <div>${msg}</div>
+                    </td>
+                </tr>
+            `);
+            $('#pagination-container').hide();
+        }
+
+        function renderPagination() {
+            if (totalPages <= 1) {
+                $('#pagination-container').hide();
+                return;
+            }
+
+            const from = currentPage * pageSize + 1;
+            const to = Math.min((currentPage + 1) * pageSize, totalElements);
+            $('#pagination-info').text(`Hiển thị ${from} - ${to} trong tổng số ${totalElements} danh mục`);
+
+            const buttonsContainer = $('#pagination-buttons');
+            buttonsContainer.empty();
+
+            buttonsContainer.append(`
+                <button class="btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''}>
+                    <i class="fa fa-angle-left"></i>
+                </button>
+            `);
+
+            for (let i = 0; i < totalPages; i++) {
+                if (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    buttonsContainer.append(`
+                        <button class="btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i + 1}</button>
+                    `);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    buttonsContainer.append(`<span class="px-1 text-muted">...</span>`);
+                }
+            }
+
+            buttonsContainer.append(`
+                <button class="btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages - 1 ? 'disabled' : ''}>
+                    <i class="fa fa-angle-right"></i>
+                </button>
+            `);
+
+            $('#pagination-container').show();
+        }
+
+        function goToPage(page) {
+            if (page >= 0 && page < totalPages) {
+                currentPage = page;
+                loadCategories();
+            }
+        }
+
+        // Slug helper & preview
+        function stringToSlug(str) {
+            str = str.replace(/^\s+|\s+$/g, '');
+            str = str.toLowerCase();
+            const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ·/_,:;";
+            const to   = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd------";
+            for (let i = 0, l = from.length; i < l; i++) {
+                str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+            }
+            str = str.replace(/[^a-z0-9 -]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+            return str;
+        }
+
+        function handleNameInput(name) {
+            if (!currentlyEditingCatId) {
+                $('#cat-slug').val(stringToSlug(name));
+            }
+        }
+
+        function regenerateSlug() {
+            const name = $('#cat-name').val();
+            if (name) {
+                $('#cat-slug').val(stringToSlug(name));
+            }
+        }
+
+        function handleImagePreview(url) {
+            const box = $('#img-preview-box');
+            if (url && url.trim()) {
+                box.html(`<img src="${url.trim()}" onerror="this.onerror=null;this.parentElement.innerHTML='<i class=\\'fa fa-image text-danger\\'></i>';">`);
+            } else {
+                box.html('<i class="fa fa-image text-muted"></i>');
+            }
+        }
+
+        // Open Modals
+        function openCreateModal() {
+            currentlyEditingCatId = null;
+            $('#categoryModalTitle').text('Thêm Danh Mục Mới');
+            $('#categoryForm')[0].reset();
+            $('#cat-id').val('');
+            $('#cat-sort').val('0');
+            $('#cat-status').val('active');
+            handleImagePreview('');
+            populateParentSelect();
+            $('#categoryModal').modal('show');
+        }
+
+        function openEditModal(id) {
+            currentlyEditingCatId = id;
+            $('#categoryModalTitle').text('Chỉnh Sửa Danh Mục #' + id);
+            populateParentSelect(id);
+
+            $.ajax({
+                url: `${API_BASE}/${id}`,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    const cat = res.data;
+                    $('#cat-id').val(cat.id);
+                    $('#cat-name').val(cat.name);
+                    $('#cat-slug').val(cat.slug);
+                    $('#cat-parent').val(cat.parentId || '');
+                    $('#cat-image').val(cat.imageUrl || '');
+                    $('#cat-sort').val(cat.sortOrder || 0);
+                    $('#cat-status').val(cat.status || 'active');
+                    handleImagePreview(cat.imageUrl || '');
+
+                    $('#categoryDetailModal').modal('hide');
+                    $('#categoryModal').modal('show');
+                },
+                error: function (xhr) {
+                    showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết danh mục', 'danger');
+                }
+            });
+        }
+
+        // Save (Create or Update)
+        function saveCategory(e) {
+            e.preventDefault();
+
+            const name = $('#cat-name').val().trim();
+            const slug = $('#cat-slug').val().trim();
+            const parentIdVal = $('#cat-parent').val();
+            const parentId = parentIdVal ? parseInt(parentIdVal) : null;
+            const imageUrl = $('#cat-image').val().trim();
+            const sortOrder = parseInt($('#cat-sort').val()) || 0;
+            const status = $('#cat-status').val();
+
+            if (!name) {
+                showToast('Vui lòng nhập tên danh mục!', 'warning');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                slug: slug || stringToSlug(name),
+                parentId: parentId,
+                imageUrl: imageUrl || null,
+                sortOrder: sortOrder,
+                status: status
+            };
+
+            const submitBtn = $('#btn-save-category');
+            submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang lưu...');
+
+            const isEdit = !!currentlyEditingCatId;
+            const url = isEdit ? `${API_BASE}/${currentlyEditingCatId}` : API_BASE;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            $.ajax({
+                url: url,
+                type: method,
+                headers: getAuthHeaders(),
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu thông tin');
+                    $('#categoryModal').modal('hide');
+                    showToast(res.message || (isEdit ? 'Cập nhật danh mục thành công!' : 'Thêm mới danh mục thành công!'), 'success');
+                    loadStats();
+                    loadRootCategoriesFilter();
+                    loadCategories();
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu thông tin');
+                    showToast(xhr.responseJSON?.message || 'Thao tác thất bại!', 'danger');
+                }
+            });
+        }
+
+        // Toggle status
+        function toggleStatus(id, newStatus) {
+            $.ajax({
+                url: `${API_BASE}/${id}/status?status=${newStatus}`,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    showToast(`Đã chuyển trạng thái sang ${newStatus === 'active' ? 'Hoạt động' : 'Tạm ngừng'}!`, 'success');
+                    loadStats();
+                    loadCategories();
+                },
+                error: function (xhr) {
+                    showToast(xhr.responseJSON?.message || 'Không thể đổi trạng thái', 'danger');
+                }
+            });
+        }
+
+        // View detail
+        function viewDetail(id) {
+            $.ajax({
+                url: `${API_BASE}/${id}`,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    const cat = res.data;
+                    const content = $('#category-detail-content');
+                    content.html(`
+                        <div class="text-center mb-4">
+                            ${cat.imageUrl
+                                ? `<img src="${cat.imageUrl}" style="width: 90px; height: 90px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd;" onerror="this.onerror=null;this.src='/img/icon/heart.png';">`
+                                : `<div style="width: 90px; height: 90px; border-radius: 8px; background: #f1f3f5; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; color: #999;"><i class="fa fa-folder"></i></div>`
+                            }
+                            <h4 class="mt-2 font-weight-bold">${cat.name}</h4>
+                            <span class="slug-badge">${cat.slug}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Mã danh mục (ID):</span>
+                            <span class="detail-value">#${cat.id}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Danh mục cha:</span>
+                            <span class="detail-value">${cat.parentName ? cat.parentName + ' (#' + cat.parentId + ')' : '<span class="text-primary">Danh mục gốc (None)</span>'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Số danh mục con:</span>
+                            <span class="detail-value">${cat.childrenCount} danh mục con</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Thứ tự sắp xếp:</span>
+                            <span class="detail-value">${cat.sortOrder}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Trạng thái:</span>
+                            <span class="detail-value">${cat.status === 'active' ? '<span class="badge badge-success">Đang hoạt động</span>' : '<span class="badge badge-secondary">Tạm ngừng</span>'}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Ngày khởi tạo:</span>
+                            <span class="detail-value">${cat.createdAt || 'N/A'}</span>
+                        </div>
+                    `);
+
+                    $('#btn-edit-from-detail').off('click').on('click', function () {
+                        openEditModal(cat.id);
+                    });
+
+                    $('#categoryDetailModal').modal('show');
+                },
+                error: function (xhr) {
+                    showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết danh mục', 'danger');
+                }
+            });
+        }
+
+        // Delete
+        function confirmDelete(id, name, childrenCount) {
+            deletingCatId = id;
+            $('#delete-cat-name').text(name + ' (#' + id + ')');
+            if (childrenCount > 0) {
+                $('#delete-cat-warning').html(`<strong>CẢNH BÁO:</strong> Danh mục này đang chứa <strong>${childrenCount} danh mục con</strong>. Hệ thống sẽ chặn xóa để bảo đảm toàn vẹn dữ liệu.`);
+            } else {
+                $('#delete-cat-warning').text('Lưu ý: Hành động này không thể hoàn tác!');
+            }
+            $('#deleteCategoryModal').modal('show');
+        }
+
+        function executeDelete() {
+            if (!deletingCatId) return;
+
+            const btn = $('#btn-confirm-delete');
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang xóa...');
+
+            $.ajax({
+                url: `${API_BASE}/${deletingCatId}`,
+                type: 'DELETE',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
+                    $('#deleteCategoryModal').modal('hide');
+                    showToast(res.message || 'Xóa danh mục thành công!', 'success');
+                    loadStats();
+                    loadRootCategoriesFilter();
+                    loadCategories();
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
+                    showToast(xhr.responseJSON?.message || 'Không thể xóa danh mục!', 'danger');
+                }
+            });
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const container = $('#toast-container');
+            const icon = type === 'success' ? 'fa-check-circle' :
+                         type === 'danger' ? 'fa-exclamation-circle' :
+                         type === 'warning' ? 'fa-warning' : 'fa-info-circle';
+
+            const toast = $(`
+                <div class="custom-toast toast-${type}">
+                    <i class="fa ${icon} toast-icon"></i>
+                    <div class="toast-message">${message}</div>
+                    <span class="toast-close" onclick="$(this).parent().fadeOut(300, function(){ $(this).remove(); });">&times;</span>
+                </div>
+            `);
+
+            container.append(toast);
+
+            setTimeout(() => {
+                toast.fadeOut(400, function () {
+                    $(this).remove();
+                });
+            }, 4000);
+        }
+    </script>
+</body>
+
+</html>
