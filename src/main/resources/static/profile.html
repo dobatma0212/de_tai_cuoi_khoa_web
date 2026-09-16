@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
     <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
+    <link rel="stylesheet" href="/css/nice-select.css" type="text/css">
     <link rel="stylesheet" href="/css/auth.css" type="text/css">
 
     <style>
@@ -291,6 +292,57 @@
         .order-filter-item.active .of-count {
             background: #e53637;
             color: #fff;
+        }
+
+        /* ===== Form thống nhất, thẩm mĩ hơn trong tab quản lý ===== */
+        #shopManagerWrapper .form-control,
+        #shopManagerWrapper textarea,
+        #shopManagerWrapper input[type="text"],
+        #shopManagerWrapper input[type="number"],
+        #shopManagerWrapper input[type="email"],
+        #shopManagerWrapper input[type="datetime-local"] {
+            border-radius: 6px;
+            border: 1px solid #e3e3e3;
+            padding: 9px 12px;
+            font-size: 14px;
+            height: auto;
+            box-shadow: none;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        #shopManagerWrapper .form-control:focus {
+            border-color: #e53637;
+            box-shadow: none;
+            outline: none;
+        }
+
+        #shopManagerWrapper .profile-info-label {
+            font-size: 11.5px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* Dropdown nice-select của template: full width, gọn */
+        #shopManagerWrapper .nice-select {
+            width: 100%;
+            float: none;
+            border-radius: 6px;
+            border: 1px solid #e3e3e3;
+            padding-left: 12px;
+            font-size: 14px;
+        }
+
+        #shopManagerWrapper .nice-select .list {
+            width: 100%;
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+        }
+
+        /* Nhóm ngày bắt đầu/kết thúc khuyến mãi co giãn đều */
+        #promoForm .col-md-3 .form-control,
+        #promoForm input[type="datetime-local"] {
+            width: 100%;
         }
 
         .badge-representative {
