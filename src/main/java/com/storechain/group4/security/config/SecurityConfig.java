@@ -95,6 +95,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/shipper/**").hasAnyRole("SHIPPER", "ADMIN")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
 
+                        // 4. API hồ sơ cá nhân / địa chỉ nhận hàng: mọi người dùng đã đăng nhập
+                        .requestMatchers("/api/profile/**").authenticated()
+
                         // Tất cả các request còn lại yêu cầu xác thực
                         .anyRequest().authenticated()
                 );
