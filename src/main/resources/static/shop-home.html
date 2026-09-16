@@ -115,6 +115,108 @@
         .product-item .pi-price { font-weight: 800; color: #e53637; }
         .product-item .pi-stock { font-size: 13px; color: #888; }
         .out-of-stock { opacity: .6; }
+
+        /* ===== Gợi ý tìm kiếm + lịch sử tìm kiếm ===== */
+        .shop-search-wrap { position: relative; }
+
+        .shop-search-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .12);
+            z-index: 1050;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+
+        .ss-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #999;
+            background: #fafafa;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .ss-clear {
+            color: #e53637;
+            cursor: pointer;
+            text-transform: none;
+            font-size: 12px;
+            letter-spacing: 0;
+        }
+
+        .ss-clear:hover { text-decoration: underline; }
+
+        .ss-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .ss-item:hover,
+        .ss-item.active { background: #f7f7f7; }
+
+        .ss-item .ss-thumb {
+            width: 38px;
+            height: 38px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: #eee;
+            flex-shrink: 0;
+        }
+
+        .ss-item .ss-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 6px;
+            background: #f5f5f5;
+            color: #bbb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 15px;
+        }
+
+        .ss-item .ss-info { flex: 1; min-width: 0; }
+
+        .ss-item .ss-name {
+            color: #111;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ss-item .ss-sub { color: #888; font-size: 12px; }
+
+        .ss-item .ss-price {
+            color: #e53637;
+            font-weight: 700;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .ss-empty {
+            padding: 16px;
+            color: #999;
+            font-size: 13px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -203,14 +305,17 @@
         <div class="container">
             <div class="row mb-4 align-items-center">
                 <div class="col-md-6">
-                    <h5 class="font-weight-bold mb-0">Sản phẩm của cửa hàng</h5>
+                    <h5 class="font-weight-bold mb-0" id="gridTitle">Sản phẩm của cửa hàng</h5>
                 </div>
                 <div class="col-md-6">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="searchKeyword" placeholder="Tìm sản phẩm trong shop...">
-                        <div class="input-group-append">
-                            <button class="btn btn-dark" onclick="onSearch()">Tìm</button>
+                    <div class="shop-search-wrap">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchKeyword" placeholder="Tìm sản phẩm trong shop..." autocomplete="off">
+                            <div class="input-group-append">
+                                <button class="btn btn-dark" onclick="onSearch()">Tìm</button>
+                            </div>
                         </div>
+                        <div class="shop-search-dropdown" id="searchDropdown"></div>
                     </div>
                 </div>
             </div>
@@ -227,6 +332,17 @@
             </div>
         </div>
     </section>
+
+    <!-- Search Begin -->
+    <div class="search-model">
+        <div class="h-100 d-flex align-items-center justify-content-center">
+            <div class="search-close-switch">+</div>
+            <form class="search-model-form" onsubmit="return false;">
+                <input type="text" id="search-input" placeholder="Tìm sản phẩm trong shop này...">
+            </form>
+        </div>
+    </div>
+    <!-- Search End -->
 
     <footer class="footer">
         <div class="container">
@@ -273,10 +389,61 @@
             }
             loadShop();
             loadProducts();
-            $('#searchKeyword').on('keypress', function (e) {
-                if (e.which === 13) onSearch();
-            });
+            initSearchBox();
         });
+
+        // ============ Gợi ý tìm kiếm + lịch sử tìm kiếm ============
+        const HISTORY_KEY = 'sc_shop_search_history_' + shopId;
+        let suggestTimer = null;
+        let currentSuggest = [];
+        let currentHistory = [];
+
+        function getSearchHistory() {
+            try {
+                const raw = JSON.parse(localStorage.getItem(HISTORY_KEY));
+                return Array.isArray(raw) ? raw : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveSearchHistory(kw) {
+            let h = getSearchHistory().filter(x => String(x).toLowerCase() !== kw.toLowerCase());
+            h.unshift(kw);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 10)));
+        }
+
+        function clearSearchHistory() {
+            localStorage.removeItem(HISTORY_KEY);
+            hideSearchDropdown();
+        }
+
+        function hideSearchDropdown() {
+            $('#searchDropdown').hide().empty();
+            currentSuggest = [];
+            currentHistory = [];
+        }
+
+        function renderSearchDropdown(html) {
+            $('#searchDropdown').html(html).show();
+        }
+
+        function showSearchHistory() {
+            currentHistory = getSearchHistory();
+            if (!currentHistory.length) {
+                renderSearchDropdown('<div class="ss-empty">Chưa có lịch sử tìm kiếm</div>');
+                return;
+            }
+            let html = '<div class="ss-label"><span>Lịch sử tìm kiếm</span>' +
+                '<span class="ss-clear" onclick="clearSearchHistory()"><i class="fa fa-trash mr-1"></i>Xóa lịch sử</span></div>';
+            currentHistory.forEach((kw, i) => {
+                html += '<div class="ss-item" data-history="' + i + '">' +
+                    '<div class="ss-icon"><i class="fa fa-history"></i></div>' +
+                    '<div class="ss-info"><div class="ss-name">' + escapeHtml(kw) + '</div></div>' +
+                    '<i class="fa fa-angle-right text-muted"></i></div>';
+            });
+            renderSearchDropdown(html);
+        }
 
         function loadShop() {
             $.ajax({
@@ -300,10 +467,134 @@
             });
         }
 
+        function showSearchSuggestions(kw) {
+            $.ajax({
+                url: `/api/public/shops/${shopId}/products`,
+                type: 'GET',
+                data: { keyword: kw, page: 0, size: 5 },
+                success: function (res) {
+                    const items = (res.data && res.data.content) || [];
+                    if (!items.length) {
+                        renderSearchDropdown('<div class="ss-empty">Không có sản phẩm nào khớp với "<b>' + escapeHtml(kw) + '</b>"</div>');
+                        return;
+                    }
+                    currentSuggest = items;
+                    let html = '<div class="ss-label"><span>Gợi ý sản phẩm</span></div>';
+                    items.forEach((p, i) => {
+                        const thumb = p.imageUrl
+                            ? `<img class="ss-thumb" src="${escapeHtml(p.imageUrl)}" alt="">`
+                            : `<div class="ss-icon"><i class="fa fa-image"></i></div>`;
+                        html += '<div class="ss-item" data-suggest="' + i + '">' + thumb +
+                            '<div class="ss-info">' +
+                            '<div class="ss-name">' + escapeHtml(p.name) + '</div>' +
+                            '<div class="ss-sub">' + escapeHtml(p.categoryName || '') + '</div></div>' +
+                            '<span class="ss-price">' + formatCurrency(p.price) + '</span></div>';
+                    });
+                    renderSearchDropdown(html);
+                }
+            });
+        }
+
+        function pickSearchItem(el) {
+            if (el.hasAttribute('data-suggest')) {
+                const p = currentSuggest[parseInt(el.getAttribute('data-suggest'), 10)];
+                if (!p) return;
+                $('#searchKeyword').val(p.name);
+                onSearch();
+            } else if (el.hasAttribute('data-history')) {
+                const kw = currentHistory[parseInt(el.getAttribute('data-history'), 10)];
+                if (!kw) return;
+                $('#searchKeyword').val(kw);
+                onSearch();
+            }
+        }
+
         function onSearch() {
             keyword = $('#searchKeyword').val().trim();
+            if (keyword) saveSearchHistory(keyword);
             currentPage = 0;
+            hideSearchDropdown();
+            if (keyword) {
+                $('#gridTitle').html('Kết quả cho "<em>' + escapeHtml(keyword) + '</em>"');
+            } else {
+                $('#gridTitle').text('Sản phẩm của cửa hàng');
+            }
             loadProducts();
+        }
+
+        function initSearchBox() {
+            $('#searchKeyword')
+                .on('focus', function () {
+                    const kw = $(this).val().trim();
+                    if (kw) showSearchSuggestions(kw);
+                    else showSearchHistory();
+                })
+                .on('input', function () {
+                    const kw = $(this).val().trim();
+                    clearTimeout(suggestTimer);
+                    if (!kw) { showSearchHistory(); return; }
+                    suggestTimer = setTimeout(function () { showSearchSuggestions(kw); }, 300);
+                })
+                .on('keydown', function (e) {
+                    const $dropdown = $('#searchDropdown');
+                    const $items = $dropdown.find('.ss-item');
+                    if ($dropdown.is(':visible') && $items.length) {
+                        let idx = $items.index($items.filter('.active'));
+                        if (e.which === 40) { // Mũi tên xuống
+                            e.preventDefault();
+                            idx = idx >= $items.length - 1 ? 0 : idx + 1;
+                            $items.removeClass('active').eq(idx).addClass('active');
+                            return;
+                        }
+                        if (e.which === 38) { // Mũi tên lên
+                            e.preventDefault();
+                            idx = idx <= 0 ? $items.length - 1 : idx - 1;
+                            $items.removeClass('active').eq(idx).addClass('active');
+                            return;
+                        }
+                        if (e.which === 27) { // Esc
+                            hideSearchDropdown();
+                            return;
+                        }
+                        if (e.which === 13 && idx >= 0) { // Enter chọn mục đang highlight
+                            e.preventDefault();
+                            $items.eq(idx).click();
+                            return;
+                        }
+                    }
+                    if (e.which === 13) {
+                        e.preventDefault();
+                        onSearch();
+                    }
+                });
+
+            $('#searchDropdown').on('click', '.ss-item', function () {
+                pickSearchItem(this);
+            });
+
+            // Đóng dropdown khi bấm ra ngoài
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('.shop-search-wrap').length) hideSearchDropdown();
+            });
+
+            // Icon kính lúp trên header mở overlay tìm kiếm
+            $('.search-switch').on('click', function () {
+                setTimeout(function () {
+                    $('#search-input').val($('#searchKeyword').val()).focus();
+                }, 420);
+            });
+            $('#search-input').on('keydown', function (e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    const kw = $(this).val().trim();
+                    if (kw) {
+                        $('#searchKeyword').val(kw);
+                        onSearch();
+                        $('html, body').animate({ scrollTop: $('.product-grid').offset().top - 80 }, 400);
+                    }
+                    $('.search-close-switch').click();
+                }
+            });
         }
 
         function loadMore() {
@@ -332,7 +623,10 @@
             if (!append) grid.empty();
 
             if (!products.length && !append) {
-                grid.html('<div class="col-12 text-center py-5 text-muted"><i class="fa fa-box fa-3x mb-3"></i><div>Cửa hàng chưa có sản phẩm nào.</div></div>');
+                const msg = keyword
+                    ? 'Không tìm thấy sản phẩm nào khớp với "<b>' + escapeHtml(keyword) + '</b>"'
+                    : 'Cửa hàng chưa có sản phẩm nào.';
+                grid.html('<div class="col-12 text-center py-5 text-muted"><i class="fa fa-search fa-3x mb-3"></i><div>' + msg + '</div></div>');
                 $('#loadMoreBox').hide();
                 return;
             }

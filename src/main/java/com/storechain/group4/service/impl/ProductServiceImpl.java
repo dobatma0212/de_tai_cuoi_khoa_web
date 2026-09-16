@@ -136,7 +136,9 @@ public class ProductServiceImpl implements ProductService {
             throw new IllegalArgumentException("Cửa hàng này hiện không hoạt động");
         }
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return productRepository.searchPublicProducts(shopId, keyword, pageable).map(this::toDto);
+        // Chuẩn hóa keyword: null/rỗng -> "" để tránh lỗi khi so sánh tham số NULL trong JPQL
+        String kw = (keyword == null) ? "" : keyword.trim();
+        return productRepository.searchPublicProducts(shopId, kw, pageable).map(this::toDto);
     }
 
     // ==================== Helper ====================

@@ -426,6 +426,7 @@
                                 </div>
                             </div>
                             <input type="file" id="pr-image-file" accept="image/*" style="display:none;">
+                            <img id="pr-image-preview" alt="Ảnh sản phẩm" style="display:none; margin-top:10px; width:120px; height:120px; object-fit:cover; border-radius:8px; border:1px solid #eee;">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Trạng thái</label>
@@ -501,6 +502,7 @@
             }
             loadProducts();
             loadCategories();
+            bindProductImageUpload();
             $('#filter-keyword').on('input', function () {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function () {
@@ -509,6 +511,53 @@
                 }, 400);
             });
         });
+
+        // ===== Tải ảnh lên cho sản phẩm (fix: bấm "Tải lên" giờ mở hộp thoại chọn ảnh) =====
+        function bindProductImageUpload() {
+            $('#btnUploadImage').on('click', function () {
+                $('#pr-image-file').click();
+            });
+            $('#pr-image-file').on('change', function () {
+                const file = this.files[0];
+                this.value = '';
+                if (!file) return;
+                const btn = $('#btnUploadImage');
+                const oldHtml = btn.html();
+                btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang tải...');
+                const fd = new FormData();
+                fd.append('file', file);
+                $.ajax({
+                    url: '/api/uploads',
+                    type: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken() },
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        btn.prop('disabled', false).html(oldHtml);
+                        if (res.data && res.data.url) {
+                            $('#pr-image').val(res.data.url);
+                            updateImagePreview();
+                            showToast(res.message || 'Tải ảnh lên thành công!', 'success');
+                        }
+                    },
+                    error: function (xhr) {
+                        btn.prop('disabled', false).html(oldHtml);
+                        showToast(xhr.responseJSON?.message || 'Tải ảnh lên thất bại!', 'danger');
+                    }
+                });
+            });
+            $('#pr-image').on('input change', updateImagePreview);
+        }
+
+        function updateImagePreview() {
+            const url = $('#pr-image').val().trim();
+            if (url) {
+                $('#pr-image-preview').attr('src', url).show();
+            } else {
+                $('#pr-image-preview').hide().attr('src', '');
+            }
+        }
 
         function onFilterChange() {
             currentPage = 0;
@@ -656,6 +705,7 @@
             $('#pr-id').val('');
             $('#pr-status').val('active');
             $('#productModal').modal('show');
+            updateImagePreview();
         }
 
         function openEditModal(id) {
@@ -675,6 +725,7 @@
                     $('#pr-image').val(p.imageUrl || '');
                     $('#pr-status').val(p.status);
                     $('#productModal').modal('show');
+                    updateImagePreview();
                 },
                 error: function (xhr) {
                     showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết sản phẩm', 'danger');

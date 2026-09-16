@@ -24,7 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     );
 
     @Query("SELECT p FROM Product p WHERE p.shop.id = :shopId AND LOWER(p.status) = 'active' AND " +
-            "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "(:keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Product> searchPublicProducts(
             @Param("shopId") Long shopId,
             @Param("keyword") String keyword,
