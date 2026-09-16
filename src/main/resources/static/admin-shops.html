@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Quản lý & Duyệt cửa hàng - Male Fashion Admin">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Quản lý Cửa hàng | Male-Fashion Admin</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+    <style>
+        .filter-panel {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .filter-input-group { position: relative; }
+
+        .filter-input-group input {
+            height: 46px;
+            width: 100%;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            padding-left: 42px;
+            font-size: 14px;
+        }
+
+        .filter-input-group input:focus {
+            border-color: #e53637;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        .filter-input-group .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888888;
+        }
+
+        .filter-select {
+            height: 46px;
+            width: 100%;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            padding: 0 14px;
+            font-size: 14px;
+            color: #333333;
+            background-color: #ffffff;
+            outline: none;
+        }
+
+        .filter-select:focus {
+            border-color: #e53637;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        .admin-table-container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .admin-table { margin-bottom: 0; }
+
+        .admin-table thead th {
+            background: #111111;
+            color: #ffffff;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 16px 14px;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .admin-table tbody td {
+            vertical-align: middle;
+            padding: 14px;
+            font-size: 14px;
+            border-top: 1px solid #f0f0f0;
+            color: #333333;
+        }
+
+        .admin-table tbody tr:hover { background-color: #fcfcfc; }
+
+        .contact-line {
+            font-size: 13px;
+            color: #555555;
+            margin: 0;
+        }
+
+        .contact-line i { width: 16px; color: #888888; }
+
+        .badge-pending { background-color: #fff8e1; color: #e65100; }
+        .badge-active { background-color: #e8f5e9; color: #2e7d32; }
+        .badge-rejected { background-color: #ffebee; color: #c62828; }
+        .badge-banned { background-color: #eceff1; color: #455a64; }
+
+        .badge-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .btn-male-fashion {
+            background: #111111;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 20px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .btn-male-fashion:hover { background: #e53637; color: #ffffff; }
+
+        .btn-action {
+            height: 30px;
+            padding: 0 10px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid #e1e1e1;
+            background: #ffffff;
+            color: #555555;
+            transition: all 0.2s;
+            margin: 0 2px;
+            cursor: pointer;
+        }
+
+        .btn-action:hover { border-color: #111111; background: #111111; color: #ffffff; }
+        .btn-approve { border-color: #28a745; color: #28a745; }
+        .btn-approve:hover { background: #28a745; border-color: #28a745; color: #ffffff; }
+        .btn-reject { border-color: #dc3545; color: #dc3545; }
+        .btn-reject:hover { background: #dc3545; border-color: #dc3545; color: #ffffff; }
+
+        .pagination-container {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #f0f0f0;
+            background: #ffffff;
+        }
+
+        .pagination-info { font-size: 13px; color: #777777; }
+
+        .pagination-buttons .btn {
+            height: 36px;
+            min-width: 36px;
+            padding: 0 10px;
+            margin: 0 2px;
+            border-radius: 4px;
+            border: 1px solid #e1e1e1;
+            background: #ffffff;
+            color: #111111;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .pagination-buttons .btn.active {
+            background: #111111;
+            border-color: #111111;
+            color: #ffffff;
+        }
+
+        .pagination-buttons .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        #toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 99999;
+            min-width: 320px;
+            max-width: 420px;
+        }
+
+        .custom-toast {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #111111;
+        }
+
+        .custom-toast.toast-success { border-left-color: #28a745; }
+        .custom-toast.toast-danger { border-left-color: #dc3545; }
+        .custom-toast.toast-info { border-left-color: #17a2b8; }
+        .toast-icon { font-size: 20px; }
+        .toast-success .toast-icon { color: #28a745; }
+        .toast-danger .toast-icon { color: #dc3545; }
+        .toast-info .toast-icon { color: #17a2b8; }
+        .toast-message { font-size: 14px; font-weight: 600; color: #222222; flex-grow: 1; }
+        .toast-close { cursor: pointer; color: #999; font-size: 16px; }
+
+        .modal-header {
+            background: #111111;
+            color: #ffffff;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            padding: 16px 20px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .modal-header .close { color: #ffffff; opacity: 0.8; outline: none; }
+        .modal-content { border-radius: 8px; border: none; }
+    </style>
+</head>
+
+<body>
+    <div id="preloder">
+        <div class="loader"></div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div class="offcanvas-menu-overlay"></div>
+    <div class="offcanvas-menu-wrapper">
+        <div class="offcanvas__option">
+            <div class="offcanvas__links" id="mobile-auth-section"></div>
+        </div>
+        <div id="mobile-menu-wrap"></div>
+        <div class="offcanvas__text">
+            <p>Hệ thống Quản lý Chuỗi Cửa hàng - Male Fashion</p>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="header__top">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="header__top__left">
+                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin & Manager)</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <div class="header__top__links" id="auth-user-info">
+                                <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                                <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__logo">
+                        <a href="/index.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <nav class="header__menu mobile-menu">
+                        <ul>
+                            <li><a href="/index.html">Trang chủ</a></li>
+                            <li><a href="/shop.html">Cửa hàng</a></li>
+                            <li><a href="/admin-users.html">Quản lý Users</a></li>
+                            <li><a href="/admin-categories.html">Quản lý Danh mục</a></li>
+                            <li><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
+                            <li class="active"><a href="/admin-shops.html">Quản lý Shops</a></li>
+                            <li><a href="/contact.html">Liên hệ</a></li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__nav__option text-right">
+                        <span class="badge badge-danger p-2" id="role-indicator" style="font-size: 12px; letter-spacing: 0.5px;">
+                            <i class="fa fa-lock"></i> KHÁCH
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas__open"><i class="fa fa-bars"></i></div>
+        </div>
+    </header>
+
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Quản lý & Duyệt Cửa hàng (Shop)</h4>
+                        <div class="breadcrumb__links">
+                            <a href="/index.html">Trang chủ</a>
+                            <a href="#">Quản trị viên & Quản lý</a>
+                            <span>Danh sách cửa hàng</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="spad pt-4">
+        <div class="container">
+
+            <div class="filter-panel">
+                <div class="row align-items-center">
+                    <div class="col-lg-5 col-md-6 mb-3 mb-lg-0">
+                        <div class="filter-input-group">
+                            <i class="fa fa-search search-icon"></i>
+                            <input type="text" id="filter-keyword" placeholder="Tìm theo tên shop, SĐT, chủ shop...">
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-status" onchange="onFilterChange()">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="pending">Đang chờ duyệt</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="rejected">Bị từ chối</option>
+                            <option value="banned">Bị khóa</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-sort" onchange="onFilterChange()">
+                            <option value="id-desc">Mới nhất trước</option>
+                            <option value="id-asc">Cũ nhất trước</option>
+                            <option value="name-asc">Tên A-Z</option>
+                            <option value="name-desc">Tên Z-A</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-table-container">
+                <div class="table-responsive">
+                    <table class="table admin-table text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cửa hàng</th>
+                                <th>Chủ shop</th>
+                                <th>Liên hệ</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày đăng ký</th>
+                                <th class="text-right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shop-table-body">
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                                    <div>Đang tải danh sách cửa hàng...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-container" id="pagination-container" style="display: none;">
+                    <div class="pagination-info" id="pagination-info">Hiển thị 0 - 0 trong tổng số 0 cửa hàng</div>
+                    <div class="pagination-buttons" id="pagination-buttons"></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger">
+                    <h5 class="modal-title text-white"><i class="fa fa-exclamation-triangle mr-1"></i> Từ Chối Đăng Ký</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn đang từ chối đơn đăng ký cửa hàng: <strong id="reject-shop-name"></strong></p>
+                    <div class="form-group">
+                        <label>Lý do từ chối</label>
+                        <textarea class="form-control" id="reject-reason" rows="3" maxlength="500" placeholder="VD: Tên cửa hàng không phù hợp..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-danger" id="btn-confirm-reject" onclick="executeReject()">
+                        <i class="fa fa-times mr-1"></i> Xác nhận từ chối
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa fa-lock mr-1"></i> Đăng nhập Quản trị</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="adminLoginForm" onsubmit="handleLogin(event)">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Tên đăng nhập / Email</label>
+                            <input type="text" class="form-control" id="login-username" required placeholder="admin hoặc manager">
+                        </div>
+                        <div class="form-group">
+                            <label>Mật khẩu</label>
+                            <input type="password" class="form-control" id="login-password" required placeholder="Mật khẩu">
+                        </div>
+                        <div class="mt-3">
+                            <p class="mb-1 text-muted" style="font-size: 13px;">Tài khoản thử nghiệm có sẵn:</p>
+                            <button type="button" class="btn btn-sm btn-outline-danger mb-1 mr-1" onclick="quickFillLogin('admin', 'admin123')">
+                                <i class="fa fa-user"></i> Admin (admin123)
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary mb-1" onclick="quickFillLogin('manager', 'manager123')">
+                                <i class="fa fa-user"></i> Manager (manager123)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn-male-fashion" id="btn-submit-login">
+                            <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/jquery.nicescroll.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/main.js"></script>
+
+    <script>
+        let currentUser = null;
+        let currentPage = 0;
+        let pageSize = 10;
+        let totalPages = 0;
+        let totalElements = 0;
+        let searchTimeout = null;
+        let rejectingId = null;
+
+        const API_BASE = '/api/admin/shops';
+        const AUTH_API = '/api/auth/login';
+
+        const STATUS_META = {
+            pending: { text: 'Đang chờ duyệt', cls: 'badge-pending' },
+            active: { text: 'Đang hoạt động', cls: 'badge-active' },
+            rejected: { text: 'Bị từ chối', cls: 'badge-rejected' },
+            banned: { text: 'Bị khóa', cls: 'badge-banned' }
+        };
+
+        $(document).ready(function () {
+            checkAuth();
+            setupSearchDebounce();
+            loadShops();
+        });
+
+        function getToken() {
+            const scRaw = localStorage.getItem('sc_auth');
+            if (scRaw) {
+                try {
+                    const parsed = JSON.parse(scRaw);
+                    if (parsed && parsed.token) return parsed.token;
+                } catch (e) {}
+            }
+            return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            return token
+                ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                : { 'Content-Type': 'application/json' };
+        }
+
+        function checkAuth() {
+            let storedUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info');
+            if (!storedUser) {
+                const scRaw = localStorage.getItem('sc_auth');
+                if (scRaw) storedUser = scRaw;
+            }
+            if (storedUser) {
+                try { currentUser = JSON.parse(storedUser); } catch (e) { currentUser = null; }
+            }
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            const authContainer = $('#auth-user-info');
+            const roleIndicator = $('#role-indicator');
+
+            if (currentUser && getToken()) {
+                const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
+                const isAdmin = roleName.includes('ADMIN');
+                const isManager = roleName.includes('MANAGER');
+
+                roleIndicator.removeClass('badge-danger badge-primary badge-dark')
+                    .addClass(isAdmin ? 'badge-danger' : 'badge-primary')
+                    .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : (isManager ? 'MANAGER' : roleName)}`);
+
+                authContainer.html(`
+                    <span class="text-white mr-3">
+                        <i class="fa fa-user-circle text-danger mr-1"></i>
+                        Xin chào, <strong>${currentUser.fullName || currentUser.username}</strong>
+                    </span>
+                    <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
+                        <i class="fa fa-sign-out mr-1"></i> Đăng xuất
+                    </button>
+                `);
+            } else {
+                roleIndicator.removeClass('badge-danger badge-primary').addClass('badge-dark')
+                    .html(`<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP`);
+                authContainer.html(`
+                    <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                    <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()">Đăng nhập</button>
+                `);
+            }
+        }
+
+        function openLoginModal() { $('#loginModal').modal('show'); }
+
+        function quickFillLogin(user, pass) {
+            $('#login-username').val(user);
+            $('#login-password').val(pass);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = $('#login-username').val().trim();
+            const password = $('#login-password').val().trim();
+            const submitBtn = $('#btn-submit-login');
+
+            submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang đăng nhập...');
+
+            $.ajax({
+                url: AUTH_API,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ username: username, password: password }),
+                success: function (res) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
+                    const data = res.data || res;
+                    const token = data.token || data.accessToken;
+                    const userObj = {
+                        userId: data.id || data.userId,
+                        username: data.username,
+                        email: data.email,
+                        fullName: data.fullName || data.username,
+                        role: data.role || (data.roles ? data.roles[0] : 'ROLE_ADMIN')
+                    };
+
+                    localStorage.setItem('jwt_token', token);
+                    localStorage.setItem('user_info', JSON.stringify(userObj));
+                    localStorage.setItem('sc_auth', JSON.stringify({ token: token, user: userObj }));
+                    currentUser = userObj;
+
+                    $('#loginModal').modal('hide');
+                    updateAuthUI();
+                    showToast('Đăng nhập thành công với vai trò ' + userObj.role, 'success');
+                    loadShops();
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
+                    showToast(xhr.responseJSON?.message || 'Đăng nhập thất bại!', 'danger');
+                }
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_info');
+            localStorage.removeItem('sc_auth');
+            sessionStorage.clear();
+            currentUser = null;
+            updateAuthUI();
+            showToast('Đã đăng xuất khỏi hệ thống', 'info');
+            loadShops();
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function setupSearchDebounce() {
+            $('#filter-keyword').on('input', function () {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function () {
+                    currentPage = 0;
+                    loadShops();
+                }, 400);
+            });
+        }
+
+        function onFilterChange() {
+            currentPage = 0;
+            loadShops();
+        }
+
+        function loadShops() {
+            const tbody = $('#shop-table-body');
+            tbody.html(`
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa fa-spinner fa-spin fa-2x mb-3 text-danger"></i>
+                        <div>Đang tải dữ liệu...</div>
+                    </td>
+                </tr>
+            `);
+
+            const keyword = $('#filter-keyword').val().trim();
+            const status = $('#filter-status').val();
+            const sortVal = $('#filter-sort').val().split('-');
+
+            const params = {
+                page: currentPage,
+                size: pageSize,
+                sortBy: sortVal[0] || 'id',
+                sortDir: sortVal[1] || 'desc'
+            };
+            if (keyword) params.keyword = keyword;
+            if (status) params.status = status;
+
+            $.ajax({
+                url: API_BASE,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                data: params,
+                success: function (res) {
+                    if (res.data && res.data.content) {
+                        renderTable(res.data.content);
+                        totalElements = res.data.totalElements;
+                        totalPages = res.data.totalPages;
+                        renderPagination();
+                    } else {
+                        renderEmptyTable('Không có dữ liệu cửa hàng');
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        tbody.html(`
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <i class="fa fa-lock fa-3x text-danger mb-3"></i>
+                                    <h5>Yêu cầu quyền Quản trị viên (ADMIN) hoặc Quản lý (MANAGER)</h5>
+                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản có thẩm quyền để quản lý cửa hàng.</p>
+                                    <button class="btn btn-male-fashion" onclick="openLoginModal()">
+                                        <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
+                        $('#pagination-container').hide();
+                    } else {
+                        renderEmptyTable('Đã xảy ra lỗi khi tải dữ liệu: ' + (xhr.responseJSON?.message || 'Lỗi server'));
+                    }
+                }
+            });
+        }
+
+        function renderTable(shops) {
+            const tbody = $('#shop-table-body');
+            tbody.empty();
+
+            if (!shops || shops.length === 0) {
+                renderEmptyTable('Không tìm thấy cửa hàng nào phù hợp với bộ lọc');
+                return;
+            }
+
+            shops.forEach(shop => {
+                const meta = STATUS_META[shop.status] || { text: shop.status, cls: 'badge-banned' };
+                const logo = shop.logoUrl
+                    ? `<img src="${escapeHtml(shop.logoUrl)}" alt="" style="width:36px;height:36px;border-radius:6px;object-fit:cover;margin-right:10px;">`
+                    : `<div style="width:36px;height:36px;border-radius:6px;background:#ffeaea;color:#e53637;display:inline-flex;align-items:center;justify-content:center;margin-right:10px;"><i class="fa fa-store"></i></div>`;
+
+                let actions = '';
+                if (shop.status === 'pending') {
+                    actions += `<button class="btn-action btn-approve" onclick="approveShop(${shop.id})"><i class="fa fa-check mr-1"></i> Duyệt</button>`;
+                    actions += `<button class="btn-action btn-reject" onclick="openRejectModal(${shop.id}, '${escapeHtml(shop.name).replace(/'/g, "\\'")}')"><i class="fa fa-times mr-1"></i> Từ chối</button>`;
+                } else if (shop.status === 'rejected') {
+                    actions += `<button class="btn-action btn-approve" onclick="approveShop(${shop.id})"><i class="fa fa-check mr-1"></i> Duyệt lại</button>`;
+                } else if (shop.status === 'active') {
+                    actions += `<button class="btn-action btn-reject" onclick="toggleStatus(${shop.id}, 'banned')"><i class="fa fa-lock mr-1"></i> Khóa shop</button>`;
+                    actions += `<a class="btn-action" href="/shop-home.html?id=${shop.id}" target="_blank" title="Xem trang chủ shop"><i class="fa fa-eye mr-1"></i> Xem</a>`;
+                } else if (shop.status === 'banned') {
+                    actions += `<button class="btn-action btn-approve" onclick="toggleStatus(${shop.id}, 'active')"><i class="fa fa-unlock mr-1"></i> Mở khóa</button>`;
+                }
+
+                const rejectReason = shop.status === 'rejected' && shop.rejectReason
+                    ? `<p class="contact-line text-danger mt-1"><i class="fa fa-info-circle"></i> Lý do: ${escapeHtml(shop.rejectReason)}</p>`
+                    : '';
+
+                const row = `
+                    <tr>
+                        <td><strong>#${shop.id}</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                ${logo}
+                                <div>
+                                    <strong>${escapeHtml(shop.name)}</strong>
+                                    ${rejectReason}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <p class="contact-line mb-1"><i class="fa fa-user"></i> ${escapeHtml(shop.ownerFullName || '')}</p>
+                            <p class="contact-line"><i class="fa fa-at"></i> ${escapeHtml(shop.ownerUsername || '')}</p>
+                        </td>
+                        <td>
+                            <p class="contact-line mb-1"><i class="fa fa-envelope"></i> ${escapeHtml(shop.ownerEmail || '')}</p>
+                            <p class="contact-line"><i class="fa fa-phone"></i> ${escapeHtml(shop.phone || 'Chưa có')}</p>
+                        </td>
+                        <td><span class="badge-status ${meta.cls}">${meta.text}</span></td>
+                        <td><small class="text-muted">${shop.createdAt ? shop.createdAt.substring(0, 10) : 'N/A'}</small></td>
+                        <td class="text-right">${actions}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+
+            $('#pagination-container').show();
+        }
+
+        function renderEmptyTable(msg) {
+            $('#shop-table-body').html(`
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa fa-store fa-3x mb-3 text-muted"></i>
+                        <div>${msg}</div>
+                    </td>
+                </tr>
+            `);
+            $('#pagination-container').hide();
+        }
+
+        function renderPagination() {
+            if (totalPages <= 1) {
+                $('#pagination-container').hide();
+                return;
+            }
+
+            const from = currentPage * pageSize + 1;
+            const to = Math.min((currentPage + 1) * pageSize, totalElements);
+            $('#pagination-info').text(`Hiển thị ${from} - ${to} trong tổng số ${totalElements} cửa hàng`);
+
+            const buttonsContainer = $('#pagination-buttons');
+            buttonsContainer.empty();
+
+            buttonsContainer.append(`
+                <button class="btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''}>
+                    <i class="fa fa-angle-left"></i>
+                </button>
+            `);
+
+            for (let i = 0; i < totalPages; i++) {
+                if (i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    buttonsContainer.append(`
+                        <button class="btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i + 1}</button>
+                    `);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    buttonsContainer.append(`<span class="px-1 text-muted">...</span>`);
+                }
+            }
+
+            buttonsContainer.append(`
+                <button class="btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages - 1 ? 'disabled' : ''}>
+                    <i class="fa fa-angle-right"></i>
+                </button>
+            `);
+
+            $('#pagination-container').show();
+        }
+
+        function goToPage(page) {
+            if (page >= 0 && page < totalPages) {
+                currentPage = page;
+                loadShops();
+            }
+        }
+
+        function approveShop(id) {
+            if (!confirm('Duyệt cửa hàng này? Chủ shop sẽ được cấp quyền bán hàng (VENDOR).')) return;
+            $.ajax({
+                url: `${API_BASE}/${id}/approve`,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    showToast(res.message || 'Duyệt cửa hàng thành công!', 'success');
+                    loadShops();
+                },
+                error: function (xhr) {
+                    showToast(xhr.responseJSON?.message || 'Không thể duyệt cửa hàng!', 'danger');
+                }
+            });
+        }
+
+        function openRejectModal(id, name) {
+            rejectingId = id;
+            $('#reject-shop-name').text(name + ' (#' + id + ')');
+            $('#reject-reason').val('');
+            $('#rejectModal').modal('show');
+        }
+
+        function executeReject() {
+            if (!rejectingId) return;
+            const reason = $('#reject-reason').val().trim();
+            const btn = $('#btn-confirm-reject');
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang xử lý...');
+
+            $.ajax({
+                url: `${API_BASE}/${rejectingId}/reject?reason=${encodeURIComponent(reason)}`,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    btn.prop('disabled', false).html('<i class="fa fa-times mr-1"></i> Xác nhận từ chối');
+                    $('#rejectModal').modal('hide');
+                    showToast(res.message || 'Đã từ chối đơn đăng ký!', 'success');
+                    loadShops();
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).html('<i class="fa fa-times mr-1"></i> Xác nhận từ chối');
+                    showToast(xhr.responseJSON?.message || 'Không thể từ chối!', 'danger');
+                }
+            });
+        }
+
+        function toggleStatus(id, status) {
+            const label = status === 'banned' ? 'khóa' : 'mở khóa';
+            if (!confirm(`Bạn có chắc muốn ${label} cửa hàng này?`)) return;
+            $.ajax({
+                url: `${API_BASE}/${id}/status?status=${status}`,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    showToast(res.message || 'Cập nhật trạng thái thành công!', 'success');
+                    loadShops();
+                },
+                error: function (xhr) {
+                    showToast(xhr.responseJSON?.message || 'Không thể đổi trạng thái!', 'danger');
+                }
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = $('#toast-container');
+            const icon = type === 'success' ? 'fa-check-circle' :
+                         type === 'danger' ? 'fa-exclamation-circle' : 'fa-info-circle';
+
+            const toast = $(`
+                <div class="custom-toast toast-${type}">
+                    <i class="fa ${icon} toast-icon"></i>
+                    <div class="toast-message">${message}</div>
+                    <span class="toast-close" onclick="$(this).parent().fadeOut(300, function(){ $(this).remove(); });">&times;</span>
+                </div>
+            `);
+
+            container.append(toast);
+            setTimeout(() => {
+                toast.fadeOut(400, function () { $(this).remove(); });
+            }, 4000);
+        }
+    </script>
+</body>
+
+</html>

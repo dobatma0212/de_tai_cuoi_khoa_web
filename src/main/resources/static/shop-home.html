@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Trang chủ cửa hàng | Male-Fashion</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+    <style>
+        .shop-hero {
+            position: relative;
+            background: #111;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .shop-hero .banner {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.55;
+        }
+
+        .shop-hero .container { position: relative; z-index: 2; padding: 50px 0; }
+
+        .shop-logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 3px solid #fff;
+            background: #fff;
+        }
+
+        .shop-name {
+            color: #fff;
+            font-weight: 800;
+            margin: 0;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, .6);
+        }
+
+        .shop-meta { color: #ddd; margin: 6px 0 0; }
+
+        .shop-badge {
+            background: #e53637;
+            color: #fff;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .product-grid {
+            padding: 50px 0 80px;
+            background: #f5f5f5;
+        }
+
+        .product-item {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+            transition: all .3s;
+        }
+
+        .product-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+        }
+
+        .product-item .pi-img {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            background: #eee;
+            display: block;
+        }
+
+        .product-item .pi-body { padding: 16px 18px; }
+
+        .product-item .pi-category {
+            color: #e53637;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .product-item .pi-name {
+            font-weight: 700;
+            color: #111;
+            margin: 6px 0;
+            font-size: 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .product-item .pi-name:hover { color: #e53637; text-decoration: none; }
+
+        .product-item .pi-price { font-weight: 800; color: #e53637; }
+        .product-item .pi-stock { font-size: 13px; color: #888; }
+        .out-of-stock { opacity: .6; }
+    </style>
+</head>
+
+<body>
+    <div id="preloder">
+        <div class="loader"></div>
+    </div>
+
+    <header class="header">
+        <div class="header__top">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6 col-md-7">
+                        <div class="header__top__left">
+                            <p>Free shipping, 30-day return or refund guarantee.</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-5">
+                        <div class="header__top__right">
+                            <div class="header__top__links">
+                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Sign in</a>
+                                <a href="#">FAQs</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__logo">
+                        <a href="./index.html"><img src="/img/logo.png" alt=""></a>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <nav class="header__menu mobile-menu">
+                        <ul>
+                            <li><a href="./index.html">Home</a></li>
+                            <li><a href="./shop.html">Shop</a></li>
+                            <li><a href="#">Pages</a>
+                                <ul class="dropdown">
+                                    <li><a href="./about.html">About Us</a></li>
+                                    <li><a href="./shop-details.html">Shop Details</a></li>
+                                    <li><a href="./shopping-cart.html">Shopping Cart</a></li>
+                                    <li><a href="./checkout.html">Check Out</a></li>
+                                    <li><a href="./blog-details.html">Blog Details</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="./blog.html">Blog</a></li>
+                            <li><a href="./contact.html">Contacts</a></li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__nav__option">
+                        <a href="#" class="search-switch"><img src="/img/icon/search.png" alt=""></a>
+                        <a href="#"><img src="/img/icon/heart.png" alt=""></a>
+                        <a href="./shopping-cart.html"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
+                        <div class="price">$0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero của shop -->
+    <section class="shop-hero">
+        <img class="banner" id="shopBanner" src="/img/hero/banner.jpg" alt="">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <img id="shopLogo" class="shop-logo" src="/img/logo.png" alt="">
+                <div class="ml-4">
+                    <h3 class="shop-name"><span id="shopName">Cửa hàng</span><span class="shop-badge">Chính thức</span></h3>
+                    <p class="shop-meta">
+                        <i class="fa fa-phone"></i> <span id="shopPhone">Chưa có</span>
+                        &nbsp;&nbsp;<i class="fa fa-map-marker"></i> <span id="shopAddress">Chưa có</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sản phẩm của shop -->
+    <section class="product-grid">
+        <div class="container">
+            <div class="row mb-4 align-items-center">
+                <div class="col-md-6">
+                    <h5 class="font-weight-bold mb-0">Sản phẩm của cửa hàng</h5>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchKeyword" placeholder="Tìm sản phẩm trong shop...">
+                        <div class="input-group-append">
+                            <button class="btn btn-dark" onclick="onSearch()">Tìm</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" id="productGrid">
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                    <div>Đang tải sản phẩm...</div>
+                </div>
+            </div>
+
+            <div class="text-center" id="loadMoreBox" style="display:none;">
+                <button class="btn btn-dark px-4" onclick="loadMore()">Xem thêm</button>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <div class="footer__copyright__text">
+                        <p>Copyright &copy; <script>document.write(new Date().getFullYear());</script>
+                            All rights reserved | StoreChain Group 4</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const shopId = params.get('id');
+        let currentPage = 0;
+        const pageSize = 12;
+        let totalPages = 0;
+        let keyword = '';
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + ' ₫';
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        $(document).ready(function () {
+            if (!shopId) {
+                $('#productGrid').html('<div class="col-12 text-center py-5"><h5>Không tìm thấy cửa hàng.</h5></div>');
+                return;
+            }
+            loadShop();
+            loadProducts();
+            $('#searchKeyword').on('keypress', function (e) {
+                if (e.which === 13) onSearch();
+            });
+        });
+
+        function loadShop() {
+            $.ajax({
+                url: `/api/public/shops/${shopId}`,
+                type: 'GET',
+                success: function (res) {
+                    const shop = res.data;
+                    document.title = shop.name + ' | Male-Fashion';
+                    $('#shopName').text(shop.name);
+                    $('#shopPhone').text(shop.phone || 'Chưa có');
+                    $('#shopAddress').text(shop.address || 'Chưa có');
+                    if (shop.logoUrl) $('#shopLogo').attr('src', shop.logoUrl);
+                    if (shop.bannerUrl) $('#shopBanner').attr('src', shop.bannerUrl);
+                    if (shop.description) {
+                        $('.shop-hero .container').append('<p class="shop-meta mt-2">' + escapeHtml(shop.description) + '</p>');
+                    }
+                },
+                error: function () {
+                    $('#productGrid').html('<div class="col-12 text-center py-5"><h5>Cửa hàng này hiện không hoạt động.</h5></div>');
+                }
+            });
+        }
+
+        function onSearch() {
+            keyword = $('#searchKeyword').val().trim();
+            currentPage = 0;
+            loadProducts();
+        }
+
+        function loadMore() {
+            currentPage++;
+            loadProducts(true);
+        }
+
+        function loadProducts(append) {
+            $.ajax({
+                url: `/api/public/shops/${shopId}/products`,
+                type: 'GET',
+                data: { keyword: keyword, page: currentPage, size: pageSize },
+                success: function (res) {
+                    if (!res.data || !res.data.content) return;
+                    totalPages = res.data.totalPages;
+                    renderProducts(res.data.content, append);
+                },
+                error: function () {
+                    $('#productGrid').html('<div class="col-12 text-center py-5"><h5>Không thể tải sản phẩm của cửa hàng.</h5></div>');
+                }
+            });
+        }
+
+        function renderProducts(products, append) {
+            const grid = $('#productGrid');
+            if (!append) grid.empty();
+
+            if (!products.length && !append) {
+                grid.html('<div class="col-12 text-center py-5 text-muted"><i class="fa fa-box fa-3x mb-3"></i><div>Cửa hàng chưa có sản phẩm nào.</div></div>');
+                $('#loadMoreBox').hide();
+                return;
+            }
+
+            products.forEach(p => {
+                const soldOut = !p.stock || p.stock <= 0;
+                const img = p.imageUrl
+                    ? `<img class="pi-img" src="${escapeHtml(p.imageUrl)}" alt="">`
+                    : `<div class="pi-img d-flex align-items-center justify-content-center" style="color:#bbb;font-size:40px;"><i class="fa fa-image"></i></div>`;
+
+                grid.append(`
+                    <div class="col-lg-3 col-md-4 col-sm-6">
+                        <div class="product-item ${soldOut ? 'out-of-stock' : ''}">
+                            ${img}
+                            <div class="pi-body">
+                                <div class="pi-category">${escapeHtml(p.categoryName || '')}</div>
+                                <a href="javascript:void(0)" class="pi-name">${escapeHtml(p.name)}</a>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="pi-price">${formatCurrency(p.price)}</span>
+                                    <span class="pi-stock">${soldOut ? 'Hết hàng' : 'Còn ' + p.stock}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+
+            $('#loadMoreBox').toggle(currentPage < totalPages - 1);
+        }
+    </script>
+</body>
+
+</html>

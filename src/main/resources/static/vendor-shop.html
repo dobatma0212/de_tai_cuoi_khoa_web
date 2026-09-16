@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Quản lý trang chủ Shop | Male-Fashion</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+
+    <style>
+        .vendor-section { padding: 50px 0 80px; background: #f5f5f5; min-height: 60vh; }
+
+        .vendor-card {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .07);
+            overflow: hidden;
+        }
+
+        .vendor-tabs {
+            display: flex;
+            border-bottom: 1px solid #e8e8e8;
+            background: #fafafa;
+        }
+
+        .vendor-tabs a {
+            flex: 1;
+            min-width: 160px;
+            padding: 16px 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: 1px;
+            text-decoration: none;
+        }
+
+        .vendor-tabs a.active {
+            color: #e53637;
+            border-bottom: 2px solid #e53637;
+            background: #fff;
+        }
+
+        .vendor-card-body { padding: 30px; }
+
+        .shop-banner-preview {
+            width: 100%;
+            height: 180px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #eee;
+            margin-bottom: 10px;
+        }
+
+        .shop-logo-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #e53637;
+        }
+
+        .info-label {
+            font-weight: 700;
+            color: #888;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        .btn-store {
+            background: #e53637;
+            color: #fff;
+            border: none;
+            font-weight: 700;
+            padding: 10px 24px;
+            border-radius: 4px;
+        }
+
+        .btn-store:hover { background: #c72b2c; color: #fff; }
+
+        .btn-outline-store {
+            border: 1px solid #e53637;
+            color: #e53637;
+            background: transparent;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 4px;
+        }
+
+        .btn-outline-store:hover { background: #e53637; color: #fff; }
+
+        .alert { display: none; }
+    </style>
+</head>
+
+<body>
+    <div id="preloder">
+        <div class="loader"></div>
+    </div>
+
+    <header class="header">
+        <div class="header__top">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="header__top__left">
+                            <p><i class="fa fa-store text-danger mr-1"></i> Khu vực Người bán (Seller)</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <div class="header__top__links" id="auth-user-info">
+                                <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                                <a href="/profile.html" class="text-white mr-2">Hồ sơ</a>
+                                <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">Đăng xuất</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__logo">
+                        <a href="/index.html"><img src="/img/logo.png" alt=""></a>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <nav class="header__menu mobile-menu">
+                        <ul>
+                            <li><a href="/index.html">Trang chủ</a></li>
+                            <li><a href="/shop.html">Cửa hàng</a></li>
+                            <li><a href="/profile.html">Hồ sơ</a></li>
+                            <li><a href="/contact.html">Liên hệ</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <div class="canvas__open"><i class="fa fa-bars"></i></div>
+        </div>
+    </header>
+
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Quản lý trang chủ Shop</h4>
+                        <div class="breadcrumb__links">
+                            <a href="/index.html">Trang chủ</a>
+                            <a href="/profile.html">Hồ sơ</a>
+                            <span>Quản lý Shop</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="vendor-section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-9">
+                    <div class="vendor-card">
+                        <div class="vendor-tabs">
+                            <a href="/vendor-shop.html" class="active">Trang chủ Shop</a>
+                            <a href="/vendor-products.html">Sản phẩm</a>
+                        </div>
+                        <div class="vendor-card-body">
+
+                            <div class="alert alert-info" id="shopAlert"></div>
+                            <div class="alert alert-success" id="shopSuccess"></div>
+
+                            <div id="notVendorBox" style="display:none;" class="text-center py-5">
+                                <i class="fa fa-store fa-3x text-muted mb-3"></i>
+                                <h5>Bạn chưa có cửa hàng hoặc cửa hàng chưa được duyệt.</h5>
+                                <p class="text-muted">Hãy đăng ký mở cửa hàng trong trang Hồ sơ cá nhân.</p>
+                                <a href="/profile.html" class="btn-store" style="text-decoration:none;">Đến trang Hồ sơ</a>
+                            </div>
+
+                            <div id="shopFormWrapper" style="display:none;">
+                                <div class="text-center mb-4">
+                                    <img id="previewBanner" class="shop-banner-preview" src="/img/hero/banner.jpg" alt="banner">
+                                    <img id="previewLogo" class="shop-logo-preview" src="/img/logo.png" alt="logo"
+                                         style="margin-top:-40px; background:#fff;">
+                                </div>
+                                <form id="shopForm">
+                                    <div class="row">
+                                        <div class="col-md-6 form-group">
+                                            <label class="info-label">Tên cửa hàng (*)</label>
+                                            <input type="text" id="vShopName" class="form-control" maxlength="150" required>
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="info-label">Số điện thoại</label>
+                                            <input type="text" id="vShopPhone" class="form-control" maxlength="15">
+                                        </div>
+                                        <div class="col-md-12 form-group">
+                                            <label class="info-label">Địa chỉ cửa hàng</label>
+                                            <input type="text" id="vShopAddress" class="form-control" maxlength="255">
+                                        </div>
+                                        <div class="col-md-12 form-group">
+                                            <label class="info-label">Mô tả cửa hàng</label>
+                                            <textarea id="vShopDescription" class="form-control" rows="3" maxlength="2000"></textarea>
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="info-label">Logo (URL)</label>
+                                            <input type="text" id="vShopLogoUrl" class="form-control" maxlength="255" placeholder="https://...">
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="info-label">Banner (URL)</label>
+                                            <input type="text" id="vShopBannerUrl" class="form-control" maxlength="255" placeholder="https://...">
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn-store">Lưu thay đổi</button>
+                                    <a id="viewShopLink" href="#" target="_blank" class="btn-outline-store">Xem trang chủ shop</a>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+
+    <script>
+        const API_BASE = '/api/vendor/shop';
+
+        function getToken() {
+            const scRaw = localStorage.getItem('sc_auth');
+            if (scRaw) {
+                try {
+                    const parsed = JSON.parse(scRaw);
+                    if (parsed && parsed.token) return parsed.token;
+                } catch (e) {}
+            }
+            return localStorage.getItem('jwt_token');
+        }
+
+        function authHeaders() {
+            return { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' };
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_info');
+            localStorage.removeItem('sc_auth');
+            sessionStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        function showAlert(msg) {
+            $('#shopAlert').text(msg).show();
+        }
+
+        function showSuccess(msg) {
+            $('#shopSuccess').text(msg).show();
+            setTimeout(() => $('#shopSuccess').hide(), 4000);
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        $(document).ready(function () {
+            if (!getToken()) {
+                window.location.href = '/login.html';
+                return;
+            }
+            loadMyShop();
+            $('#shopForm').on('submit', saveShop);
+            $('#vShopLogoUrl').on('input', function () { if (this.value) $('#previewLogo').attr('src', this.value); });
+            $('#vShopBannerUrl').on('input', function () { if (this.value) $('#previewBanner').attr('src', this.value); });
+        });
+
+        function loadMyShop() {
+            $.ajax({
+                url: API_BASE,
+                type: 'GET',
+                headers: authHeaders(),
+                success: function (res) {
+                    const shop = res.data;
+                    if (!shop || shop.status !== 'active') {
+                        $('#notVendorBox').show();
+                        return;
+                    }
+                    $('#shopFormWrapper').show();
+                    $('#vShopName').val(shop.name || '');
+                    $('#vShopPhone').val(shop.phone || '');
+                    $('#vShopAddress').val(shop.address || '');
+                    $('#vShopDescription').val(shop.description || '');
+                    $('#vShopLogoUrl').val(shop.logoUrl || '');
+                    $('#vShopBannerUrl').val(shop.bannerUrl || '');
+                    if (shop.logoUrl) $('#previewLogo').attr('src', shop.logoUrl);
+                    if (shop.bannerUrl) $('#previewBanner').attr('src', shop.bannerUrl);
+                    $('#viewShopLink').attr('href', '/shop-home.html?id=' + shop.id);
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        window.location.href = '/login.html';
+                    } else {
+                        $('#notVendorBox').show();
+                        showAlert(xhr.responseJSON?.message || 'Không thể tải thông tin cửa hàng');
+                    }
+                }
+            });
+        }
+
+        function saveShop(e) {
+            e.preventDefault();
+            $('#shopAlert').hide();
+            $.ajax({
+                url: API_BASE,
+                type: 'PUT',
+                headers: authHeaders(),
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    name: $('#vShopName').val().trim(),
+                    phone: $('#vShopPhone').val().trim(),
+                    address: $('#vShopAddress').val().trim(),
+                    description: $('#vShopDescription').val().trim(),
+                    logoUrl: $('#vShopLogoUrl').val().trim(),
+                    bannerUrl: $('#vShopBannerUrl').val().trim()
+                }),
+                success: function (res) {
+                    showSuccess(res.message || 'Cập nhật thành công!');
+                },
+                error: function (xhr) {
+                    showAlert(xhr.responseJSON?.message || 'Cập nhật thất bại!');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

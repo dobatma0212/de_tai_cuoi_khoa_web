@@ -24,12 +24,34 @@
     }
 
     function handleResponse(res) {
-        return res.json().then(function (data) {
-            if (!res.ok || data.success === false) {
-                throw new Error(data.message || "Đã có lỗi xảy ra, vui lòng thử lại.");
+        return res.text().then(function (raw) {
+            var data = null;
+            try {
+                data = raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                // Response không phải JSON (lỗi server 500, HTML error page...)
+            }
+            if (!res.ok || (data && data.success === false)) {
+                var detail = data && data.message ? data.message : null;
+                throw new Error(buildErrorMessage(res.status, detail));
             }
             return data;
         });
+    }
+
+    function buildErrorMessage(status, detail) {
+        var base = "Đã xảy ra lỗi";
+        if (status >= 500) {
+            base += " từ máy chủ (lỗi " + status + ")";
+        } else if (status === 401 || status === 403) {
+            base = "Phiên đăng nhập hết hạn hoặc không có quyền (lỗi " + status + ")";
+        }
+        if (detail) {
+            base += ": " + detail;
+        } else {
+            base += ". Vui lòng thử lại sau.";
+        }
+        return base;
     }
 
     function api(method, path, body) {
@@ -85,12 +107,14 @@
         initTabs();
         loadProfile();
         loadAddresses();
+        loadMyShop();
 
         $("infoForm").addEventListener("submit", onSaveInfo);
         $("passwordForm").addEventListener("submit", onChangePassword);
         $("addressForm").addEventListener("submit", onSaveAddress);
         $("btnShowAddAddress").addEventListener("click", showAddAddressForm);
         $("btnCancelAddress").addEventListener("click", hideAddressForm);
+        $("shopRegisterForm").addEventListener("submit", onRegisterShop);
     });
 
     // ============ Tab điều hướng ============
@@ -172,6 +196,75 @@
             $("passwordForm").reset();
         }).catch(function (err) {
             showAlert($("passwordAlert"), err.message, "error");
+        });
+    }
+
+    // ============ Đăng ký mở cửa hàng ============
+    var STATUS_META = {
+        pending: { text: "Đang chờ duyệt", cls: "badge-warning text-dark" },
+        active: { text: "Đã được duyệt", cls: "badge-success" },
+        rejected: { text: "Bị từ chối", cls: "badge-danger" },
+        banned: { text: "Bị khóa", cls: "badge-secondary" }
+    };
+
+    function loadMyShop() {
+        api("GET", "/shop").then(function (res) {
+            if (res.data) {
+                renderShopStatus(res.data);
+            }
+        }).catch(function () {
+            // chưa có shop: hiển thị form đăng ký (mặc định đã hiện)
+        });
+    }
+
+    function renderShopStatus(shop) {
+        $("shopRegisterFormCard").style.display = "none";
+        $("shopStatusCard").style.display = "block";
+
+        var meta = STATUS_META[shop.status] || { text: shop.status, cls: "badge-secondary" };
+        $("shopStatusName").textContent = shop.name;
+        $("shopStatusBadge").textContent = meta.text;
+        $("shopStatusBadge").className = "badge " + meta.cls;
+        if (shop.logoUrl) {
+            $("shopStatusLogo").src = shop.logoUrl;
+        }
+
+        var msg = "";
+        if (shop.status === "pending") {
+            msg = "Đơn đăng ký của bạn đang chờ quản trị viên duyệt. Vui lòng quay lại sau.";
+        } else if (shop.status === "active") {
+            msg = "Cửa hàng của bạn đã hoạt động. Hãy quản lý trang chủ cửa hàng và sản phẩm của mình!";
+        } else if (shop.status === "rejected") {
+            msg = "Đơn đăng ký bị từ chối." + (shop.rejectReason ? " Lý do: " + shop.rejectReason : "");
+        } else if (shop.status === "banned") {
+            msg = "Cửa hàng hiện bị khóa. Vui lòng liên hệ quản trị viên.";
+        }
+        $("shopStatusMessage").textContent = msg;
+
+        var actions = "";
+        if (shop.status === "active") {
+            actions = '<a href="/shop-home.html?id=' + shop.id + '" target="_blank" class="btn btn-sm btn-outline-store">Xem trang chủ shop</a> ' +
+                '<a href="/vendor-shop.html" class="btn btn-sm btn-outline-store">Quản lý trang chủ shop</a> ' +
+                '<a href="/vendor-products.html" class="btn btn-sm btn-store">Quản lý sản phẩm</a>';
+        }
+        $("shopStatusActions").innerHTML = actions;
+    }
+
+    function onRegisterShop(e) {
+        e.preventDefault();
+        hideAlert($("shopAlert"));
+        api("POST", "/shop/register", {
+            name: $("shopName").value.trim(),
+            phone: $("shopPhone").value.trim(),
+            address: $("shopAddress").value.trim(),
+            description: $("shopDescription").value.trim(),
+            logoUrl: $("shopLogoUrl").value.trim(),
+            bannerUrl: $("shopBannerUrl").value.trim()
+        }).then(function (res) {
+            showAlert($("shopAlert"), res.message, "success");
+            renderShopStatus(res.data);
+        }).catch(function (err) {
+            showAlert($("shopAlert"), err.message, "error");
         });
     }
 
