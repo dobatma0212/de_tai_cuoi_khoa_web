@@ -127,14 +127,14 @@
             if (desktopLink) {
                 desktopLink.innerHTML =
                     adminBtnHtml +
-                    '<i class="fa fa-user-circle-o" aria-hidden="true"></i> Xin chào, ' + escapeHtml(displayName) +
+                    '<a href="/profile.html" style="color: inherit; text-decoration: none;"><i class="fa fa-user-circle-o" aria-hidden="true"></i> Xin chào, ' + escapeHtml(displayName) + "</a>" +
                     ' <span class="auth-logout-link" id="btnLogoutDesktop" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 desktopLink.removeAttribute("href");
             }
             if (mobileLink) {
                 mobileLink.innerHTML =
                     adminBtnHtml +
-                    'Xin chào, ' + escapeHtml(displayName) +
+                    '<a href="/profile.html" style="color: inherit; text-decoration: none;">Xin chào, ' + escapeHtml(displayName) + "</a>" +
                     ' <span class="auth-logout-link" id="btnLogoutMobile" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 mobileLink.removeAttribute("href");
             }
