@@ -43,16 +43,10 @@
 
         .shop-hero-body {
             padding: 18px 24px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 16px;
         }
 
         .shop-info-left {
-            flex: 1 1 320px;
-            min-width: 0;
+            max-width: 760px;
         }
 
         .shop-info-left h3 {
@@ -64,37 +58,43 @@
             margin-bottom: 4px;
         }
 
-        /* Cột tìm kiếm nhỏ, căn phải */
-        .shop-search-col {
-            flex: 0 0 300px;
-            max-width: 100%;
+        /* Thanh tìm kiếm lớn, căn giữa */
+        .shop-search-block {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .07);
+            padding: 26px 24px;
+            margin-bottom: 30px;
+            text-align: center;
         }
 
         .shop-search-wrap {
             position: relative;
             width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
         }
 
         .shop-search-input {
             width: 100%;
-            padding: 8px 42px 8px 14px;
-            border: 1.5px solid #e53637;
-            border-radius: 20px;
-            font-size: 13px;
+            padding: 14px 58px 14px 22px;
+            border: 2px solid #e53637;
+            border-radius: 32px;
+            font-size: 16px;
             outline: none;
         }
 
         .shop-search-btn {
             position: absolute;
-            right: 4px;
-            top: 4px;
-            bottom: 4px;
+            right: 6px;
+            top: 5px;
+            bottom: 5px;
             border: none;
             background: #e53637;
             color: #fff;
-            border-radius: 16px;
-            padding: 0 14px;
-            font-size: 12px;
+            border-radius: 26px;
+            padding: 0 24px;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -110,13 +110,14 @@
             z-index: 50;
             display: none;
             overflow: hidden;
+            text-align: left;
         }
 
         .suggest-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
+            gap: 12px;
+            padding: 10px 16px;
             cursor: pointer;
         }
 
@@ -125,26 +126,22 @@
         }
 
         .suggest-item img {
-            width: 36px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             object-fit: cover;
             border-radius: 4px;
-        }
-
-        .suggest-item .font-weight-bold {
-            font-size: 13px;
         }
 
         .history-chip {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #fff;
+            background: #f7f7f7;
             border: 1px solid #ddd;
-            border-radius: 16px;
-            padding: 3px 10px;
-            font-size: 12px;
-            margin: 0 6px 6px 0;
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 13px;
+            margin: 0 8px 8px 0;
             cursor: pointer;
         }
 
@@ -236,6 +233,137 @@
         .search-result-item .body .price-text {
             font-size: 16px;
         }
+
+        /* ===== Bộ lọc sidebar ===== */
+        .filter-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .07);
+            padding: 8px 20px;
+        }
+
+        .filter-group {
+            border-bottom: 1px solid #eee;
+            padding: 14px 0;
+        }
+
+        .filter-group:last-child {
+            border-bottom: none;
+        }
+
+        .filter-title {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: none;
+            background: none;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .filter-content {
+            margin-top: 12px;
+        }
+
+        .filter-content.collapsed {
+            display: none;
+        }
+
+        .filter-cat {
+            display: block;
+            padding: 6px 0;
+            color: #555;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .filter-cat:hover { color: #e53637; }
+
+        .filter-cat.active {
+            color: #e53637;
+            font-weight: 800;
+        }
+
+        .size-chip {
+            display: inline-block;
+            border: 1.5px solid #ddd;
+            border-radius: 6px;
+            padding: 5px 12px;
+            margin: 0 6px 6px 0;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .size-chip.active {
+            border-color: #e53637;
+            color: #e53637;
+        }
+
+        .price-inputs input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .apply-filter-btn {
+            background: #e53637;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 7px 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* ===== Phân trang ===== */
+        .pagination-wrap {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 26px;
+        }
+
+        .page-btn {
+            min-width: 38px;
+            height: 38px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 50%;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .page-btn:hover { border-color: #e53637; color: #e53637; }
+
+        .page-btn.current {
+            background: #e53637;
+            border-color: #e53637;
+            color: #fff;
+        }
+
+        .page-btn:disabled {
+            opacity: .4;
+            cursor: default;
+        }
+
+        /* Sao đánh giá trên thẻ sản phẩm */
+        .product-stars {
+            color: #f5b301;
+            font-size: 13px;
+            letter-spacing: 2px;
+        }
+
+        .product-stars .off { color: #ddd; }
 
         .cat-product-card {
             border: 1px solid #eee;
@@ -375,7 +503,7 @@
         <div class="container">
             <div id="shopLoadError" class="alert alert-warning" style="display:none;"></div>
 
-            <!-- Hero: banner (ảnh đại diện chi nhánh) + thông tin + tìm kiếm nhỏ bên phải -->
+            <!-- Hero: banner (ảnh đại diện chi nhánh) + thông tin chi nhánh -->
             <div id="shopHero" class="shop-hero" style="display:none;">
                 <img id="shopBanner" src="/img/banner/banner-1.jpg" class="hero-banner" alt="banner">
                 <div class="shop-hero-body">
@@ -385,35 +513,58 @@
                         <p class="text-muted mb-1"><i class="fa fa-phone"></i> <span id="shopPhone"></span></p>
                         <p id="shopDescription" class="mb-0"></p>
                     </div>
-                    <div class="shop-search-col">
-                        <div class="shop-search-wrap">
-                            <input type="text" id="searchInput" class="shop-search-input"
-                                   placeholder="Tìm sản phẩm..." autocomplete="off">
-                            <button type="button" id="searchBtn" class="shop-search-btn"><i class="fa fa-search"></i></button>
-                            <div id="suggestBox" class="suggest-box"></div>
-                        </div>
-                        <div id="historySection" class="mt-2" style="display:none;">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-muted font-weight-bold text-uppercase" style="font-size:11px;">Lịch sử tìm kiếm</small>
-                                <button type="button" id="clearHistoryBtn"
-                                        style="border:none;background:none;color:#999;text-decoration:underline;font-size:11px;cursor:pointer;">
-                                    Xóa tất cả
-                                </button>
-                            </div>
-                            <div id="historyChips" class="mt-1"></div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Kết quả tìm kiếm / danh sách sản phẩm của danh mục -->
+            <!-- Thanh tìm kiếm lớn căn giữa + lịch sử -->
+            <div class="shop-search-block">
+                <div class="shop-search-wrap">
+                    <input type="text" id="searchInput" class="shop-search-input"
+                           placeholder="Tìm kiếm sản phẩm của chi nhánh..." autocomplete="off">
+                    <button type="button" id="searchBtn" class="shop-search-btn"><i class="fa fa-search"></i></button>
+                    <div id="suggestBox" class="suggest-box"></div>
+                </div>
+                <div id="historySection" class="mt-3" style="display:none;">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <small class="text-muted font-weight-bold text-uppercase mr-3"
+                               style="letter-spacing:1px;">Lịch sử tìm kiếm</small>
+                        <button type="button" id="clearHistoryBtn"
+                                style="border:none;background:none;color:#999;text-decoration:underline;font-size:12px;cursor:pointer;">
+                            <i class="fa fa-trash-o"></i> Xóa tất cả
+                        </button>
+                    </div>
+                    <div id="historyChips" class="mt-2"></div>
+                </div>
+            </div>
+
+            <!-- Kết quả tìm kiếm / danh sách sản phẩm của danh mục: bộ lọc + lưới + phân trang -->
             <div id="searchResultSection" style="display:none;">
-                <h5 class="font-weight-bold mb-3"><span id="resultsTitle"></span>
-                    (<span id="searchResultCount"></span>)</h5>
-                <button type="button" id="clearSearchBtn" class="btn btn-sm btn-outline-secondary mb-3">
-                    <i class="fa fa-arrow-left"></i> Quay lại trang chủ
-                </button>
-                <div id="searchResults" class="row"></div>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                    <h5 class="font-weight-bold mb-0"><span id="resultsTitle"></span>
+                        (<span id="searchResultCount"></span>)</h5>
+                    <div class="d-flex align-items-center">
+                        <button type="button" id="clearSearchBtn" class="btn btn-sm btn-outline-secondary">
+                            <i class="fa fa-arrow-left"></i> Quay lại trang chủ
+                        </button>
+                        <select id="sortSelect" class="form-control form-control-sm ml-2" style="width:auto;">
+                            <option value="">Mới nhất</option>
+                            <option value="priceAsc">Giá tăng dần</option>
+                            <option value="priceDesc">Giá giảm dần</option>
+                            <option value="name">Tên A-Z</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <!-- Sidebar bộ lọc -->
+                    <div class="col-lg-3 mb-4">
+                        <div class="filter-card" id="filterSidebar"></div>
+                    </div>
+                    <!-- Lưới sản phẩm -->
+                    <div class="col-lg-9">
+                        <div id="searchResults" class="row"></div>
+                        <div id="pagination" class="pagination-wrap"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Danh mục + sản phẩm đại diện -->

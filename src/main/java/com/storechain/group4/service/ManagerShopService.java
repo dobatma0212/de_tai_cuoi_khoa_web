@@ -1,7 +1,11 @@
 package com.storechain.group4.service;
 
+import com.storechain.group4.dto.OrderDto;
+import com.storechain.group4.dto.ProductPageDto;
 import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
+import com.storechain.group4.dto.PromotionDto;
+import com.storechain.group4.dto.RevenueDto;
 import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopHomeDto;
 import com.storechain.group4.dto.ShopResponseDto;
@@ -43,11 +47,36 @@ public interface ManagerShopService {
     /** Tải ảnh sản phẩm từ máy lên, trả về URL truy cập được */
     String uploadImage(MultipartFile file);
 
+    // ============ Quản lý đơn hàng của chi nhánh ============
+
+    List<OrderDto> getOrders(Long managerId, String status);
+
+    OrderDto updateOrderStatus(Long managerId, Long orderId, String status);
+
+    // ============ Chương trình khuyến mãi ============
+
+    List<PromotionDto> getPromotions(Long managerId);
+
+    PromotionDto savePromotion(Long managerId, PromotionDto request);
+
+    void deletePromotion(Long managerId, Long promoId);
+
+    // ============ Doanh thu chi nhánh ============
+
+    RevenueDto getRevenue(Long managerId);
+
+    // ============ Trang chủ chi nhánh (public) ============
+
     /** Dữ liệu trang chủ chi nhánh (dùng cho cả public) */
     ShopHomeDto getShopHome(Long shopId);
 
-    /** Tìm kiếm sản phẩm theo từ khóa và/hoặc lọc theo danh mục */
-    List<ProductResponseDto> searchShopProducts(Long shopId, String keyword, Long categoryId);
+    /**
+     * Danh sách sản phẩm có lọc + phân trang:
+     * từ khóa, danh mục, khoảng giá, size, sắp xếp; tối đa pageSize sản phẩm mỗi trang.
+     */
+    ProductPageDto searchShopProducts(Long shopId, String keyword, Long categoryId,
+                                      java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice,
+                                      String size, String sort, int page, int pageSize);
 
     List<ProductResponseDto> suggestShopProducts(Long shopId, String keyword);
 }

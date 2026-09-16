@@ -1,14 +1,23 @@
 package com.storechain.group4.service.impl;
 
+import com.storechain.group4.dto.OrderDto;
+import com.storechain.group4.dto.ProductPageDto;
 import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
+import com.storechain.group4.dto.PromotionDto;
+import com.storechain.group4.dto.RevenueDto;
 import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopHomeDto;
 import com.storechain.group4.dto.ShopResponseDto;
+import com.storechain.group4.model.Order;
 import com.storechain.group4.model.Product;
+import com.storechain.group4.model.Promotion;
 import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.ShopCategory;
+import com.storechain.group4.repository.OrderItemRepository;
+import com.storechain.group4.repository.OrderRepository;
 import com.storechain.group4.repository.ProductRepository;
+import com.storechain.group4.repository.PromotionRepository;
 import com.storechain.group4.repository.ShopCategoryRepository;
 import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.service.ManagerShopService;
@@ -25,10 +34,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +51,10 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final ShopRepository shopRepository;
     private final ShopCategoryRepository shopCategoryRepository;
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final PromotionRepository promotionRepository;
+    private final com.storechain.group4.repository.ProductReviewRepository reviewRepository;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -204,6 +221,8 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .price(request.getPrice())
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
+                .stock(request.getStock() == null ? 0 : Math.max(0, request.getStock()))
+                .sizes(normalizeSizes(request.getSizes()))
                 .build();
         Product saved = productRepository.save(product);
         // Sản phẩm đầu tiên của danh mục tự động làm đại diện
@@ -227,6 +246,10 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         product.setPrice(request.getPrice());
         product.setDescription(request.getDescription());
         product.setImageUrl(request.getImageUrl());
+        if (request.getStock() != null) {
+            product.setStock(Math.max(0, request.getStock()));
+        }
+        product.setSizes(normalizeSizes(request.getSizes()));
         if (categoryChanged) {
             product.setRepresentative(false);
             Product saved = productRepository.save(product);
@@ -280,6 +303,12 @@ public class ManagerShopServiceImpl implements ManagerShopService {
             product.setRepresentative(false);
         }
         return toProductDto(productRepository.save(product));
+    }
+
+    private String normalizeSizes(String sizes) {
+        if (sizes == null) return null;
+        String cleaned = sizes.replaceAll("\\s*,\\s*", ",").trim();
+        return cleaned.isEmpty() ? null : cleaned;
     }
 
     private void validatePrice(ProductRequestDto request) {
@@ -363,21 +392,85 @@ public class ManagerShopServiceImpl implements ManagerShopService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponseDto> searchShopProducts(Long shopId, String keyword, Long categoryId) {
+    public ProductPageDto searchShopProducts(Long shopId, String keyword, Long categoryId,
+                                             BigDecimal minPrice, BigDecimal maxPrice,
+                                             String size, String sort, int page, int pageSize) {
         String kw = keyword == null ? "" : keyword.trim();
         List<Product> products;
         if (categoryId != null && categoryId > 0) {
             products = productRepository.findByShopIdAndCategoryIdOrderByCreatedAtDesc(shopId, categoryId);
-        } else {
+        } else if (!kw.isEmpty()) {
             products = productRepository.searchProducts(shopId, kw);
+        } else {
+            products = productRepository.findByShopIdOrderByCreatedAtDesc(shopId);
         }
-        return products.stream()
+
+        final String kwLower = kw.toLowerCase(Locale.ROOT);
+        List<Product> filtered = products.stream()
                 .filter(p -> "active".equalsIgnoreCase(p.getStatus()))
                 .filter(p -> kw.isEmpty()
-                        || p.getName().toLowerCase(Locale.ROOT).contains(kw.toLowerCase(Locale.ROOT))
+                        || p.getName().toLowerCase(Locale.ROOT).contains(kwLower)
                         || (p.getDescription() != null && p.getDescription()
-                                .toLowerCase(Locale.ROOT).contains(kw.toLowerCase(Locale.ROOT))))
-                .map(this::toProductDto).toList();
+                                .toLowerCase(Locale.ROOT).contains(kwLower)))
+                .filter(p -> minPrice == null
+                        || p.getPrice().compareTo(minPrice) >= 0)
+                .filter(p -> maxPrice == null
+                        || p.getPrice().compareTo(maxPrice) <= 0)
+                .filter(p -> size == null || size.isBlank()
+                        || sizeMatches(p.getSizes(), size.trim()))
+                .collect(Collectors.toList());
+
+        if ("priceAsc".equals(sort)) {
+            filtered.sort((a, b) -> a.getPrice().compareTo(b.getPrice()));
+        } else if ("priceDesc".equals(sort)) {
+            filtered.sort((a, b) -> b.getPrice().compareTo(a.getPrice()));
+        } else if ("name".equals(sort)) {
+            filtered.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        } // mặc định: mới nhất (đã sort theo created_at từ repository)
+
+        int safePageSize = pageSize <= 0 ? 10 : pageSize;
+        int safePage = Math.max(0, page);
+        int totalPages = (int) Math.ceil((double) filtered.size() / safePageSize);
+        int from = Math.min(safePage * safePageSize, filtered.size());
+        int to = Math.min(from + safePageSize, filtered.size());
+
+        List<ProductResponseDto> content = filtered.subList(from, to)
+                .stream().map(this::toProductDto).collect(Collectors.toList());
+        // Điểm đánh giá từng sản phẩm (chỉ 10 phần tử/trang nên chi phí thấp)
+        for (ProductResponseDto dto : content) {
+            dto.setAvgRating(round1(reviewRepository.averageRatingByProductId(dto.getId())));
+            dto.setReviewCount(reviewRepository.countByProductId(dto.getId()));
+        }
+
+        return ProductPageDto.builder()
+                .content(content)
+                .page(safePage)
+                .pageSize(safePageSize)
+                .totalElements(filtered.size())
+                .totalPages(totalPages)
+                .build();
+    }
+
+    /** Kiểm tra size có nằm trong danh sách size của sản phẩm (VD: "M" trong "S,M,L") */
+    private boolean sizeMatches(String sizes, String wanted) {
+        if (sizes == null || sizes.isBlank()) return false;
+        return Arrays.stream(sizes.split(","))
+                .map(String::trim)
+                .anyMatch(s -> s.equalsIgnoreCase(wanted));
+    }
+
+    /** "S,M,L" -> ["S","M","L"] */
+    private List<String> parseSizes(String sizes) {
+        if (sizes == null || sizes.isBlank()) return List.of();
+        return Arrays.stream(sizes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
+
+    private Double round1(Double v) {
+        if (v == null) return 0.0;
+        return BigDecimal.valueOf(v).setScale(1, java.math.RoundingMode.HALF_UP).doubleValue();
     }
 
     @Override
@@ -388,6 +481,138 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         }
         return productRepository.suggestByName(shopId, keyword.trim())
                 .stream().limit(8).map(this::toProductDto).toList();
+    }
+
+    // ============ Quản lý đơn hàng của chi nhánh ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDto> getOrders(Long managerId, String status) {
+        Shop shop = findMyShop(managerId);
+        List<Order> orders = (status == null || status.isBlank())
+                ? orderRepository.findByShopIdOrderByCreatedAtDesc(shop.getId())
+                : orderRepository.findByShopIdAndStatusOrderByCreatedAtDesc(shop.getId(), status);
+        return orders.stream().map(this::toOrderDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public OrderDto updateOrderStatus(Long managerId, Long orderId, String status) {
+        Shop shop = findMyShop(managerId);
+        List<String> allowed = List.of(
+                Order.STATUS_NEW, Order.STATUS_CONFIRMED, Order.STATUS_PICKED_UP,
+                Order.STATUS_SHIPPING, Order.STATUS_DELIVERED,
+                Order.STATUS_CANCELLED, Order.STATUS_RETURNED);
+        if (!allowed.contains(status)) {
+            throw new IllegalArgumentException("Trạng thái không hợp lệ.");
+        }
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
+        if (!order.getShop().getId().equals(shop.getId())) {
+            throw new IllegalArgumentException("Đơn hàng này không thuộc chi nhánh bạn quản lý.");
+        }
+        order.setStatus(status);
+        return toOrderDto(orderRepository.save(order));
+    }
+
+    // ============ Chương trình khuyến mãi ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PromotionDto> getPromotions(Long managerId) {
+        Shop shop = findMyShop(managerId);
+        return promotionRepository.findByShopIdOrderByCreatedAtDesc(shop.getId())
+                .stream().map(this::toPromotionDto).toList();
+    }
+
+    @Override
+    @Transactional
+    public PromotionDto savePromotion(Long managerId, PromotionDto request) {
+        Shop shop = findMyShop(managerId);
+        Promotion promo;
+        if (request.getId() != null && request.getId() > 0) {
+            promo = promotionRepository.findByIdAndShopId(request.getId(), shop.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi."));
+        } else {
+            promo = Promotion.builder().shop(shop).build();
+        }
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new IllegalArgumentException("Tên khuyến mãi không được để trống.");
+        }
+        if (!Promotion.TYPE_PERCENT.equals(request.getPromoType())
+                && !Promotion.TYPE_SHIPPING.equals(request.getPromoType())) {
+            throw new IllegalArgumentException("Loại khuyến mãi phải là PERCENT (giảm %) hoặc SHIPPING (giảm phí vận chuyển).");
+        }
+        if (request.getValue() == null || request.getValue().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Giá trị khuyến mãi phải lớn hơn 0.");
+        }
+        if (Promotion.TYPE_PERCENT.equals(request.getPromoType())
+                && request.getValue().compareTo(BigDecimal.valueOf(90)) > 0) {
+            throw new IllegalArgumentException("Giảm giá theo % tối đa là 90%.");
+        }
+        promo.setName(request.getName().trim());
+        promo.setCode(request.getCode() == null || request.getCode().isBlank()
+                ? null : request.getCode().trim());
+        promo.setPromoType(request.getPromoType());
+        promo.setValue(request.getValue());
+        promo.setMinOrderAmount(request.getMinOrderAmount() == null
+                ? BigDecimal.ZERO : request.getMinOrderAmount());
+        promo.setStartDate(request.getStartDate() != null ? request.getStartDate() : LocalDateTime.now());
+        promo.setEndDate(request.getEndDate());
+        promo.setActive(request.isActive());
+        return toPromotionDto(promotionRepository.save(promo));
+    }
+
+    @Override
+    @Transactional
+    public void deletePromotion(Long managerId, Long promoId) {
+        Shop shop = findMyShop(managerId);
+        Promotion promo = promotionRepository.findByIdAndShopId(promoId, shop.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chương trình khuyến mãi."));
+        promotionRepository.delete(promo);
+    }
+
+    // ============ Doanh thu chi nhánh ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public RevenueDto getRevenue(Long managerId) {
+        Shop shop = findMyShop(managerId);
+        List<Order> orders = orderRepository.findByShopIdOrderByCreatedAtDesc(shop.getId());
+
+        BigDecimal revenue = BigDecimal.ZERO;      // tổng tiền khách đã trả cho đơn DELIVERED
+        BigDecimal productAmount = BigDecimal.ZERO;
+        BigDecimal shippingTotal = BigDecimal.ZERO;
+        BigDecimal discountTotal = BigDecimal.ZERO;
+        long delivered = 0, cancelled = 0, returned = 0;
+        Map<String, Long> statusCounts = orders.stream()
+                .collect(Collectors.groupingBy(o -> o.getStatus() == null ? "" : o.getStatus(),
+                        Collectors.counting()));
+
+        for (Order o : orders) {
+            if (Order.STATUS_DELIVERED.equals(o.getStatus())) {
+                delivered++;
+                revenue = revenue.add(o.getGrandTotal() == null ? BigDecimal.ZERO : o.getGrandTotal());
+                productAmount = productAmount.add(o.getTotalAmount() == null ? BigDecimal.ZERO : o.getTotalAmount());
+                shippingTotal = shippingTotal.add(o.getShippingFee() == null ? BigDecimal.ZERO : o.getShippingFee());
+                discountTotal = discountTotal.add(o.getDiscountAmount() == null ? BigDecimal.ZERO : o.getDiscountAmount());
+            } else if (Order.STATUS_CANCELLED.equals(o.getStatus())) {
+                cancelled++;
+            } else if (Order.STATUS_RETURNED.equals(o.getStatus())) {
+                returned++;
+            }
+        }
+        return RevenueDto.builder()
+                .totalRevenue(revenue)
+                .deliveredProductAmount(productAmount)
+                .deliveredShippingFee(shippingTotal)
+                .deliveredDiscount(discountTotal)
+                .totalOrders(orders.size())
+                .deliveredOrders(delivered)
+                .cancelledOrders(cancelled)
+                .returnedOrders(returned)
+                .statusCounts(statusCounts)
+                .build();
     }
 
     // ============ Mapper ============
@@ -422,9 +647,76 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .price(p.getPrice())
                 .description(p.getDescription())
                 .imageUrl(p.getImageUrl())
+                .stock(p.getStock())
+                .sizes(p.getSizes())
+                .sizesList(parseSizes(p.getSizes()))
                 .representative(p.isRepresentative())
                 .status(p.getStatus())
                 .createdAt(p.getCreatedAt())
+                .build();
+    }
+
+    private OrderDto toOrderDto(Order o) {
+        List<OrderDto.ItemDto> items = orderItemRepository.findByOrderId(o.getId())
+                .stream().map(oi -> OrderDto.ItemDto.builder()
+                        .productId(oi.getProduct() != null ? oi.getProduct().getId() : null)
+                        .productName(oi.getProductName())
+                        .imageUrl(oi.getImageUrl())
+                        .price(oi.getPrice())
+                        .quantity(oi.getQuantity())
+                        .size(oi.getSize())
+                        .subtotal(oi.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())))
+                        .build())
+                .collect(Collectors.toList());
+        return OrderDto.builder()
+                .id(o.getId())
+                .orderCode(o.getOrderCode())
+                .shopId(o.getShop().getId())
+                .shopName(o.getShop().getName())
+                .userId(o.getUser().getId())
+                .customerName(o.getUser().getFullName())
+                .status(o.getStatus())
+                .statusLabel(statusLabel(o.getStatus()))
+                .totalAmount(o.getTotalAmount())
+                .shippingFee(o.getShippingFee())
+                .discountAmount(o.getDiscountAmount())
+                .grandTotal(o.getGrandTotal())
+                .promoName(o.getPromoName())
+                .transporterName(o.getTransporter() != null ? o.getTransporter().getName() : null)
+                .receiverName(o.getReceiverName())
+                .receiverPhone(o.getReceiverPhone())
+                .receiverAddress(o.getReceiverAddress())
+                .note(o.getNote())
+                .createdAt(o.getCreatedAt())
+                .items(items)
+                .build();
+    }
+
+    private String statusLabel(String status) {
+        return switch (status == null ? "" : status) {
+            case Order.STATUS_NEW -> "Đơn hàng mới";
+            case Order.STATUS_CONFIRMED -> "Đã xác nhận";
+            case Order.STATUS_PICKED_UP -> "Đã lấy hàng";
+            case Order.STATUS_SHIPPING -> "Đang giao";
+            case Order.STATUS_DELIVERED -> "Đã giao";
+            case Order.STATUS_CANCELLED -> "Hủy";
+            case Order.STATUS_RETURNED -> "Trả hàng - hoàn tiền";
+            default -> status;
+        };
+    }
+
+    private PromotionDto toPromotionDto(Promotion p) {
+        return PromotionDto.builder()
+                .id(p.getId())
+                .shopId(p.getShop().getId())
+                .name(p.getName())
+                .code(p.getCode())
+                .promoType(p.getPromoType())
+                .value(p.getValue())
+                .minOrderAmount(p.getMinOrderAmount())
+                .startDate(p.getStartDate())
+                .endDate(p.getEndDate())
+                .active(p.isActive())
                 .build();
     }
 }

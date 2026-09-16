@@ -301,6 +301,7 @@
     // ==================================================================
 
     var MANAGER_API = "/api/manager/shop";
+    var MGR_BASE = "/api/manager";
     var currentShop = null;
     var categories = [];
     var currentCategoryId = null;
@@ -316,6 +317,22 @@
                 if (window.ScAuth) window.ScAuth.clearSession();
                 window.location.href = "/login.html";
                 return new Promise(function () { }); // dừng chuỗi
+            }
+            return handleResponse(res);
+        });
+    }
+
+    /** Base /api/manager cho đơn hàng, khuyến mãi, vận chuyển, doanh thu */
+    function mgrBaseApi(method, path, body) {
+        return fetch(MGR_BASE + path, {
+            method: method,
+            headers: authHeaders(),
+            body: body ? JSON.stringify(body) : undefined
+        }).then(function (res) {
+            if (res.status === 401 || res.status === 403) {
+                if (window.ScAuth) window.ScAuth.clearSession();
+                window.location.href = "/login.html";
+                return new Promise(function () { });
             }
             return handleResponse(res);
         });
@@ -358,6 +375,12 @@
                 document.querySelectorAll(".shop-subcontent").forEach(function (c) { c.classList.remove("active"); });
                 btn.classList.add("active");
                 $(btn.getAttribute("data-sub")).classList.add("active");
+                // Load dữ liệu theo sub-tab vừa mở
+                var sub = btn.getAttribute("data-sub");
+                if (sub === "shopSubOrders") loadOrders();
+                else if (sub === "shopSubPromos") loadPromotions();
+                else if (sub === "shopSubTransporters") loadTransporters();
+                else if (sub === "shopSubRevenue") loadRevenue();
             });
         });
         document.querySelectorAll(".prod-group-btn").forEach(function (btn) {
@@ -385,6 +408,11 @@
                 onAddCategory();
             }
         });
+
+        $("promoForm").addEventListener("submit", onSavePromo);
+        $("btnCancelPromo").addEventListener("click", resetPromoForm);
+        $("transporterForm").addEventListener("submit", onSaveTransporter);
+        $("btnCancelTransporter").addEventListener("click", resetTransporterForm);
     }
 
     function fillShopInfo(shop) {
@@ -566,6 +594,8 @@
                 '<h6 class="font-weight-bold mb-1">' + escapeHtml(p.name) +
                 (p.representative ? ' <span class="badge-representative">Đại diện danh mục</span>' : "") + "</h6>" +
                 '<div style="color:#e53637;font-weight:700;">' + formatVnd(p.price) + "</div>" +
+                '<small class="text-muted">Tồn kho: <b>' + (p.stock || 0) + "</b>" +
+                (p.sizes ? " — Size: " + escapeHtml(p.sizes) : "") + "</small>" +
                 '<p class="text-muted mb-2" style="font-size:13px;">' + escapeHtml(p.description || "") + "</p>" +
                 '<button type="button" class="btn btn-sm btn-outline-store" data-rep="' + p.id + '">' +
                 (p.representative ? "Bỏ đại diện" : "Đặt làm đại diện") + "</button> " +
@@ -634,6 +664,7 @@
         $("productForm").reset();
         $("productId").value = "";
         $("productCategory").value = currentCategoryId === null ? "" : currentCategoryId;
+        $("productStock").value = 0;
         $("productFormTitle").textContent = "Thêm sản phẩm mới";
         $("btnSaveProduct").textContent = "Lưu sản phẩm";
         $("btnCancelProduct").style.display = "none";
@@ -645,9 +676,11 @@
             var p = (res.data || []).find(function (x) { return x.id === id; });
             if (!p) return;
             $("productId").value = p.id;
-            $("productGroup").value = p.categoryGroup;
+            $("productGroup").value = p.categoryId;
             $("productName").value = p.name;
             $("productPrice").value = p.price;
+            $("productStock").value = p.stock || 0;
+            $("productSizes").value = p.sizes || "";
             $("productDescription").value = p.description || "";
             $("productImageUrl").value = p.imageUrl || "";
             updateProductImagePreview(p.imageUrl || "");
@@ -669,6 +702,8 @@
             name: $("productName").value.trim(),
             categoryId: currentCategoryId,
             price: $("productPrice").value ? Number($("productPrice").value) : null,
+            stock: $("productStock").value ? Number($("productStock").value) : 0,
+            sizes: $("productSizes").value.trim(),
             description: $("productDescription").value.trim(),
             imageUrl: $("productImageUrl").value.trim()
         };
@@ -684,5 +719,352 @@
         }).catch(function (err) {
             showAlert($("productAlert"), err.message, "error");
         });
+    }
+
+    // ==================================================================
+    // ========= Quản lý đơn hàng của chi nhánh (Manager) ================
+    // ==================================================================
+
+    var ORDER_STATUSES = [
+        ["", "Tất cả"],
+        ["NEW", "Đơn hàng mới"],
+        ["CONFIRMED", "Đã xác nhận"],
+        ["PICKED_UP", "Đã lấy hàng"],
+        ["SHIPPING", "Đang giao"],
+        ["DELIVERED", "Đã giao"],
+        ["CANCELLED", "Hủy"],
+        ["RETURNED", "Trả hàng - hoàn tiền"]
+    ];
+    var currentOrderStatus = "";
+
+    function loadOrders() {
+        var chips = $("orderStatusChips");
+        chips.innerHTML = ORDER_STATUSES.map(function (s) {
+            var active = currentOrderStatus === s[0] ? " active" : "";
+            return '<button type="button" class="shop-subbtn order-status-btn' + active +
+                '" data-status="' + s[0] + '">' + s[1] + "</button>";
+        }).join("");
+        chips.onclick = function (e) {
+            var btn = e.target.closest(".order-status-btn");
+            if (!btn) return;
+            currentOrderStatus = btn.getAttribute("data-status");
+            loadOrders();
+        };
+        var url = "/orders" + (currentOrderStatus ? "?status=" + currentOrderStatus : "");
+        mgrBaseApi("GET", url).then(function (res) {
+            renderOrders(res.data || []);
+        }).catch(function (err) {
+            showAlert($("orderAlert"), err.message, "error");
+        });
+    }
+
+    function renderOrders(list) {
+        var container = $("orderList");
+        if (!list.length) {
+            container.innerHTML = '<p class="text-muted">Không có đơn hàng nào ở trạng thái này.</p>';
+            return;
+        }
+        var statusColors = {
+            NEW: "badge-primary", CONFIRMED: "badge-info", PICKED_UP: "badge-secondary",
+            SHIPPING: "badge-warning", DELIVERED: "badge-success",
+            CANCELLED: "badge-danger", RETURNED: "badge-dark"
+        };
+        container.innerHTML = list.map(function (o) {
+            var items = (o.items || []).map(function (it) {
+                return "<li>" + escapeHtml(it.productName) +
+                    (it.size ? " (size " + escapeHtml(it.size) + ")" : "") +
+                    " x" + it.quantity + " — " + formatVnd(it.subtotal) + "</li>";
+            }).join("");
+            return '<div class="address-card">' +
+                '<div class="d-flex justify-content-between flex-wrap">' +
+                "<div><b>" + escapeHtml(o.orderCode) + "</b> " +
+                '<span class="badge ' + (statusColors[o.status] || "badge-light") + '">' +
+                escapeHtml(o.statusLabel || o.status) + "</span>" +
+                '<div><small class="text-muted">Khách: ' + escapeHtml(o.customerName || "") +
+                " — " + escapeHtml(o.receiverPhone || "") + "</small></div>" +
+                '<div><small class="text-muted">' + escapeHtml(o.receiverAddress || "") + "</small></div>" +
+                (o.transporterName ? '<div><small class="text-muted">VC: ' + escapeHtml(o.transporterName) +
+                    " (" + formatVnd(o.shippingFee) + ")</small></div>" : "") +
+                (o.promoName ? '<div><small class="text-success">KM: ' + escapeHtml(o.promoName) +
+                    " -" + formatVnd(o.discountAmount) + "</small></div>" : "") +
+                "</div>" +
+                '<div class="text-right"><b style="color:#e53637;">' + formatVnd(o.grandTotal) + "</b>" +
+                '<div><small class="text-muted">' + escapeHtml(o.createdAt || "") + "</small></div>" +
+                '<select class="form-control form-control-sm mt-2 order-status-select" data-id="' + o.id + '">' +
+                ORDER_STATUSES.slice(1).map(function (s) {
+                    return '<option value="' + s[0] + '"' + (s[0] === o.status ? " selected" : "") +
+                        ">" + s[1] + "</option>";
+                }).join("") +
+                "</select></div></div>" +
+                '<ul class="mt-2 mb-0 text-muted" style="font-size:13px;">' + items + "</ul>" +
+                "</div>";
+        }).join("");
+
+        container.onchange = function (e) {
+            var select = e.target.closest(".order-status-select");
+            if (!select) return;
+            var id = select.getAttribute("data-id");
+            var status = select.value;
+            mgrBaseApi("PATCH", "/orders/" + id + "/status?status=" + status).then(function () {
+                showAlert($("orderAlert"), "Cập nhật trạng thái đơn hàng thành công!", "success");
+                loadOrders();
+            }).catch(function (err) {
+                alert(err.message);
+                loadOrders();
+            });
+        };
+    }
+
+    // ==================================================================
+    // ========= Chương trình khuyến mãi (Manager) =======================
+    // ==================================================================
+
+    function loadPromotions() {
+        mgrBaseApi("GET", "/promotions").then(function (res) {
+            renderPromotions(res.data || []);
+        }).catch(function (err) {
+            showAlert($("promoAlert"), err.message, "error");
+        });
+    }
+
+    function renderPromotions(list) {
+        var container = $("promoList");
+        if (!list.length) {
+            container.innerHTML = '<p class="text-muted">Chưa có chương trình khuyến mãi nào.</p>';
+            return;
+        }
+        container.innerHTML = list.map(function (p) {
+            var valueText = p.promoType === "PERCENT"
+                ? "Giảm " + p.value + "%"
+                : "Giảm " + formatVnd(p.value) + " phí vận chuyển";
+            return '<div class="address-card' + (p.active ? " is-default" : "") + '">' +
+                '<div class="d-flex justify-content-between align-items-start flex-wrap">' +
+                "<div><b>" + escapeHtml(p.name) + "</b>" +
+                (p.code ? ' <span class="badge-representative">' + escapeHtml(p.code) + "</span>" : "") +
+                (p.active ? "" : ' <span class="badge badge-secondary">Tạm dừng</span>') +
+                '<div><small class="text-muted">' + valueText +
+                (p.minOrderAmount > 0 ? " — đơn tối thiểu " + formatVnd(p.minOrderAmount) : "") + "</small></div>" +
+                '<div><small class="text-muted">' + escapeHtml(p.startDate || "") + " → " +
+                escapeHtml(p.endDate || "không giới hạn") + "</small></div></div>" +
+                '<div class="mt-2">' +
+                '<button type="button" class="btn btn-sm btn-outline-store" data-toggle-promo="' + p.id + '">' +
+                (p.active ? "Tạm dừng" : "Kích hoạt") + "</button> " +
+                '<button type="button" class="btn btn-sm btn-outline-secondary" data-edit-promo="' + p.id + '">Sửa</button> ' +
+                '<button type="button" class="btn btn-sm btn-link btn-link-danger" data-del-promo="' + p.id + '">Xóa</button>' +
+                "</div></div></div>";
+        }).join("");
+
+        container.onclick = function (e) {
+            var btn = e.target.closest("button");
+            if (!btn) return;
+            if (btn.getAttribute("data-toggle-promo") !== null) {
+                var id = btn.getAttribute("data-toggle-promo");
+                var makeActive = btn.textContent.trim() === "Kích hoạt";
+                mgrBaseApi("PATCH", "/promotions/" + id + "/active?active=" + makeActive).then(function () {
+                    showAlert($("promoAlert"), "Cập nhật trạng thái khuyến mãi thành công!", "success");
+                    loadPromotions();
+                }).catch(function (err) { alert(err.message); });
+            } else if (btn.getAttribute("data-edit-promo") !== null) {
+                startEditPromo(parseInt(btn.getAttribute("data-edit-promo"), 10));
+            } else if (btn.getAttribute("data-del-promo") !== null) {
+                if (!confirm("Xóa chương trình khuyến mãi này?")) return;
+                mgrBaseApi("DELETE", "/promotions/" + btn.getAttribute("data-del-promo")).then(function () {
+                    showAlert($("promoAlert"), "Xóa khuyến mãi thành công!", "success");
+                    loadPromotions();
+                }).catch(function (err) { alert(err.message); });
+            }
+        };
+    }
+
+    function startEditPromo(id) {
+        mgrBaseApi("GET", "/promotions").then(function (res) {
+            var p = (res.data || []).find(function (x) { return x.id === id; });
+            if (!p) return;
+            $("promoId").value = p.id;
+            $("promoName").value = p.name || "";
+            $("promoCode").value = p.code || "";
+            $("promoType").value = p.promoType || "PERCENT";
+            $("promoValue").value = p.value;
+            $("promoMinOrder").value = p.minOrderAmount || 0;
+            $("promoStart").value = toLocalInput(p.startDate);
+            $("promoEnd").value = toLocalInput(p.endDate);
+            $("promoActive").checked = !!p.active;
+            $("promoFormTitle").textContent = "Cập nhật khuyến mãi";
+            $("btnCancelPromo").style.display = "";
+            $("promoFormCard").scrollIntoView({ behavior: "smooth" });
+        });
+    }
+
+    function toLocalInput(dt) {
+        if (!dt) return "";
+        // "2026-09-16 15:30:00" -> "2026-09-16T15:30"
+        return String(dt).replace(" ", "T").slice(0, 16);
+    }
+
+    function onSavePromo(e) {
+        e.preventDefault();
+        hideAlert($("promoAlert"));
+        var payload = {
+            name: $("promoName").value.trim(),
+            code: $("promoCode").value.trim(),
+            promoType: $("promoType").value,
+            value: $("promoValue").value ? Number($("promoValue").value) : null,
+            minOrderAmount: $("promoMinOrder").value ? Number($("promoMinOrder").value) : 0,
+            startDate: $("promoStart").value ? $("promoStart").value + ":00" : null,
+            endDate: $("promoEnd").value ? $("promoEnd").value + ":00" : null,
+            active: $("promoActive").checked
+        };
+        var id = $("promoId").value;
+        var request = id
+            ? mgrBaseApi("PUT", "/promotions/" + id, payload)
+            : mgrBaseApi("POST", "/promotions", payload);
+        request.then(function () {
+            showAlert($("promoAlert"), id ? "Cập nhật khuyến mãi thành công!" : "Tạo khuyến mãi thành công!", "success");
+            resetPromoForm();
+            loadPromotions();
+        }).catch(function (err) {
+            showAlert($("promoAlert"), err.message, "error");
+        });
+    }
+
+    function resetPromoForm() {
+        $("promoForm").reset();
+        $("promoId").value = "";
+        $("promoActive").checked = true;
+        $("promoFormTitle").textContent = "Thêm chương trình khuyến mãi";
+        $("btnCancelPromo").style.display = "none";
+    }
+
+    // ==================================================================
+    // ========= Nhà vận chuyển (Manager) ================================
+    // ==================================================================
+
+    function loadTransporters() {
+        mgrBaseApi("GET", "/transporters").then(function (res) {
+            renderTransporters(res.data || []);
+        }).catch(function (err) {
+            showAlert($("transporterAlert"), err.message, "error");
+        });
+    }
+
+    function renderTransporters(list) {
+        var container = $("transporterList");
+        if (!list.length) {
+            container.innerHTML = '<p class="text-muted">Chưa có nhà vận chuyển nào.</p>';
+            return;
+        }
+        container.innerHTML = list.map(function (t) {
+            return '<div class="address-card">' +
+                '<div class="d-flex justify-content-between align-items-start flex-wrap">' +
+                "<div><b>" + escapeHtml(t.name) + "</b>" +
+                (t.status === "inactive" ? ' <span class="badge badge-secondary">Tạm dừng</span>' : "") +
+                '<div><small class="text-muted"><i class="fa fa-phone"></i> ' + escapeHtml(t.phone || "—") +
+                (t.email ? " — " + escapeHtml(t.email) : "") + "</small></div>" +
+                '<div><small class="text-muted">Phí vận chuyển: <b style="color:#e53637;">' +
+                formatVnd(t.baseFee) + "</b></small></div></div>" +
+                '<div class="mt-2">' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary" data-edit-tr="' + t.id + '">Sửa</button> ' +
+                '<button type="button" class="btn btn-sm btn-link btn-link-danger" data-del-tr="' + t.id + '">Xóa</button>' +
+                "</div></div></div>";
+        }).join("");
+
+        container.onclick = function (e) {
+            var btn = e.target.closest("button");
+            if (!btn) return;
+            if (btn.getAttribute("data-edit-tr") !== null) {
+                startEditTransporter(parseInt(btn.getAttribute("data-edit-tr"), 10));
+            } else if (btn.getAttribute("data-del-tr") !== null) {
+                if (!confirm("Xóa nhà vận chuyển này?")) return;
+                mgrBaseApi("DELETE", "/transporters/" + btn.getAttribute("data-del-tr")).then(function () {
+                    showAlert($("transporterAlert"), "Xóa nhà vận chuyển thành công!", "success");
+                    loadTransporters();
+                }).catch(function (err) { alert(err.message); });
+            }
+        };
+    }
+
+    function startEditTransporter(id) {
+        mgrBaseApi("GET", "/transporters").then(function (res) {
+            var t = (res.data || []).find(function (x) { return x.id === id; });
+            if (!t) return;
+            $("transporterId").value = t.id;
+            $("transporterName").value = t.name || "";
+            $("transporterPhone").value = t.phone || "";
+            $("transporterEmail").value = t.email || "";
+            $("transporterFee").value = t.baseFee || 0;
+            $("transporterStatus").value = t.status || "active";
+            $("transporterFormTitle").textContent = "Cập nhật nhà vận chuyển";
+            $("btnCancelTransporter").style.display = "";
+            $("transporterFormCard").scrollIntoView({ behavior: "smooth" });
+        });
+    }
+
+    function onSaveTransporter(e) {
+        e.preventDefault();
+        hideAlert($("transporterAlert"));
+        var payload = {
+            name: $("transporterName").value.trim(),
+            phone: $("transporterPhone").value.trim(),
+            email: $("transporterEmail").value.trim(),
+            baseFee: $("transporterFee").value ? Number($("transporterFee").value) : 0,
+            status: $("transporterStatus").value
+        };
+        var id = $("transporterId").value;
+        var request = id
+            ? mgrBaseApi("PUT", "/transporters/" + id, payload)
+            : mgrBaseApi("POST", "/transporters", payload);
+        request.then(function () {
+            showAlert($("transporterAlert"), id ? "Cập nhật nhà vận chuyển thành công!" : "Thêm nhà vận chuyển thành công!", "success");
+            resetTransporterForm();
+            loadTransporters();
+        }).catch(function (err) {
+            showAlert($("transporterAlert"), err.message, "error");
+        });
+    }
+
+    function resetTransporterForm() {
+        $("transporterForm").reset();
+        $("transporterId").value = "";
+        $("transporterStatus").value = "active";
+        $("transporterFormTitle").textContent = "Thêm nhà vận chuyển";
+        $("btnCancelTransporter").style.display = "none";
+    }
+
+    // ==================================================================
+    // ========= Doanh thu chi nhánh (Manager) ===========================
+    // ==================================================================
+
+    function loadRevenue() {
+        mgrBaseApi("GET", "/revenue").then(function (res) {
+            renderRevenue(res.data);
+        }).catch(function (err) {
+            $("revenueSummary").innerHTML = '<p class="text-muted">' + escapeHtml(err.message) + "</p>";
+        });
+    }
+
+    function renderRevenue(r) {
+        if (!r) return;
+        var cards = [
+            ["Tổng doanh thu (đã giao)", formatVnd(r.totalRevenue), "#e53637"],
+            ["Tiền hàng đã giao", formatVnd(r.deliveredProductAmount), "#333"],
+            ["Phí vận chuyển đã giao", formatVnd(r.deliveredShippingFee), "#333"],
+            ["Khuyến mãi đã giảm", formatVnd(r.deliveredDiscount), "#c72b2c"],
+            ["Tổng đơn hàng", r.totalOrders, "#333"],
+            ["Đơn đã giao", r.deliveredOrders, "#28a745"],
+            ["Đơn bị hủy", r.cancelledOrders, "#dc3545"],
+            ["Trả hàng/hoàn tiền", r.returnedOrders, "#6c757d"]
+        ];
+        var statusRows = Object.keys(r.statusCounts || {}).map(function (k) {
+            var label = k;
+            ORDER_STATUSES.forEach(function (s) { if (s[0] === k) label = s[1]; });
+            return "<li>" + label + ": <b>" + r.statusCounts[k] + "</b> đơn</li>";
+        }).join("");
+        $("revenueSummary").innerHTML =
+            '<div class="row">' + cards.map(function (c) {
+                return '<div class="col-md-3 col-6 mb-3"><div class="address-card text-center">' +
+                    '<small class="text-muted">' + c[0] + "</small>" +
+                    '<div style="font-size:20px;font-weight:800;color:' + c[2] + ';">' + c[1] + "</div></div></div>";
+            }).join("") + "</div>" +
+            (statusRows ? "<h6>Chi tiết theo trạng thái</h6><ul>" + statusRows + "</ul>" : "");
     }
 })();

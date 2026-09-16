@@ -437,6 +437,10 @@
                                         <button type="button" class="shop-subbtn active" data-sub="shopSubInfo">Thông tin chi nhánh</button>
                                         <button type="button" class="shop-subbtn" data-sub="shopSubHome">Trang chủ chi nhánh</button>
                                         <button type="button" class="shop-subbtn" data-sub="shopSubProducts">Quản lý sản phẩm</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubOrders">Đơn hàng</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubPromos">Khuyến mãi</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubTransporters">Nhà vận chuyển</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubRevenue">Doanh thu</button>
                                     </div>
 
                                     <!-- Sub-tab: Thông tin chi nhánh -->
@@ -514,6 +518,14 @@
                                                         <label class="profile-info-label">Giá bán - VND (*)</label>
                                                         <input type="number" id="productPrice" class="form-control" min="0" step="1000" required placeholder="VD: 250000">
                                                     </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Tồn kho</label>
+                                                        <input type="number" id="productStock" class="form-control" min="0" value="0">
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Các size (cách nhau bởi dấu phẩy)</label>
+                                                        <input type="text" id="productSizes" class="form-control" maxlength="200" placeholder="VD: S,M,L,XL">
+                                                    </div>
                                                     <div class="col-md-12 form-group">
                                                         <label class="profile-info-label">Mô tả sản phẩm (*)</label>
                                                         <textarea id="productDescription" class="form-control" rows="3" maxlength="5000" required></textarea>
@@ -540,6 +552,109 @@
 
                                         <h6 class="font-weight-bold" id="productListTitle">Danh sách sản phẩm</h6>
                                         <div id="productList"></div>
+                                    </div>
+
+                                    <!-- Sub-tab: Đơn hàng -->
+                                    <div id="shopSubOrders" class="shop-subcontent">
+                                        <div class="shop-subtabs" id="orderStatusChips"></div>
+                                        <div class="alert auth-alert" id="orderAlert" style="display:none;"></div>
+                                        <div id="orderList"></div>
+                                    </div>
+
+                                    <!-- Sub-tab: Khuyến mãi -->
+                                    <div id="shopSubPromos" class="shop-subcontent">
+                                        <div id="promoFormCard" class="address-card mb-4">
+                                            <h6 class="font-weight-bold mb-3" id="promoFormTitle">Thêm chương trình khuyến mãi</h6>
+                                            <form id="promoForm">
+                                                <input type="hidden" id="promoId">
+                                                <div class="row">
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Tên khuyến mãi (*)</label>
+                                                        <input type="text" id="promoName" class="form-control" maxlength="150" required>
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Mã khuyến mãi (khách nhập khi đặt hàng)</label>
+                                                        <input type="text" id="promoCode" class="form-control" maxlength="30" placeholder="VD: SALE10">
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Loại khuyến mãi (*)</label>
+                                                        <select id="promoType" class="form-control">
+                                                            <option value="PERCENT">Giảm % giá sản phẩm</option>
+                                                            <option value="SHIPPING">Giảm phí vận chuyển (VND)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Giá trị (*) <small class="text-muted">(% hoặc số tiền VND)</small></label>
+                                                        <input type="number" id="promoValue" class="form-control" min="1" required>
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Đơn tối thiểu (VND)</label>
+                                                        <input type="number" id="promoMinOrder" class="form-control" min="0" value="0">
+                                                    </div>
+                                                    <div class="col-md-3 form-group">
+                                                        <label class="profile-info-label">Bắt đầu</label>
+                                                        <input type="datetime-local" id="promoStart" class="form-control">
+                                                    </div>
+                                                    <div class="col-md-3 form-group">
+                                                        <label class="profile-info-label">Kết thúc</label>
+                                                        <input type="datetime-local" id="promoEnd" class="form-control">
+                                                    </div>
+                                                    <div class="col-md-12 form-check mb-3 ml-2">
+                                                        <input type="checkbox" class="form-check-input" id="promoActive" checked>
+                                                        <label class="form-check-label" for="promoActive">Kích hoạt</label>
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn-store" id="btnSavePromo">Lưu khuyến mãi</button>
+                                                <button type="button" class="btn btn-link btn-link-danger" id="btnCancelPromo" style="display:none;">Hủy chỉnh sửa</button>
+                                            </form>
+                                        </div>
+                                        <div class="alert auth-alert" id="promoAlert" style="display:none;"></div>
+                                        <div id="promoList"></div>
+                                    </div>
+
+                                    <!-- Sub-tab: Nhà vận chuyển -->
+                                    <div id="shopSubTransporters" class="shop-subcontent">
+                                        <p class="text-muted">Quản lý nhà vận chuyển (tên, phí vận chuyển VND) áp dụng cho đơn hàng của chi nhánh.</p>
+                                        <div id="transporterFormCard" class="address-card mb-4">
+                                            <h6 class="font-weight-bold mb-3" id="transporterFormTitle">Thêm nhà vận chuyển</h6>
+                                            <form id="transporterForm">
+                                                <input type="hidden" id="transporterId">
+                                                <div class="row">
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Tên nhà vận chuyển (*)</label>
+                                                        <input type="text" id="transporterName" class="form-control" maxlength="100" required>
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Số điện thoại</label>
+                                                        <input type="text" id="transporterPhone" class="form-control" maxlength="20">
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Email</label>
+                                                        <input type="email" id="transporterEmail" class="form-control" maxlength="100">
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Phí vận chuyển - VND (*)</label>
+                                                        <input type="number" id="transporterFee" class="form-control" min="0" step="1000" required>
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Trạng thái</label>
+                                                        <select id="transporterStatus" class="form-control">
+                                                            <option value="active">Đang hoạt động</option>
+                                                            <option value="inactive">Tạm dừng</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn-store" id="btnSaveTransporter">Lưu</button>
+                                                <button type="button" class="btn btn-link btn-link-danger" id="btnCancelTransporter" style="display:none;">Hủy chỉnh sửa</button>
+                                            </form>
+                                        </div>
+                                        <div class="alert auth-alert" id="transporterAlert" style="display:none;"></div>
+                                        <div id="transporterList"></div>
+                                    </div>
+
+                                    <!-- Sub-tab: Doanh thu -->
+                                    <div id="shopSubRevenue" class="shop-subcontent">
+                                        <div id="revenueSummary"></div>
                                     </div>
                                 </div>
                             </div>

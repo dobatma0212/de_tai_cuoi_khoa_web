@@ -36,13 +36,20 @@ public class PublicShopController {
     }
 
     @GetMapping("/{id}/products")
-    public ResponseEntity<ApiResponse<List<ProductResponseDto>>> searchProducts(
+    public ResponseEntity<ApiResponse<com.storechain.group4.dto.ProductPageDto>> searchProducts(
             @PathVariable Long id,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoryId) {
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @RequestParam(required = false) String size,
+            @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Tìm kiếm sản phẩm thành công",
-                managerShopService.searchShopProducts(id, keyword, categoryId)));
+                managerShopService.searchShopProducts(id, keyword, categoryId,
+                        minPrice, maxPrice, size, sort, page, Math.min(pageSize, 50))));
     }
 
     @GetMapping("/{id}/suggest")
