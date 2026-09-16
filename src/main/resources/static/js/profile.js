@@ -495,28 +495,28 @@
     function renderCategoryChips() {
         var container = $("categoryChips");
         if (!categories.length) {
-            container.innerHTML = '<span class="text-muted">Chưa có danh mục nào — hãy thêm danh mục đầu tiên cho chi nhánh.</span>';
+            container.innerHTML = '<div class="order-filter-item" style="color:#999;font-weight:400;">Chưa có danh mục nào</div>';
             return;
         }
         container.innerHTML = categories.map(function (c) {
             var active = c.id === currentCategoryId ? " active" : "";
-            return '<span class="cat-chip' + active + '" data-cat="' + c.id + '">' +
-                escapeHtml(c.name) + " (" + c.totalProducts + ")" +
-                '<i class="fa fa-pencil chip-action" data-rename="' + c.id + '" title="Đổi tên"></i>' +
+            return '<div class="order-filter-item' + active + '" data-cat="' + c.id + '">' +
+                "<span>" + escapeHtml(c.name) +
+                ' <small class="text-muted">(' + c.totalProducts + ")</small></span>" +
+                "<span>" +
+                '<i class="fa fa-pencil chip-action" data-rename="' + c.id + '" title="Đổi tên"></i> ' +
                 '<i class="fa fa-times chip-action" data-delcat="' + c.id + '" title="Xóa danh mục"></i>' +
-                "</span>";
+                "</span></div>";
         }).join("");
 
         container.onclick = onCategoryChipClick;
     }
 
     function onCategoryChipClick(e) {
-        var chip = e.target.closest(".cat-chip");
-        if (!chip) return;
-        var catId = parseInt(chip.getAttribute("data-cat"), 10);
-        var renameId = e.target.getAttribute("data-rename");
-        var delId = e.target.getAttribute("data-delcat");
-        if (renameId !== null) {
+        // Ưu tiên nút sửa / xóa trên dòng
+        var icon = e.target.closest(".chip-action");
+        if (icon && icon.getAttribute("data-rename") !== null) {
+            var renameId = icon.getAttribute("data-rename");
             var cat = categories.find(function (c) { return c.id === parseInt(renameId, 10); });
             var newName = prompt("Tên mới cho danh mục:", cat ? cat.name : "");
             if (newName === null) return;
@@ -528,7 +528,8 @@
             }).catch(function (err) { alert(err.message); });
             return;
         }
-        if (delId !== null) {
+        if (icon && icon.getAttribute("data-delcat") !== null) {
+            var delId = icon.getAttribute("data-delcat");
             if (!confirm("Xóa danh mục này? (Chỉ xóa được khi danh mục không còn sản phẩm)")) return;
             mgrApi("DELETE", "/categories/" + delId).then(function () {
                 showAlert($("productAlert"), "Xóa danh mục thành công!", "success");
@@ -538,8 +539,10 @@
             }).catch(function (err) { alert(err.message); });
             return;
         }
-        // Chọn danh mục để xem/thêm sản phẩm
-        currentCategoryId = catId;
+        // Bấm vào dòng: chọn danh mục để xem/thêm sản phẩm
+        var item = e.target.closest(".order-filter-item");
+        if (!item || !item.getAttribute("data-cat")) return;
+        currentCategoryId = parseInt(item.getAttribute("data-cat"), 10);
         renderCategoryChips();
         resetProductForm();
         loadProducts();
@@ -736,26 +739,42 @@
         ["RETURNED", "Trả hàng - hoàn tiền"]
     ];
     var currentOrderStatus = "";
+    var orderCache = [];
 
+    /** Tải toàn bộ đơn hàng 1 lần: vẽ menu đếm bên trái + lọc danh sách bên phải */
     function loadOrders() {
-        var chips = $("orderStatusChips");
-        chips.innerHTML = ORDER_STATUSES.map(function (s) {
-            var active = currentOrderStatus === s[0] ? " active" : "";
-            return '<button type="button" class="shop-subbtn order-status-btn' + active +
-                '" data-status="' + s[0] + '">' + s[1] + "</button>";
-        }).join("");
-        chips.onclick = function (e) {
-            var btn = e.target.closest(".order-status-btn");
-            if (!btn) return;
-            currentOrderStatus = btn.getAttribute("data-status");
-            loadOrders();
-        };
-        var url = "/orders" + (currentOrderStatus ? "?status=" + currentOrderStatus : "");
-        mgrBaseApi("GET", url).then(function (res) {
-            renderOrders(res.data || []);
+        mgrBaseApi("GET", "/orders").then(function (res) {
+            orderCache = res.data || [];
+            renderOrderFilterList();
+            renderOrders(filterOrders());
         }).catch(function (err) {
             showAlert($("orderAlert"), err.message, "error");
         });
+    }
+
+    function filterOrders() {
+        if (!currentOrderStatus) return orderCache;
+        return orderCache.filter(function (o) { return o.status === currentOrderStatus; });
+    }
+
+    function renderOrderFilterList() {
+        var container = $("orderStatusChips");
+        container.innerHTML = ORDER_STATUSES.map(function (s) {
+            var count = s[0] === ""
+                ? orderCache.length
+                : orderCache.filter(function (o) { return o.status === s[0]; }).length;
+            var active = currentOrderStatus === s[0] ? " active" : "";
+            return '<div class="order-filter-item' + active + '" data-status="' + s[0] + '">' +
+                "<span>" + s[1] + "</span>" +
+                '<span class="of-count">' + count + "</span></div>";
+        }).join("");
+        container.onclick = function (e) {
+            var item = e.target.closest(".order-filter-item");
+            if (!item) return;
+            currentOrderStatus = item.getAttribute("data-status");
+            renderOrderFilterList();
+            renderOrders(filterOrders());
+        };
     }
 
     function renderOrders(list) {
