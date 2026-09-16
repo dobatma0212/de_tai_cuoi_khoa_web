@@ -7,14 +7,17 @@ import com.storechain.group4.model.User;
 import com.storechain.group4.repository.RoleRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -26,14 +29,81 @@ public class DataInitializer implements CommandLineRunner {
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
     private final TransporterRepository transporterRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @Override
     public void run(String... args) {
-        initRoles();
-        initDefaultAdmin();
-        initDefaultManager();
-        initDefaultCategories();
-        initDefaultTransporters();
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            cleanupObsoleteRoles();
+            initRoles();
+            initDefaultAdmin();
+            initDefaultManager();
+            initDefaultCategories();
+            initDefaultTransporters();
+        });
+    }
+
+    /**
+     * Xóa các role cũ (ROLE_VENDOR, ROLE_SHIPPER) khỏi database.
+     * Đổi vendor thành manager: user có role ROLE_VENDOR chuyển sang ROLE_MANAGER.
+     * User có role ROLE_SHIPPER chuyển sang ROLE_USER.
+     * Sau đó xóa 2 role này khỏi bảng roles để tránh lỗi deserialize enum trong JPA.
+     */
+    private void cleanupObsoleteRoles() {
+        try {
+            // Đảm bảo ROLE_MANAGER và ROLE_USER có sẵn trong bảng roles
+            Role managerRole = roleRepository.findByName(RoleType.ROLE_MANAGER)
+                    .orElseGet(() -> roleRepository.save(new Role(RoleType.ROLE_MANAGER, "Quản lý cửa hàng")));
+            Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
+                    .orElseGet(() -> roleRepository.save(new Role(RoleType.ROLE_USER, "Người dùng / Khách hàng mua sắm")));
+
+            // 1. Chuyển các user có role ROLE_VENDOR sang ROLE_MANAGER
+            @SuppressWarnings("unchecked")
+            List<Object> vendorResults = entityManager
+                    .createNativeQuery("SELECT role_id FROM roles WHERE role_name = 'ROLE_VENDOR'")
+                    .getResultList();
+
+            if (!vendorResults.isEmpty()) {
+                Long vendorRoleId = ((Number) vendorResults.get(0)).longValue();
+                int updated = entityManager
+                        .createNativeQuery("UPDATE users SET role_id = :newRoleId WHERE role_id = :oldRoleId")
+                        .setParameter("newRoleId", managerRole.getId())
+                        .setParameter("oldRoleId", vendorRoleId)
+                        .executeUpdate();
+                log.info("Đã chuyển {} người dùng từ ROLE_VENDOR sang ROLE_MANAGER", updated);
+
+                entityManager
+                        .createNativeQuery("DELETE FROM roles WHERE role_id = :roleId")
+                        .setParameter("roleId", vendorRoleId)
+                        .executeUpdate();
+                log.info("Đã xóa role cũ ROLE_VENDOR khỏi database");
+            }
+
+            // 2. Chuyển các user có role ROLE_SHIPPER sang ROLE_USER
+            @SuppressWarnings("unchecked")
+            List<Object> shipperResults = entityManager
+                    .createNativeQuery("SELECT role_id FROM roles WHERE role_name = 'ROLE_SHIPPER'")
+                    .getResultList();
+
+            if (!shipperResults.isEmpty()) {
+                Long shipperRoleId = ((Number) shipperResults.get(0)).longValue();
+                int updated = entityManager
+                        .createNativeQuery("UPDATE users SET role_id = :newRoleId WHERE role_id = :oldRoleId")
+                        .setParameter("newRoleId", userRole.getId())
+                        .setParameter("oldRoleId", shipperRoleId)
+                        .executeUpdate();
+                log.info("Đã chuyển {} người dùng từ ROLE_SHIPPER sang ROLE_USER", updated);
+
+                entityManager
+                        .createNativeQuery("DELETE FROM roles WHERE role_id = :roleId")
+                        .setParameter("roleId", shipperRoleId)
+                        .executeUpdate();
+                log.info("Đã xóa role cũ ROLE_SHIPPER khỏi database");
+            }
+        } catch (Exception e) {
+            log.error("Lỗi trong quá trình dọn dẹp role cũ: {}", e.getMessage(), e);
+        }
     }
 
     private void initRoles() {
@@ -42,10 +112,8 @@ public class DataInitializer implements CommandLineRunner {
                 String description = switch (roleType) {
                     case ROLE_USER -> "Người dùng / Khách hàng mua sắm";
                     case ROLE_GUEST -> "Khách vãng lai";
-                    case ROLE_VENDOR -> "Nhà bán hàng / Đối tác";
-                    case ROLE_MANAGER -> "Quản lý chuỗi cửa hàng";
+                    case ROLE_MANAGER -> "Quản lý cửa hàng";
                     case ROLE_ADMIN -> "Quản trị viên hệ thống";
-                    case ROLE_SHIPPER -> "Nhân viên giao hàng";
                 };
                 roleRepository.save(new Role(roleType, description));
                 log.info("Khởi tạo role: {} - {}", roleType.name(), description);

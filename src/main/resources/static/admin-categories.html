@@ -536,7 +536,7 @@
                 <div class="row align-items-center">
                     <div class="col-lg-6 col-md-6">
                         <div class="header__top__left">
-                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin & Manager)</p>
+                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin)</p>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-6">
@@ -591,7 +591,7 @@
                         <h4>Quản lý Danh mục (Category)</h4>
                         <div class="breadcrumb__links">
                             <a href="/index.html">Trang chủ</a>
-                            <a href="#">Quản trị viên & Quản lý</a>
+                            <a href="#">Quản trị viên</a>
                             <span>Danh sách Danh mục sản phẩm</span>
                         </div>
                     </div>
@@ -885,7 +885,7 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Tên đăng nhập / Email</label>
-                            <input type="text" class="form-control" id="login-username" required placeholder="admin hoặc manager">
+                            <input type="text" class="form-control" id="login-username" required placeholder="admin">
                         </div>
                         <div class="form-group">
                             <label>Mật khẩu</label>
@@ -895,9 +895,6 @@
                             <p class="mb-1 text-muted" style="font-size: 13px;">Tài khoản thử nghiệm có sẵn:</p>
                             <button type="button" class="btn btn-sm btn-outline-danger mb-1 mr-1" onclick="quickFillLogin('admin', 'admin123')">
                                 <i class="fa fa-user"></i> Admin (admin123)
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-primary mb-1" onclick="quickFillLogin('manager', 'manager123')">
-                                <i class="fa fa-user"></i> Manager (manager123)
                             </button>
                         </div>
                     </div>
@@ -984,11 +981,10 @@
             if (currentUser && getToken()) {
                 const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
                 const isAdmin = roleName.includes('ADMIN');
-                const isManager = roleName.includes('MANAGER');
 
                 roleIndicator.removeClass('badge-danger badge-primary badge-dark')
-                    .addClass(isAdmin ? 'badge-danger' : 'badge-primary')
-                    .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : (isManager ? 'MANAGER' : roleName)}`);
+                    .addClass(isAdmin ? 'badge-danger' : 'badge-dark')
+                    .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : roleName.replace('ROLE_', '')}`);
 
                 const authHtml = `
                     <span class="text-white mr-3">
@@ -1044,6 +1040,11 @@
                         role: data.role || (data.roles ? data.roles[0] : 'ROLE_ADMIN')
                     };
 
+                    if (!userObj.role.includes('ADMIN')) {
+                        showToast('Tài khoản của bạn không có quyền truy cập trang Quản lý Danh mục (yêu cầu ADMIN)!', 'danger');
+                        return;
+                    }
+
                     localStorage.setItem('jwt_token', token);
                     localStorage.setItem('user_info', JSON.stringify(userObj));
                     localStorage.setItem('sc_auth', JSON.stringify({ token: token, user: userObj }));
@@ -1069,9 +1070,7 @@
             localStorage.removeItem('sc_auth');
             sessionStorage.clear();
             currentUser = null;
-            updateAuthUI();
-            showToast('Đã đăng xuất khỏi hệ thống', 'info');
-            loadCategories();
+            window.location.href = '/index.html';
         }
 
         // Stats loader
@@ -1221,8 +1220,8 @@
                             <tr>
                                 <td colspan="9" class="text-center py-5">
                                     <i class="fa fa-lock fa-3x text-danger mb-3"></i>
-                                    <h5>Yêu cầu quyền Quản trị viên (ADMIN) hoặc Quản lý (MANAGER)</h5>
-                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản có thẩm quyền để quản lý danh mục.</p>
+                                    <h5>Yêu cầu quyền Quản trị viên (ADMIN)</h5>
+                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản Quản trị viên để quản lý danh mục.</p>
                                     <button class="btn btn-male-fashion" onclick="openLoginModal()">
                                         <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
                                     </button>

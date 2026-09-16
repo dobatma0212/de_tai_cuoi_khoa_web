@@ -274,10 +274,10 @@
             var alertBox = document.getElementById("loginAlert");
             var submitBtn = document.getElementById("loginSubmitBtn");
 
-            // Nếu đã đăng nhập rồi: Admin/Manager vào trang quản trị, User vào trang chủ
+            // Nếu đã đăng nhập rồi: Chỉ Admin vào trang quản trị users, còn lại (Manager, User) vào trang chủ
             if (window.ScAuth.isLoggedIn()) {
                 var currentSession = window.ScAuth.getSession();
-                if (window.ScAuth.isAdminOrManager(currentSession)) {
+                if (window.ScAuth.isAdmin(currentSession)) {
                     window.location.href = "/admin-users.html";
                 } else {
                     window.location.href = "/index.html";
@@ -305,7 +305,7 @@
                     password: password
                 }).then(function (res) {
                     window.ScAuth.saveSession(res.data);
-                    var isAdmin = window.ScAuth.isAdminOrManager(res.data);
+                    var isAdmin = window.ScAuth.isAdmin(res.data);
                     var redirectUrl = isAdmin ? "/admin-users.html" : "/index.html";
                     var msg = isAdmin 
                         ? "Đăng nhập thành công! Đang chuyển hướng đến Trang Quản Trị..." 

@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import jakarta.persistence.EntityManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -80,9 +82,9 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Không thể tạo tài khoản với vai trò Khách vãng lai (GUEST) vì khách vãng lai không sử dụng tài khoản!");
         }
 
-        // Manager không được quyền tạo tài khoản có vai trò ADMIN
+        // Chỉ ADMIN mới có quyền tạo tài khoản ADMIN khác
         if (!isUserAdmin(currentUser) && assignedRole.getName() == RoleType.ROLE_ADMIN) {
-            throw new SecurityException("Quản lý (Manager) không có quyền tạo tài khoản Quản trị viên (ADMIN)!");
+            throw new SecurityException("Bạn không có quyền tạo tài khoản Quản trị viên (ADMIN)!");
         }
 
         String status = (request.getStatus() != null && !request.getStatus().isBlank())
@@ -114,9 +116,9 @@ public class UserServiceImpl implements UserService {
 
         boolean isCurrentAdmin = isUserAdmin(currentUser);
 
-        // Manager không thể sửa tài khoản có vai trò ADMIN
+        // Chỉ ADMIN mới có quyền sửa tài khoản ADMIN khác
         if (!isCurrentAdmin && user.getRole() != null && user.getRole().getName() == RoleType.ROLE_ADMIN) {
-            throw new SecurityException("Quản lý (Manager) không có quyền chỉnh sửa tài khoản Quản trị viên (ADMIN)!");
+            throw new SecurityException("Bạn không có quyền chỉnh sửa tài khoản Quản trị viên (ADMIN)!");
         }
 
         // Kiểm tra email trùng với tài khoản khác
@@ -139,9 +141,9 @@ public class UserServiceImpl implements UserService {
             if (newRole.getName() == RoleType.ROLE_GUEST) {
                 throw new IllegalArgumentException("Không thể gán vai trò Khách vãng lai (GUEST) cho tài khoản!");
             }
-            // Manager không được quyền gán vai trò ADMIN cho bất kỳ ai
+            // Chỉ ADMIN mới có quyền gán vai trò ADMIN
             if (!isCurrentAdmin && newRole.getName() == RoleType.ROLE_ADMIN) {
-                throw new SecurityException("Quản lý (Manager) không có quyền gán vai trò ADMIN!");
+                throw new SecurityException("Bạn không có quyền gán vai trò ADMIN!");
             }
             user.setRole(newRole);
         }
@@ -177,9 +179,9 @@ public class UserServiceImpl implements UserService {
 
         boolean isCurrentAdmin = isUserAdmin(currentUser);
 
-        // Manager không thể thay đổi trạng thái của Admin
+        // Chỉ ADMIN mới có quyền thay đổi trạng thái của tài khoản ADMIN khác
         if (!isCurrentAdmin && user.getRole() != null && user.getRole().getName() == RoleType.ROLE_ADMIN) {
-            throw new SecurityException("Quản lý (Manager) không có quyền thay đổi trạng thái tài khoản ADMIN!");
+            throw new SecurityException("Bạn không có quyền thay đổi trạng thái tài khoản ADMIN!");
         }
 
         String normalizedStatus = status.trim().toLowerCase();
@@ -207,9 +209,58 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Bạn không thể tự xóa tài khoản của chính mình!");
         }
 
-        // Manager không thể xóa Admin
+        // Chỉ ADMIN mới có quyền xóa tài khoản ADMIN khác
         if (!isUserAdmin(currentUser) && user.getRole() != null && user.getRole().getName() == RoleType.ROLE_ADMIN) {
-            throw new SecurityException("Quản lý (Manager) không có quyền xóa tài khoản Quản trị viên (ADMIN)!");
+            throw new SecurityException("Bạn không có quyền xóa tài khoản Quản trị viên (ADMIN)!");
+        }
+
+        // Dọn dẹp các bản ghi phụ thuộc trước khi xóa người dùng để tránh lỗi khóa ngoại (foreign key constraint)
+        // 1. Xóa địa chỉ giao hàng
+        try {
+            entityManager.createNativeQuery("DELETE FROM shipping_addresses WHERE user_id = :userId")
+                    .setParameter("userId", id)
+                    .executeUpdate();
+        } catch (Exception e) {
+            log.warn("Lỗi khi xóa shipping_addresses của user ID {}: {}", id, e.getMessage());
+        }
+
+        // 2. Xóa địa chỉ thông thường
+        try {
+            entityManager.createNativeQuery("DELETE FROM addresses WHERE user_id = :userId")
+                    .setParameter("userId", id)
+                    .executeUpdate();
+        } catch (Exception e) {
+            log.warn("Lỗi khi xóa addresses của user ID {}: {}", id, e.getMessage());
+        }
+
+        // 3. Xóa sản phẩm thuộc các shop của user (nếu có)
+        try {
+            entityManager.createNativeQuery(
+                    "DELETE FROM products WHERE shop_id IN (SELECT shop_id FROM shops WHERE user_id = :userId)")
+                    .setParameter("userId", id)
+                    .executeUpdate();
+        } catch (Exception e) {
+            log.warn("Lỗi khi xóa products thuộc shop của user ID {}: {}", id, e.getMessage());
+        }
+
+        // 4. Xóa các shop của user (nếu có)
+        try {
+            entityManager.createNativeQuery("DELETE FROM shops WHERE user_id = :userId")
+                    .setParameter("userId", id)
+                    .executeUpdate();
+        } catch (Exception e) {
+            log.warn("Lỗi khi xóa shops của user ID {}: {}", id, e.getMessage());
+        }
+
+        // 5. Xóa OTP tokens liên quan đến email của user (nếu có)
+        if (user.getEmail() != null) {
+            try {
+                entityManager.createNativeQuery("DELETE FROM otp_tokens WHERE email = :email")
+                        .setParameter("email", user.getEmail())
+                        .executeUpdate();
+            } catch (Exception e) {
+                log.warn("Lỗi khi xóa otp_tokens của email {}: {}", user.getEmail(), e.getMessage());
+            }
         }
 
         userRepository.delete(user);

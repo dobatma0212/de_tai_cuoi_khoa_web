@@ -28,22 +28,10 @@ public class TestRoleController {
         return ResponseEntity.ok(ApiResponse.success("Dành cho GUEST hoặc ADMIN."));
     }
 
-    @GetMapping("/vendor")
-    @PreAuthorize("hasRole('VENDOR') or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<String>> vendorAccess() {
-        return ResponseEntity.ok(ApiResponse.success("Dành cho VENDOR hoặc ADMIN."));
-    }
-
     @GetMapping("/manager")
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> managerAccess() {
         return ResponseEntity.ok(ApiResponse.success("Dành cho MANAGER hoặc ADMIN."));
-    }
-
-    @GetMapping("/shipper")
-    @PreAuthorize("hasRole('SHIPPER') or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<String>> shipperAccess() {
-        return ResponseEntity.ok(ApiResponse.success("Dành cho SHIPPER hoặc ADMIN."));
     }
 
     @GetMapping("/admin")
