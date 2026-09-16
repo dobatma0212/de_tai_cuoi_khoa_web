@@ -187,6 +187,10 @@
                             </div>
 
                             <div id="shopFormWrapper" style="display:none;">
+                                <div class="form-group" id="shopSelectorGroup" style="display:none;">
+                                    <label class="info-label">Cửa hàng đang quản lý</label>
+                                    <select class="form-control" id="shopSelector"></select>
+                                </div>
                                 <div class="text-center mb-4">
                                     <img id="previewBanner" class="shop-banner-preview" src="/img/hero/banner.jpg" alt="banner">
                                     <img id="previewLogo" class="shop-logo-preview" src="/img/logo.png" alt="logo"
@@ -211,16 +215,32 @@
                                             <textarea id="vShopDescription" class="form-control" rows="3" maxlength="2000"></textarea>
                                         </div>
                                         <div class="col-md-6 form-group">
-                                            <label class="info-label">Logo (URL)</label>
-                                            <input type="text" id="vShopLogoUrl" class="form-control" maxlength="255" placeholder="https://...">
+                                            <label class="info-label">Logo (chèn URL hoặc tải lên)</label>
+                                            <div class="input-group">
+                                                <input type="text" id="vShopLogoUrl" class="form-control" maxlength="255" placeholder="https://...">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-outline-store" id="btnUploadLogo">
+                                                        <i class="fa fa-upload"></i> Tải lên
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input type="file" id="vShopLogoFile" accept="image/*" style="display:none;">
                                         </div>
                                         <div class="col-md-6 form-group">
-                                            <label class="info-label">Banner (URL)</label>
-                                            <input type="text" id="vShopBannerUrl" class="form-control" maxlength="255" placeholder="https://...">
+                                            <label class="info-label">Banner (chèn URL hoặc tải lên)</label>
+                                            <div class="input-group">
+                                                <input type="text" id="vShopBannerUrl" class="form-control" maxlength="255" placeholder="https://...">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-outline-store" id="btnUploadBanner">
+                                                        <i class="fa fa-upload"></i> Tải lên
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input type="file" id="vShopBannerFile" accept="image/*" style="display:none;">
                                         </div>
                                     </div>
                                     <button type="submit" class="btn-store">Lưu thay đổi</button>
-                                    <a id="viewShopLink" href="#" target="_blank" class="btn-outline-store">Xem trang chủ shop</a>
+                                    <a id="viewShopLink" href="#" class="btn-outline-store">Xem trang chủ shop</a>
                                 </form>
                             </div>
 
@@ -284,39 +304,81 @@
                 window.location.href = '/login.html';
                 return;
             }
-            loadMyShop();
             $('#shopForm').on('submit', saveShop);
             $('#vShopLogoUrl').on('input', function () { if (this.value) $('#previewLogo').attr('src', this.value); });
             $('#vShopBannerUrl').on('input', function () { if (this.value) $('#previewBanner').attr('src', this.value); });
+            $('#shopSelector').on('change', function () {
+                localStorage.setItem('vendorShopId', this.value);
+                loadShopDetail(this.value);
+            });
+            bindUpload('#btnUploadLogo', '#vShopLogoFile', '#vShopLogoUrl', '#previewLogo');
+            bindUpload('#btnUploadBanner', '#vShopBannerFile', '#vShopBannerUrl', '#previewBanner');
+
+            const urlShopId = new URLSearchParams(window.location.search).get('shopId');
+            if (urlShopId) localStorage.setItem('vendorShopId', urlShopId);
+            loadMyShops();
         });
 
-        function loadMyShop() {
+        // ===== Chọn shop =====
+        function loadMyShops() {
             $.ajax({
-                url: API_BASE,
+                url: '/api/vendor/shops',
                 type: 'GET',
                 headers: authHeaders(),
                 success: function (res) {
-                    const shop = res.data;
-                    if (!shop || shop.status !== 'active') {
+                    const shops = res.data || [];
+                    if (!shops.length) {
                         $('#notVendorBox').show();
                         return;
                     }
+                    const saved = localStorage.getItem('vendorShopId');
+                    const current = shops.find(s => String(s.id) === String(saved)) ? saved : String(shops[0].id);
+
+                    if (shops.length > 1) {
+                        $('#shopSelectorGroup').show();
+                        $('#shopSelector').empty();
+                        shops.forEach(s => {
+                            $('#shopSelector').append(`<option value="${s.id}">${escapeHtml(s.name)} (#${s.id})</option>`);
+                        });
+                        $('#shopSelector').val(current);
+                    }
                     $('#shopFormWrapper').show();
-                    $('#vShopName').val(shop.name || '');
-                    $('#vShopPhone').val(shop.phone || '');
-                    $('#vShopAddress').val(shop.address || '');
-                    $('#vShopDescription').val(shop.description || '');
-                    $('#vShopLogoUrl').val(shop.logoUrl || '');
-                    $('#vShopBannerUrl').val(shop.bannerUrl || '');
-                    if (shop.logoUrl) $('#previewLogo').attr('src', shop.logoUrl);
-                    if (shop.bannerUrl) $('#previewBanner').attr('src', shop.bannerUrl);
-                    $('#viewShopLink').attr('href', '/shop-home.html?id=' + shop.id);
+                    $('#notVendorBox').hide();
+                    loadShopDetail(current);
                 },
                 error: function (xhr) {
                     if (xhr.status === 401 || xhr.status === 403) {
                         window.location.href = '/login.html';
                     } else {
                         $('#notVendorBox').show();
+                        showAlert(xhr.responseJSON?.message || 'Không thể tải danh sách cửa hàng');
+                    }
+                }
+            });
+        }
+
+        function loadShopDetail(shopId) {
+            $.ajax({
+                url: API_BASE + '?shopId=' + shopId,
+                type: 'GET',
+                headers: authHeaders(),
+                success: function (res) {
+                    const shop = res.data;
+                    if (!shop) { $('#notVendorBox').show(); return; }
+                    $('#vShopName').val(shop.name || '');
+                    $('#vShopPhone').val(shop.phone || '');
+                    $('#vShopAddress').val(shop.address || '');
+                    $('#vShopDescription').val(shop.description || '');
+                    $('#vShopLogoUrl').val(shop.logoUrl || '');
+                    $('#vShopBannerUrl').val(shop.bannerUrl || '');
+                    $('#previewLogo').attr('src', shop.logoUrl || '/img/logo.png');
+                    $('#previewBanner').attr('src', shop.bannerUrl || '/img/hero/banner.jpg');
+                    $('#viewShopLink').attr('href', '/shop-home.html?id=' + shop.id);
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        window.location.href = '/login.html';
+                    } else {
                         showAlert(xhr.responseJSON?.message || 'Không thể tải thông tin cửa hàng');
                     }
                 }
@@ -327,7 +389,7 @@
             e.preventDefault();
             $('#shopAlert').hide();
             $.ajax({
-                url: API_BASE,
+                url: API_BASE + '?shopId=' + $('#shopSelector').val(),
                 type: 'PUT',
                 headers: authHeaders(),
                 contentType: 'application/json',
@@ -341,10 +403,48 @@
                 }),
                 success: function (res) {
                     showSuccess(res.message || 'Cập nhật thành công!');
+                    loadMyShops();
                 },
                 error: function (xhr) {
                     showAlert(xhr.responseJSON?.message || 'Cập nhật thất bại!');
                 }
+            });
+        }
+
+        // ===== Tải ảnh lên =====
+        function bindUpload(btnSel, fileSel, urlSel, previewSel) {
+            $(btnSel).on('click', function () { $(fileSel).click(); });
+            $(fileSel).on('change', function () {
+                const file = this.files[0];
+                this.value = '';
+                if (!file) return;
+                const btn = $(btnSel);
+                const oldHtml = btn.html();
+                btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang tải...');
+                const fd = new FormData();
+                fd.append('file', file);
+                $.ajax({
+                    url: '/api/uploads',
+                    type: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + getToken() },
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        btn.prop('disabled', false).html(oldHtml);
+                        if (res.data && res.data.url) {
+                            $(urlSel).val(res.data.url);
+                            if (previewSel) $(previewSel).attr('src', res.data.url);
+                            showSuccess(res.message || 'Tải ảnh lên thành công!');
+                        }
+                    },
+                    error: function (xhr) {
+                        btn.prop('disabled', false).html(oldHtml);
+                        const msg = xhr.responseJSON?.message || 'Tải ảnh lên thất bại!';
+                        showAlert(msg);
+                        $('#shopAlert').addClass('alert-danger').removeClass('alert-info');
+                    }
+                });
             });
         }
     </script>

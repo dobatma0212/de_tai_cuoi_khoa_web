@@ -6,18 +6,18 @@ import org.springframework.data.domain.Page;
 
 public interface ProductService {
 
-    Page<ProductResponseDto> getMyProducts(Long userId, String keyword, String status, Long categoryId,
+    Page<ProductResponseDto> getMyProducts(Long userId, Long shopId, String keyword, String status, Long categoryId,
                                            int page, int size, String sortBy, String sortDir);
 
-    ProductResponseDto getMyProductById(Long userId, Long productId);
+    ProductResponseDto getMyProductById(Long userId, Long shopId, Long productId);
 
-    ProductResponseDto createMyProduct(Long userId, ProductRequestDto request);
+    ProductResponseDto createMyProduct(Long userId, Long shopId, ProductRequestDto request);
 
-    ProductResponseDto updateMyProduct(Long userId, Long productId, ProductRequestDto request);
+    ProductResponseDto updateMyProduct(Long userId, Long shopId, Long productId, ProductRequestDto request);
 
-    ProductResponseDto updateMyProductStatus(Long userId, Long productId, String status);
+    ProductResponseDto updateMyProductStatus(Long userId, Long shopId, Long productId, String status);
 
-    void deleteMyProduct(Long userId, Long productId);
+    void deleteMyProduct(Long userId, Long shopId, Long productId);
 
     // === Public ===
     Page<ProductResponseDto> getPublicProducts(Long shopId, String keyword, int page, int size);

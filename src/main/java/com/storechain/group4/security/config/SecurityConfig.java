@@ -76,7 +76,8 @@ public class SecurityConfig {
                                 "/img/**",
                                 "/fonts/**",
                                 "/sass/**",
-                                "/favicon.ico"
+                                "/favicon.ico",
+                                "/uploads/**"
                         ).permitAll()
 
                         // 2. Các endpoint công khai

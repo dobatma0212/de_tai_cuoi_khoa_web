@@ -13,10 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * API đăng ký mở cửa hàng (trong trang Profile):
- * - Xem trạng thái đơn đăng ký shop của người dùng hiện tại
- * - Gửi đơn đăng ký mở cửa hàng (chờ admin duyệt)
+ * - Xem danh sách cửa hàng & trạng thái các đơn đăng ký của người dùng hiện tại
+ * - Gửi đơn đăng ký mở cửa hàng (chờ admin duyệt; mỗi user chỉ 1 đơn chờ duyệt tại một thời điểm)
  */
 @RestController
 @RequestMapping("/api/profile/shop")
@@ -28,13 +30,13 @@ public class ShopRegistrationController {
     private final ShopService shopService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<ShopResponseDto>> getMyShop(
+    public ResponseEntity<ApiResponse<List<ShopResponseDto>>> getMyShops(
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        ShopResponseDto shop = shopService.getMyShop(currentUser.getId());
-        String message = shop != null
-                ? "Lấy thông tin cửa hàng thành công!"
-                : "Bạn chưa đăng ký mở cửa hàng";
-        return ResponseEntity.ok(ApiResponse.success(message, shop));
+        List<ShopResponseDto> shops = shopService.getMyShops(currentUser.getId());
+        String message = shops.isEmpty()
+                ? "Bạn chưa đăng ký mở cửa hàng"
+                : "Lấy danh sách cửa hàng thành công!";
+        return ResponseEntity.ok(ApiResponse.success(message, shops));
     }
 
     @PostMapping("/register")

@@ -30,6 +30,7 @@ public class VendorProductController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProductResponseDto>>> getMyProducts(
             @AuthenticationPrincipal CustomUserDetails currentUser,
+            @RequestParam(required = false) Long shopId,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long categoryId,
@@ -40,7 +41,7 @@ public class VendorProductController {
     ) {
         try {
             Page<ProductResponseDto> products = productService.getMyProducts(
-                    currentUser.getId(), keyword, status, categoryId, page, size, sortBy, sortDir);
+                    currentUser.getId(), shopId, keyword, status, categoryId, page, size, sortBy, sortDir);
             return ResponseEntity.ok(ApiResponse.success("Lấy danh sách sản phẩm thành công", products));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -50,10 +51,11 @@ public class VendorProductController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponseDto>> getMyProduct(
             @PathVariable Long id,
+            @RequestParam(required = false) Long shopId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         try {
             return ResponseEntity.ok(ApiResponse.success(
-                    "Lấy chi tiết sản phẩm thành công", productService.getMyProductById(currentUser.getId(), id)));
+                    "Lấy chi tiết sản phẩm thành công", productService.getMyProductById(currentUser.getId(), shopId, id)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
         }
@@ -61,10 +63,11 @@ public class VendorProductController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<ProductResponseDto>> createProduct(
+            @RequestParam(required = false) Long shopId,
             @Valid @RequestBody ProductRequestDto request,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         try {
-            ProductResponseDto created = productService.createMyProduct(currentUser.getId(), request);
+            ProductResponseDto created = productService.createMyProduct(currentUser.getId(), shopId, request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.success("Thêm sản phẩm mới thành công!", created));
         } catch (IllegalArgumentException e) {
@@ -75,10 +78,11 @@ public class VendorProductController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponseDto>> updateProduct(
             @PathVariable Long id,
+            @RequestParam(required = false) Long shopId,
             @Valid @RequestBody ProductRequestDto request,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         try {
-            ProductResponseDto updated = productService.updateMyProduct(currentUser.getId(), id, request);
+            ProductResponseDto updated = productService.updateMyProduct(currentUser.getId(), shopId, id, request);
             return ResponseEntity.ok(ApiResponse.success("Cập nhật sản phẩm thành công!", updated));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -88,10 +92,11 @@ public class VendorProductController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<ProductResponseDto>> updateStatus(
             @PathVariable Long id,
+            @RequestParam(required = false) Long shopId,
             @RequestParam String status,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         try {
-            ProductResponseDto updated = productService.updateMyProductStatus(currentUser.getId(), id, status);
+            ProductResponseDto updated = productService.updateMyProductStatus(currentUser.getId(), shopId, id, status);
             return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái sản phẩm thành công!", updated));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
@@ -101,9 +106,10 @@ public class VendorProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<String>> deleteProduct(
             @PathVariable Long id,
+            @RequestParam(required = false) Long shopId,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
         try {
-            productService.deleteMyProduct(currentUser.getId(), id);
+            productService.deleteMyProduct(currentUser.getId(), shopId, id);
             return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công!", "Đã xóa sản phẩm ID: " + id));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

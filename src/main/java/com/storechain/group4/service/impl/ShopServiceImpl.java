@@ -19,7 +19,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,10 +40,10 @@ public class ShopServiceImpl implements ShopService {
 
     @Override
     @Transactional(readOnly = true)
-    public ShopResponseDto getMyShop(Long userId) {
-        return shopRepository.findByOwnerId(userId)
+    public List<ShopResponseDto> getMyShops(Long userId) {
+        return shopRepository.findAllByOwnerIdOrderByIdDesc(userId).stream()
                 .map(this::toDto)
-                .orElse(null);
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -50,8 +52,10 @@ public class ShopServiceImpl implements ShopService {
         User owner = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng"));
 
-        if (shopRepository.findByOwnerId(userId).isPresent()) {
-            throw new IllegalArgumentException("Bạn đã gửi đăng ký mở cửa hàng rồi. Vui lòng chờ quản trị viên duyệt.");
+        // Chống spam: mỗi user chỉ được có TỐI ĐA 1 đơn đăng ký đang chờ duyệt
+        if (shopRepository.existsByOwnerIdAndStatusIgnoreCase(userId, "pending")) {
+            throw new IllegalArgumentException(
+                    "Bạn đang có một đơn đăng ký mở cửa hàng đang chờ duyệt. Vui lòng chờ quản trị viên xử lý trước khi gửi đơn mới.");
         }
 
         String name = normalizeRequired(request.getName(), "Tên cửa hàng không được để trống");
@@ -78,10 +82,23 @@ public class ShopServiceImpl implements ShopService {
     // ==================== Vendor ====================
 
     @Override
+    @Transactional(readOnly = true)
+    public List<ShopResponseDto> getMyActiveShops(Long userId) {
+        return shopRepository.findAllByOwnerIdAndStatusIgnoreCaseOrderByIdDesc(userId, "active").stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopResponseDto getMyShop(Long userId, Long shopId) {
+        return toDto(requireMyActiveShop(userId, shopId));
+    }
+
+    @Override
     @Transactional
-    public ShopResponseDto updateMyShop(ShopUpdateRequest request, Long userId) {
-        Shop shop = shopRepository.findByOwnerId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Bạn chưa có cửa hàng"));
+    public ShopResponseDto updateMyShop(ShopUpdateRequest request, Long userId, Long shopId) {
+        Shop shop = requireMyActiveShop(userId, shopId);
 
         if (request.getName() != null && !request.getName().isBlank()) {
             String name = request.getName().trim();
@@ -204,6 +221,28 @@ public class ShopServiceImpl implements ShopService {
     }
 
     // ==================== Helper ====================
+
+    /**
+     * Lấy shop đang hoạt động của user: ưu tiên shopId được chỉ định (phải thuộc user và đang active),
+     * nếu không chỉ định thì lấy shop active mới nhất.
+     */
+    private Shop requireMyActiveShop(Long userId, Long shopId) {
+        Shop shop;
+        if (shopId != null) {
+            shop = shopRepository.findByIdAndOwnerId(shopId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cửa hàng này trong danh sách cửa hàng của bạn"));
+        } else {
+            List<Shop> actives = shopRepository.findAllByOwnerIdAndStatusIgnoreCaseOrderByIdDesc(userId, "active");
+            shop = actives.isEmpty() ? null : actives.get(0);
+        }
+        if (shop == null) {
+            throw new IllegalArgumentException("Bạn chưa có cửa hàng đang hoạt động");
+        }
+        if (!shop.isActive()) {
+            throw new IllegalArgumentException("Cửa hàng của bạn chưa được duyệt hoặc đã bị khóa");
+        }
+        return shop;
+    }
 
     private ShopResponseDto toDto(Shop shop) {
         User owner = shop.getOwner();

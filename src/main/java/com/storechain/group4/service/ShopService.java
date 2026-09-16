@@ -5,15 +5,21 @@ import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.dto.ShopUpdateRequest;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface ShopService {
 
     // === Người dùng (profile) ===
-    ShopResponseDto getMyShop(Long userId);
+    List<ShopResponseDto> getMyShops(Long userId);
 
     ShopResponseDto registerShop(ShopRegistrationRequest request, Long userId);
 
     // === Vendor ===
-    ShopResponseDto updateMyShop(ShopUpdateRequest request, Long userId);
+    List<ShopResponseDto> getMyActiveShops(Long userId);
+
+    ShopResponseDto getMyShop(Long userId, Long shopId);
+
+    ShopResponseDto updateMyShop(ShopUpdateRequest request, Long userId, Long shopId);
 
     // === Admin ===
     Page<ShopResponseDto> getShops(String keyword, String status, int page, int size, String sortBy, String sortDir);

@@ -7,11 +7,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ShopRepository extends JpaRepository<Shop, Long> {
 
-    Optional<Shop> findByOwnerId(Long ownerId);
+    List<Shop> findAllByOwnerIdOrderByIdDesc(Long ownerId);
+
+    List<Shop> findAllByOwnerIdAndStatusIgnoreCaseOrderByIdDesc(Long ownerId, String status);
+
+    Optional<Shop> findByIdAndOwnerId(Long id, Long ownerId);
+
+    boolean existsByOwnerIdAndStatusIgnoreCase(Long ownerId, String status);
 
     boolean existsByNameIgnoreCase(String name);
 

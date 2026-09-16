@@ -115,6 +115,9 @@
         $("btnShowAddAddress").addEventListener("click", showAddAddressForm);
         $("btnCancelAddress").addEventListener("click", hideAddressForm);
         $("shopRegisterForm").addEventListener("submit", onRegisterShop);
+        $("btnShowShopRegister").addEventListener("click", showShopRegisterForm);
+        $("btnCancelShopRegister").addEventListener("click", hideShopRegisterForm);
+        bindUploadButtons();
     });
 
     // ============ Tab điều hướng ============
@@ -207,47 +210,80 @@
         banned: { text: "Bị khóa", cls: "badge-secondary" }
     };
 
+    function statusMessage(shop) {
+        if (shop.status === "pending") {
+            return "Đơn đăng ký của bạn đang chờ quản trị viên duyệt. Vui lòng quay lại sau. "
+                + "(Trong thời gian chờ duyệt, bạn chưa thể gửi thêm đơn đăng ký mới.)";
+        }
+        if (shop.status === "active") {
+            return "Cửa hàng của bạn đang hoạt động. Hãy quản lý trang chủ cửa hàng và sản phẩm của mình!";
+        }
+        if (shop.status === "rejected") {
+            return "Đơn đăng ký bị từ chối." + (shop.rejectReason ? " Lý do: " + shop.rejectReason : "")
+                + " Bạn có thể gửi đơn đăng ký mới bất cứ lúc nào.";
+        }
+        if (shop.status === "banned") {
+            return "Cửa hàng hiện bị khóa. Vui lòng liên hệ quản trị viên.";
+        }
+        return "";
+    }
+
     function loadMyShop() {
         api("GET", "/shop").then(function (res) {
-            if (res.data) {
-                renderShopStatus(res.data);
-            }
-        }).catch(function () {
-            // chưa có shop: hiển thị form đăng ký (mặc định đã hiện)
+            renderShopList(res.data || []);
+        }).catch(function (err) {
+            // Lỗi thì vẫn cho phép đăng ký mới
+            renderShopList([]);
+            if (err.message) showAlert($("shopAlert"), err.message, "error");
         });
     }
 
-    function renderShopStatus(shop) {
+    function renderShopList(shops) {
+        var container = $("shopListContainer");
+        if (!shops.length) {
+            container.innerHTML = "";
+        } else {
+            container.innerHTML = shops.map(function (shop) {
+                var meta = STATUS_META[shop.status] || { text: shop.status, cls: "badge-secondary" };
+                var logo = shop.logoUrl || "/img/logo.png";
+                var actions = "";
+                if (shop.status === "active") {
+                    actions = '<div class="mt-3">' +
+                        '<a href="/shop-home.html?id=' + shop.id + '" class="btn btn-sm btn-outline-store">Xem trang chủ shop</a> ' +
+                        '<a href="/vendor-shop.html?shopId=' + shop.id + '" class="btn btn-sm btn-outline-store">Quản lý trang chủ shop</a> ' +
+                        '<a href="/vendor-products.html?shopId=' + shop.id + '" class="btn btn-sm btn-store">Quản lý sản phẩm</a>' +
+                        "</div>";
+                }
+                return '<div class="address-card">' +
+                    '<div class="d-flex align-items-center mb-2">' +
+                    '<img src="' + escapeHtml(logo) + '" alt="" ' +
+                    'style="width:60px;height:60px;border-radius:8px;object-fit:cover;margin-right:14px;">' +
+                    "<div>" +
+                    '<h5 class="font-weight-bold mb-1">' + escapeHtml(shop.name) + "</h5>" +
+                    '<span class="badge ' + meta.cls + '">' + meta.text + "</span>" +
+                    "</div></div>" +
+                    '<p class="mb-0 text-muted">' + escapeHtml(statusMessage(shop)) + "</p>" +
+                    actions +
+                    "</div>";
+            }).join("");
+        }
+
+        // Chống spam: đang có đơn chờ duyệt thì ẩn nút đăng ký
+        var hasPending = shops.some(function (s) { return s.status === "pending"; });
+        $("shopRegisterToggleBox").style.display = hasPending ? "none" : "block";
+        $("shopRegisterBtnLabel").textContent = shops.length ? "Mở thêm cửa hàng" : "Đăng ký mở cửa hàng";
+        if (hasPending) hideShopRegisterForm();
+    }
+
+    function showShopRegisterForm() {
+        hideAlert($("shopAlert"));
+        $("shopRegisterFormCard").style.display = "block";
+        $("shopRegisterFormCard").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function hideShopRegisterForm() {
         $("shopRegisterFormCard").style.display = "none";
-        $("shopStatusCard").style.display = "block";
-
-        var meta = STATUS_META[shop.status] || { text: shop.status, cls: "badge-secondary" };
-        $("shopStatusName").textContent = shop.name;
-        $("shopStatusBadge").textContent = meta.text;
-        $("shopStatusBadge").className = "badge " + meta.cls;
-        if (shop.logoUrl) {
-            $("shopStatusLogo").src = shop.logoUrl;
-        }
-
-        var msg = "";
-        if (shop.status === "pending") {
-            msg = "Đơn đăng ký của bạn đang chờ quản trị viên duyệt. Vui lòng quay lại sau.";
-        } else if (shop.status === "active") {
-            msg = "Cửa hàng của bạn đã hoạt động. Hãy quản lý trang chủ cửa hàng và sản phẩm của mình!";
-        } else if (shop.status === "rejected") {
-            msg = "Đơn đăng ký bị từ chối." + (shop.rejectReason ? " Lý do: " + shop.rejectReason : "");
-        } else if (shop.status === "banned") {
-            msg = "Cửa hàng hiện bị khóa. Vui lòng liên hệ quản trị viên.";
-        }
-        $("shopStatusMessage").textContent = msg;
-
-        var actions = "";
-        if (shop.status === "active") {
-            actions = '<a href="/shop-home.html?id=' + shop.id + '" target="_blank" class="btn btn-sm btn-outline-store">Xem trang chủ shop</a> ' +
-                '<a href="/vendor-shop.html" class="btn btn-sm btn-outline-store">Quản lý trang chủ shop</a> ' +
-                '<a href="/vendor-products.html" class="btn btn-sm btn-store">Quản lý sản phẩm</a>';
-        }
-        $("shopStatusActions").innerHTML = actions;
+        $("shopRegisterForm").reset();
     }
 
     function onRegisterShop(e) {
@@ -262,9 +298,48 @@
             bannerUrl: $("shopBannerUrl").value.trim()
         }).then(function (res) {
             showAlert($("shopAlert"), res.message, "success");
-            renderShopStatus(res.data);
+            hideShopRegisterForm();
+            loadMyShop();
         }).catch(function (err) {
             showAlert($("shopAlert"), err.message, "error");
+        });
+    }
+
+    // ============ Tải ảnh lên (upload) ============
+    function uploadImageFile(file, urlInput, button) {
+        if (!file) return;
+        var oldLabel = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+        var formData = new FormData();
+        formData.append("file", file);
+        fetch("/api/uploads", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + getToken() },
+            body: formData
+        }).then(handleResponse).then(function (res) {
+            $(urlInput).value = res.data.url;
+            button.disabled = false;
+            button.innerHTML = oldLabel;
+        }).catch(function (err) {
+            button.disabled = false;
+            button.innerHTML = oldLabel;
+            showAlert($("shopAlert"), err.message, "error");
+        });
+    }
+
+    function bindUploadButtons() {
+        document.querySelectorAll(".btn-upload-image").forEach(function (btn) {
+            var targetId = btn.getAttribute("data-target");
+            var fileInputId = targetId + "File";
+            var fileInput = $(fileInputId);
+            if (fileInput) {
+                btn.addEventListener("click", function () { fileInput.click(); });
+                fileInput.addEventListener("change", function () {
+                    uploadImageFile(fileInput.files[0], targetId, btn);
+                    fileInput.value = "";
+                });
+            }
         });
     }
 

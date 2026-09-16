@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -38,9 +39,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProductResponseDto> getMyProducts(Long userId, String keyword, String status, Long categoryId,
+    public Page<ProductResponseDto> getMyProducts(Long userId, Long shopId, String keyword, String status, Long categoryId,
                                                   int page, int size, String sortBy, String sortDir) {
-        Shop shop = requireMyActiveShop(userId);
+        Shop shop = requireMyActiveShop(userId, shopId);
         Pageable pageable = buildPageable(sortBy, sortDir, page, size);
         return productRepository.searchProducts(shop.getId(), keyword, status, categoryId, pageable)
                 .map(this::toDto);
@@ -48,14 +49,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductResponseDto getMyProductById(Long userId, Long productId) {
-        return toDto(requireMyProduct(userId, productId));
+    public ProductResponseDto getMyProductById(Long userId, Long shopId, Long productId) {
+        return toDto(requireMyProduct(userId, shopId, productId));
     }
 
     @Override
     @Transactional
-    public ProductResponseDto createMyProduct(Long userId, ProductRequestDto request) {
-        Shop shop = requireMyActiveShop(userId);
+    public ProductResponseDto createMyProduct(Long userId, Long shopId, ProductRequestDto request) {
+        Shop shop = requireMyActiveShop(userId, shopId);
         Category category = requireCategory(request.getCategoryId());
 
         Product product = Product.builder()
@@ -76,8 +77,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponseDto updateMyProduct(Long userId, Long productId, ProductRequestDto request) {
-        Product product = requireMyProduct(userId, productId);
+    public ProductResponseDto updateMyProduct(Long userId, Long shopId, Long productId, ProductRequestDto request) {
+        Product product = requireMyProduct(userId, shopId, productId);
 
         if (request.getName() != null && !request.getName().isBlank()) {
             product.setName(request.getName().trim());
@@ -108,8 +109,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponseDto updateMyProductStatus(Long userId, Long productId, String status) {
-        Product product = requireMyProduct(userId, productId);
+    public ProductResponseDto updateMyProductStatus(Long userId, Long shopId, Long productId, String status) {
+        Product product = requireMyProduct(userId, shopId, productId);
         product.setStatus(normalizeStatus(status));
         Product saved = productRepository.save(product);
         log.info("Đã cập nhật trạng thái sản phẩm ID {} thành {}", productId, saved.getStatus());
@@ -118,8 +119,8 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void deleteMyProduct(Long userId, Long productId) {
-        Product product = requireMyProduct(userId, productId);
+    public void deleteMyProduct(Long userId, Long shopId, Long productId) {
+        Product product = requireMyProduct(userId, shopId, productId);
         productRepository.delete(product);
         log.info("Đã xóa sản phẩm ID: {}", productId);
     }
@@ -140,17 +141,26 @@ public class ProductServiceImpl implements ProductService {
 
     // ==================== Helper ====================
 
-    private Shop requireMyActiveShop(Long userId) {
-        Shop shop = shopRepository.findByOwnerId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Bạn chưa có cửa hàng"));
+    private Shop requireMyActiveShop(Long userId, Long shopId) {
+        Shop shop;
+        if (shopId != null) {
+            shop = shopRepository.findByIdAndOwnerId(shopId, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cửa hàng này trong danh sách cửa hàng của bạn"));
+        } else {
+            List<Shop> actives = shopRepository.findAllByOwnerIdAndStatusIgnoreCaseOrderByIdDesc(userId, "active");
+            shop = actives.isEmpty() ? null : actives.get(0);
+        }
+        if (shop == null) {
+            throw new IllegalArgumentException("Bạn chưa có cửa hàng đang hoạt động");
+        }
         if (!shop.isActive()) {
             throw new IllegalArgumentException("Cửa hàng của bạn chưa được duyệt hoặc đã bị khóa");
         }
         return shop;
     }
 
-    private Product requireMyProduct(Long userId, Long productId) {
-        Shop shop = requireMyActiveShop(userId);
+    private Product requireMyProduct(Long userId, Long shopId, Long productId) {
+        Shop shop = requireMyActiveShop(userId, shopId);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm với ID: " + productId));
         if (!product.getShop().getId().equals(shop.getId())) {
