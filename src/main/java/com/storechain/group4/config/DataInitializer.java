@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
     private final TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.ProductRepository productRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -34,6 +36,7 @@ public class DataInitializer implements CommandLineRunner {
         initDefaultManager();
         initDefaultCategories();
         initDefaultTransporters();
+        initDefaultProducts();
     }
 
     private void initRoles() {
@@ -201,6 +204,73 @@ public class DataInitializer implements CommandLineRunner {
 
             log.info("Khởi tạo đơn vị vận chuyển mặc định thành công (GHN, GHTK, Viettel Post, J&T)");
         }
+    }
+
+    private void initDefaultProducts() {
+        if (productRepository.count() > 0) {
+            return;
+        }
+
+        record CatRef(String slug) {}
+        record Item(String name, String baseSlug, long priceVnd) {}
+
+        List<CatRef> categorySlugs = List.of(
+                new CatRef("ao-thun-nam"), new CatRef("ao-so-mi-nam"),
+                new CatRef("quan-jean-nam"), new CatRef("quan-tay-nam"),
+                new CatRef("giay-dep-thoi-trang"), new CatRef("that-lung-vi-da")
+        );
+
+        List<Item> itemsPerCategory = List.of(
+                new Item("Cơ bản form rộng", "co-ban-form-rong", 249000),
+                new Item("Phối viền contrasting", "phoi-vien-contrasting", 319000),
+                new Item("Premium cotton 100%", "premium-cotton", 429000),
+                new Item("Local brand streetwear", "local-brand-streetwear", 379000),
+                new Item("Họa tiết thủ công", "hoa-tiet-thu-cong", 359000),
+                new Item("Tối giản daily wear", "toi-gian-daily-wear", 289000),
+                new Item("Classic bespoke", "classic-bespoke", 499000),
+                new Item("Edition giới hạn", "edition-gioi-han", 559000)
+        );
+
+        String[] descriptions = {
+                "Chất liệu cao cấp, thoáng khí và bền màu qua nhiều lần giặt. Đường may tinh tế, form dáng chuẩn theo số đo phổ thông.",
+                "Thiết kế hiện đại, phù hợp đi chơi, đi học và đi làm. Fabric co giãn nhẹ, thoải mái khi mặc cả ngày dài.",
+                "Sản xuất theo quy trình khép kín, kiểm định chất lượng từng lô hàng. Đi kèm chính sách đổi trả 30 ngày."
+        };
+
+        java.util.Random random = new java.util.Random(42);
+        int counter = 0;
+
+        for (CatRef catRef : categorySlugs) {
+            com.storechain.group4.model.Category category = categoryRepository.findBySlug(catRef.slug()).orElse(null);
+            if (category == null) {
+                continue;
+            }
+
+            for (Item item : itemsPerCategory) {
+                counter++;
+                long price = item.priceVnd() + (counter % 4) * 20000;
+                boolean onSale = counter % 3 == 0;
+                long original = onSale ? price + 90000 : 0;
+
+                productRepository.save(com.storechain.group4.model.Product.builder()
+                        .name(item.name() + " " + category.getName())
+                        .slug(item.baseSlug() + "-" + catRef.slug())
+                        .description(descriptions[counter % descriptions.length])
+                        .price(java.math.BigDecimal.valueOf(price))
+                        .originalPrice(onSale ? java.math.BigDecimal.valueOf(original) : null)
+                        .imageUrl("/img/product/product-" + ((counter % 14) + 1) + ".jpg")
+                        .category(category)
+                        .stock(20 + random.nextInt(180))
+                        .soldCount(10 + random.nextInt(990))
+                        .ratingAvg(Math.round((3.0 + random.nextDouble() * 2.0) * 10) / 10.0)
+                        .reviewCount(3 + random.nextInt(197))
+                        .favoriteCount(5 + random.nextInt(495))
+                        .status("active")
+                        .build());
+            }
+        }
+
+        log.info("Khởi tạo {} sản phẩm mẫu mặc định thành công", counter);
     }
 }
 
