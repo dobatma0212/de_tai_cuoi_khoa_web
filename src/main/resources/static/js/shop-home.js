@@ -196,6 +196,8 @@
 
     /** Gọi API phân trang + render toàn bộ khu kết quả (sidebar, lưới, phân trang) */
     function loadResults(title) {
+        // Ẩn banner hero để thanh tìm kiếm + sản phẩm dâng lên, người mua dễ nhìn
+        $("shopHero").style.display = "none";
         $("homeSections").style.display = "none";
         $("searchResultSection").style.display = "block";
         $("resultsTitle").textContent = title;
@@ -431,6 +433,7 @@
     function backToHome() {
         $("searchResultSection").style.display = "none";
         $("homeSections").style.display = "block";
+        $("shopHero").style.display = ""; // hiện lại banner khi về trang chủ
         $("searchInput").value = "";
         resultState.keyword = "";
         resultState.categoryId = 0;
