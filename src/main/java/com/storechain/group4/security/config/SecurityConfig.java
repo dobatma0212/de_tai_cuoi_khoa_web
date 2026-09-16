@@ -88,7 +88,8 @@ public class SecurityConfig {
                         // 3. Phân quyền theo Role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                        // Manager kế thừa toàn bộ quyền của User
+                        .requestMatchers("/api/user/**").hasAnyRole("USER", "MANAGER", "ADMIN")
 
                         // 4. API hồ sơ cá nhân / địa chỉ nhận hàng: mọi người dùng đã đăng nhập
                         .requestMatchers("/api/profile/**").authenticated()

@@ -27,6 +27,7 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
+    private final com.storechain.group4.repository.ShopCategoryRepository shopCategoryRepository;
     private final TransporterRepository transporterRepository;
     private final com.storechain.group4.repository.ShopRepository shopRepository;
     private final PasswordEncoder passwordEncoder;
@@ -43,6 +44,7 @@ public class DataInitializer implements CommandLineRunner {
             initDefaultCategories();
             initDefaultTransporters();
             initDefaultShops();
+            initDefaultShopCategories();
         });
     }
 
@@ -308,6 +310,62 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
 
             log.info("Khởi tạo danh sách chi nhánh cửa hàng mặc định thành công!");
+        }
+    }
+
+    /**
+     * Mỗi chi nhánh có sẵn 2 danh mục mặc định (Bộ áo quần, Phụ kiện);
+     * các sản phẩm cũ chưa gắn danh mục sẽ được ghép theo cột category_group cũ.
+     */
+    private void initDefaultShopCategories() {
+        var shops = shopRepository.findAll();
+        boolean changed = false;
+        for (var shop : shops) {
+            var catRepo = shopCategoryRepository;
+            if (catRepo.countByShopId(shop.getId()) == 0) {
+                catRepo.save(com.storechain.group4.model.ShopCategory.builder()
+                        .shop(shop).name("Bộ áo quần").sortOrder(0).build());
+                catRepo.save(com.storechain.group4.model.ShopCategory.builder()
+                        .shop(shop).name("Phụ kiện").sortOrder(1).build());
+                changed = true;
+            }
+        }
+        if (changed) {
+            log.info("Đã tạo danh mục mặc định (Bộ áo quần, Phụ kiện) cho các chi nhánh.");
+        }
+        // Ghép sản phẩm cũ (category_id NULL hoặc 0) vào danh mục theo category_group cũ.
+        // Mỗi lệnh chạy trong transaction riêng: nếu cột category_group đã bị xóa khỏi DB
+        // thì chỉ bỏ qua lệnh đó mà không làm hỏng transaction chính của ứng dụng.
+        runStandaloneMigration(
+                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Bộ áo quần' " +
+                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                "AND p.category_group IN ('CLOTHING', 'Bộ áo quần')",
+                "Bỏ qua ghép sản phẩm theo category_group (CLOTHING)");
+        runStandaloneMigration(
+                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Phụ kiện' " +
+                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                "AND p.category_group IN ('ACCESSORY', 'Phụ kiện')",
+                "Bỏ qua ghép sản phẩm theo category_group (ACCESSORY)");
+        // Sản phẩm còn lại: gán vào danh mục đầu tiên của chi nhánh
+        runStandaloneMigration(
+                "UPDATE products p JOIN (" +
+                "SELECT sc.shop_id, MIN(sc.category_id) AS cid FROM shop_categories sc GROUP BY sc.shop_id" +
+                ") t ON t.shop_id = p.shop_id " +
+                "SET p.category_id = t.cid WHERE p.category_id IS NULL OR p.category_id = 0",
+                "Bỏ qua gán danh mục cho sản phẩm chưa phân loại");
+    }
+
+    /** Chạy 1 câu SQL migration trong transaction độc lập (REQUIRES_NEW), lỗi thì chỉ ghi log rồi bỏ qua */
+    private void runStandaloneMigration(String sql, String skipMessage) {
+        try {
+            var template = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+            // REQUIRES_NEW: tách khỏi transaction lớn của DataInitializer để lỗi không lây lan
+            template.setPropagationBehavior(
+                    org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            template.executeWithoutResult(status ->
+                    entityManager.createNativeQuery(sql).executeUpdate());
+        } catch (Exception e) {
+            log.info("{}: {}", skipMessage, e.getMessage());
         }
     }
 }

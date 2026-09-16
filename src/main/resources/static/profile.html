@@ -145,6 +145,125 @@
             .btn-link-danger:hover {
                 color: #e53637;
             }
+
+        /* ===== Quản lý chi nhánh (Manager) ===== */
+        .shop-subtabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .shop-subtabs button {
+            border: 1px solid #e53637;
+            background: #fff;
+            color: #e53637;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .shop-subtabs button.active {
+            background: #e53637;
+            color: #fff;
+        }
+
+        .shop-subcontent {
+            display: none;
+        }
+
+        .shop-subcontent.active {
+            display: block;
+        }
+
+        .shop-banner {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #eee;
+        }
+
+        .shop-logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e53637;
+            margin-top: -35px;
+            background: #fff;
+            position: relative;
+        }
+
+        .product-card-mgr {
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: #fff;
+        }
+
+        .product-card-mgr.is-representative {
+            border-color: #e53637;
+            background: #fffafa;
+        }
+
+        .product-card-mgr img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #f5f5f5;
+        }
+
+        .cat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #e53637;
+            background: #fff;
+            color: #e53637;
+            font-weight: 700;
+            padding: 7px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .cat-chip.active {
+            background: #e53637;
+            color: #fff;
+        }
+
+        .cat-chip .chip-action {
+            font-size: 12px;
+            opacity: .75;
+        }
+
+        .cat-chip .chip-action:hover {
+            opacity: 1;
+        }
+
+        .badge-representative {
+            background: #e53637;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .image-preview-box {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px dashed #ccc;
+            background: #fafafa;
+        }
     </style>
 </head>
 
@@ -247,6 +366,7 @@
                             <div class="profile-tabs">
                                 <button type="button" class="tab-btn active" data-tab="tabInfo">Thông tin cá nhân</button>
                                 <button type="button" class="tab-btn" data-tab="tabPassword">Đổi mật khẩu</button>
+                                <button type="button" class="tab-btn" data-tab="tabShop" id="tabShopBtn" style="display:none;">Quản lý chi nhánh</button>
                                 <button type="button" class="tab-btn" data-tab="tabAddress">Địa chỉ nhận hàng</button>
                             </div>
 
@@ -305,6 +425,123 @@
                                     </div>
                                     <button type="submit" class="btn-store">Đổi mật khẩu</button>
                                 </form>
+                            </div>
+
+                            <!-- Tab: Quản lý chi nhánh (chỉ Manager) -->
+                            <div id="tabShop" class="profile-tab-content">
+                                <div id="shopNoShop" style="display:none;" class="alert alert-warning">
+                                    Bạn chưa được admin bổ nhiệm phụ trách chi nhánh nào.
+                                </div>
+                                <div id="shopManagerWrapper" style="display:none;">
+                                    <div class="shop-subtabs">
+                                        <button type="button" class="shop-subbtn active" data-sub="shopSubInfo">Thông tin chi nhánh</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubHome">Trang chủ chi nhánh</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubProducts">Quản lý sản phẩm</button>
+                                    </div>
+
+                                    <!-- Sub-tab: Thông tin chi nhánh -->
+                                    <div id="shopSubInfo" class="shop-subcontent active">
+                                        <img id="shopBannerPreview" src="/img/banner/banner-1.jpg" class="shop-banner" alt="banner">
+                                        <img id="shopLogoPreview" src="/img/logo.png" class="shop-logo" alt="logo">
+                                        <div class="alert auth-alert" id="shopInfoAlert" style="display:none;"></div>
+                                        <form id="shopInfoForm" class="mt-4">
+                                            <div class="row">
+                                                <div class="col-md-6 form-group">
+                                                    <label class="profile-info-label">Tên chi nhánh (*)</label>
+                                                    <input type="text" id="shopName" class="form-control" maxlength="100" required>
+                                                </div>
+                                                <div class="col-md-6 form-group">
+                                                    <label class="profile-info-label">Số điện thoại</label>
+                                                    <input type="text" id="shopPhone" class="form-control" maxlength="20">
+                                                </div>
+                                                <div class="col-md-12 form-group">
+                                                    <label class="profile-info-label">Địa chỉ</label>
+                                                    <input type="text" id="shopAddress" class="form-control" maxlength="255">
+                                                </div>
+                                                <div class="col-md-12 form-group">
+                                                    <label class="profile-info-label">Mô tả chi nhánh</label>
+                                                    <textarea id="shopDescription" class="form-control" rows="3" maxlength="2000"></textarea>
+                                                </div>
+                                                <div class="col-md-6 form-group">
+                                                    <label class="profile-info-label">Logo chi nhánh (URL)</label>
+                                                    <input type="text" id="shopLogoUrl" class="form-control" placeholder="https://... hoặc /uploads/products/...">
+                                                </div>
+                                                <div class="col-md-6 form-group">
+                                                    <label class="profile-info-label">Ảnh banner (URL)</label>
+                                                    <input type="text" id="shopBannerUrl" class="form-control" placeholder="https://... hoặc /uploads/products/...">
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn-store">Lưu thông tin chi nhánh</button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Sub-tab: Trang chủ chi nhánh -->
+                                    <div id="shopSubHome" class="shop-subcontent">
+                                        <p class="text-muted">Trang chủ chi nhánh hiển thị các danh mục (Bộ áo quần / Phụ kiện) cùng sản phẩm đại diện được chọn ở mục <b>Quản lý sản phẩm</b>.</p>
+                                        <a id="btnViewShopHome" href="#" target="_blank" class="btn-store" style="display:inline-block; text-decoration:none;">
+                                            <i class="fa fa-external-link"></i> Mở trang chủ chi nhánh
+                                        </a>
+                                        <div id="shopHomePreview" class="mt-4"></div>
+                                    </div>
+
+                                    <!-- Sub-tab: Quản lý sản phẩm -->
+                                    <div id="shopSubProducts" class="shop-subcontent">
+                                        <h6 class="font-weight-bold">Danh mục sản phẩm của chi nhánh</h6>
+                                        <div class="shop-subtabs" id="categoryChips"></div>
+                                        <div class="d-flex align-items-center flex-wrap mb-3">
+                                            <input type="text" id="newCategoryName" class="form-control mr-2"
+                                                   maxlength="100" placeholder="Tên danh mục mới, VD: Giày dép..."
+                                                   style="max-width:280px;">
+                                            <button type="button" id="btnAddCategory" class="btn-store">
+                                                <i class="fa fa-plus"></i> Thêm danh mục
+                                            </button>
+                                        </div>
+
+                                        <div class="alert auth-alert" id="productAlert" style="display:none;"></div>
+
+                                        <!-- Form thêm / sửa sản phẩm -->
+                                        <div id="productFormCard" class="address-card" style="margin-bottom:20px;">
+                                            <h6 class="font-weight-bold mb-3" id="productFormTitle">Thêm sản phẩm mới</h6>
+                                            <form id="productForm">
+                                                <input type="hidden" id="productId">
+                                                <input type="hidden" id="productCategory">
+                                                <div class="row">
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Tên sản phẩm (*)</label>
+                                                        <input type="text" id="productName" class="form-control" maxlength="150" required>
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Giá bán - VND (*)</label>
+                                                        <input type="number" id="productPrice" class="form-control" min="0" step="1000" required placeholder="VD: 250000">
+                                                    </div>
+                                                    <div class="col-md-12 form-group">
+                                                        <label class="profile-info-label">Mô tả sản phẩm (*)</label>
+                                                        <textarea id="productDescription" class="form-control" rows="3" maxlength="5000" required></textarea>
+                                                    </div>
+                                                    <div class="col-md-12 form-group">
+                                                        <label class="profile-info-label">Hình ảnh sản phẩm (*)</label>
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <label class="profile-info-label">Tải ảnh từ máy</label>
+                                                                <input type="file" id="productImageFile" class="form-control-file" accept="image/*">
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="profile-info-label">Hoặc dùng URL ảnh</label>
+                                                                <input type="text" id="productImageUrl" class="form-control" maxlength="500" placeholder="https://...">
+                                                            </div>
+                                                        </div>
+                                                        <img id="productImagePreview" class="image-preview-box mt-2" alt="preview" style="display:none;">
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn-store" id="btnSaveProduct">Lưu sản phẩm</button>
+                                                <button type="button" class="btn btn-link btn-link-danger" id="btnCancelProduct" style="display:none;">Hủy chỉnh sửa</button>
+                                            </form>
+                                        </div>
+
+                                        <h6 class="font-weight-bold" id="productListTitle">Danh sách sản phẩm</h6>
+                                        <div id="productList"></div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Tab: Địa chỉ nhận hàng -->
