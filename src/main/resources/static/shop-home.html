@@ -356,6 +356,66 @@
             cursor: default;
         }
 
+        /* Nút quay lại trang chủ — căn trái, thẳng hàng với mép sidebar danh mục */
+        .results-toolbar {
+            margin-bottom: 10px;
+        }
+
+        .back-home-btn {
+            border: 1.5px solid #e0e0e0;
+            background: #fff;
+            border-radius: 20px;
+            padding: 8px 18px;
+            font-weight: 800;
+            font-size: 13px;
+            color: #555;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .back-home-btn:hover {
+            border-color: #e53637;
+            color: #e53637;
+        }
+
+        /* Nhóm nút sắp xếp bên phải */
+        .sort-pills {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .sort-label {
+            font-size: 13px;
+            font-weight: 800;
+            color: #333;
+            margin-right: 4px;
+        }
+
+        .sort-pill {
+            border: 1.5px solid #e0e0e0;
+            background: #fff;
+            border-radius: 18px;
+            padding: 6px 14px;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #666;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .sort-pill:hover {
+            border-color: #e53637;
+            color: #e53637;
+        }
+
+        .sort-pill.active {
+            background: #e53637;
+            border-color: #e53637;
+            color: #fff;
+        }
+
         /* Sao đánh giá trên thẻ sản phẩm */
         .product-stars {
             color: #f5b301;
@@ -539,19 +599,20 @@
 
             <!-- Kết quả tìm kiếm / danh sách sản phẩm của danh mục: bộ lọc + lưới + phân trang -->
             <div id="searchResultSection" style="display:none;">
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+                <div class="results-toolbar">
+                    <button type="button" id="clearSearchBtn" class="back-home-btn">
+                        <i class="fa fa-arrow-left"></i> Quay lại trang chủ
+                    </button>
+                </div>
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
                     <h5 class="font-weight-bold mb-0"><span id="resultsTitle"></span>
                         (<span id="searchResultCount"></span>)</h5>
-                    <div class="d-flex align-items-center">
-                        <button type="button" id="clearSearchBtn" class="btn btn-sm btn-outline-secondary">
-                            <i class="fa fa-arrow-left"></i> Quay lại trang chủ
-                        </button>
-                        <select id="sortSelect" class="form-control form-control-sm ml-2" style="width:auto;">
-                            <option value="">Mới nhất</option>
-                            <option value="priceAsc">Giá tăng dần</option>
-                            <option value="priceDesc">Giá giảm dần</option>
-                            <option value="name">Tên A-Z</option>
-                        </select>
+                    <div class="sort-pills" id="sortPills">
+                        <span class="sort-label"><i class="fa fa-sort-amount-desc"></i> Sắp xếp:</span>
+                        <button type="button" class="sort-pill active" data-sort="">Mới nhất</button>
+                        <button type="button" class="sort-pill" data-sort="priceAsc">Giá tăng dần</button>
+                        <button type="button" class="sort-pill" data-sort="priceDesc">Giá giảm dần</button>
+                        <button type="button" class="sort-pill" data-sort="name">Tên A-Z</button>
                     </div>
                 </div>
                 <div class="row">

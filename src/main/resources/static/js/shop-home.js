@@ -73,11 +73,17 @@
         });
         $("clearSearchBtn").addEventListener("click", backToHome);
         $("clearHistoryBtn").addEventListener("click", clearHistory);
-        $("sortSelect").addEventListener("change", function () {
-            resultState.sort = this.value;
+        // Nút sắp xếp dạng pill — delegation để không phụ thuộc re-render
+        $("sortPills").onclick = function (e) {
+            var btn = e.target.closest(".sort-pill");
+            if (!btn) return;
+            Array.prototype.forEach.call(
+                this.querySelectorAll(".sort-pill"), function (b) { b.classList.remove("active"); });
+            btn.classList.add("active");
+            resultState.sort = btn.getAttribute("data-sort");
             resultState.page = 0;
             reloadCurrentResults();
-        });
+        };
         updateCartBadge();
     });
 
