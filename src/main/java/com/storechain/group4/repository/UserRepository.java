@@ -44,4 +44,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.role.name = :roleType")
     long countByRoleType(@Param("roleType") RoleType roleType);
+
+    @Query("SELECT u FROM User u WHERE u.role.name = :roleType ORDER BY u.fullName ASC")
+    java.util.List<User> findByRoleType(@Param("roleType") RoleType roleType);
 }

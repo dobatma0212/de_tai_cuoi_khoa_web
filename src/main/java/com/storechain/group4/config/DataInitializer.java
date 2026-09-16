@@ -28,6 +28,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
     private final TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.ShopRepository shopRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
     private final org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -41,6 +42,7 @@ public class DataInitializer implements CommandLineRunner {
             initDefaultManager();
             initDefaultCategories();
             initDefaultTransporters();
+            initDefaultShops();
         });
     }
 
@@ -270,5 +272,44 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Khởi tạo đơn vị vận chuyển mặc định thành công (GHN, GHTK, Viettel Post, J&T)");
         }
     }
+
+    private void initDefaultShops() {
+        if (shopRepository.count() == 0) {
+            User defaultManager = userRepository.findByUsername("manager").orElse(null);
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Quận 1")
+                    .slug("male-fashion-chi-nhanh-quan-1")
+                    .address("123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh")
+                    .phone("028 3822 1234")
+                    .description("Chi nhánh trung tâm TP.HCM, trưng bày đầy đủ các bộ sưu tập thời trang nam cao cấp mới nhất.")
+                    .status("active")
+                    .manager(defaultManager)
+                    .build());
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Ba Đình")
+                    .slug("male-fashion-chi-nhanh-ba-dinh")
+                    .address("45 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội")
+                    .phone("024 3747 5678")
+                    .description("Chi nhánh thủ đô Hà Nội, phong cách phục vụ chuyên nghiệp, đa dạng các mẫu âu phục và phụ kiện.")
+                    .status("active")
+                    .manager(null)
+                    .build());
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Hải Châu")
+                    .slug("male-fashion-chi-nhanh-hai-chau")
+                    .address("88 Bạch Đằng, Phường Hải Châu 1, Quận Hải Châu, Đà Nẵng")
+                    .phone("0236 3848 999")
+                    .description("Chi nhánh trung tâm TP. Đà Nẵng bên bờ sông Hàn thơ mộng.")
+                    .status("active")
+                    .manager(null)
+                    .build());
+
+            log.info("Khởi tạo danh sách chi nhánh cửa hàng mặc định thành công!");
+        }
+    }
 }
+
 
