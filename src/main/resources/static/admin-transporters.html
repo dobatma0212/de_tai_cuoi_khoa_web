@@ -468,7 +468,7 @@
                 <div class="row align-items-center">
                     <div class="col-lg-6 col-md-6">
                         <div class="header__top__left">
-                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin & Manager)</p>
+                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin)</p>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-6">
@@ -496,6 +496,7 @@
                             <li><a href="/shop.html">Cửa hàng</a></li>
                             <li><a href="/admin-users.html">Quản lý Users</a></li>
                             <li><a href="/admin-categories.html">Quản lý Danh mục</a></li>
+                            <li><a href="/admin-shops.html">Quản lý Chi nhánh</a></li>
                             <li class="active"><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
                             <li><a href="/contact.html">Liên hệ</a></li>
                         </ul>
@@ -780,9 +781,6 @@
                             <button type="button" class="btn btn-sm btn-outline-danger mb-1 mr-1" onclick="quickFillLogin('admin', 'admin123')">
                                 <i class="fa fa-user"></i> Admin (admin123)
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-primary mb-1" onclick="quickFillLogin('manager', 'manager123')">
-                                <i class="fa fa-user"></i> Manager (manager123)
-                            </button>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -924,6 +922,11 @@
                         role: data.role || (data.roles ? data.roles[0] : 'ROLE_ADMIN')
                     };
 
+                    if (!userObj.role.includes('ADMIN')) {
+                        showToast('Tài khoản của bạn không có quyền truy cập trang Quản lý Vận chuyển (yêu cầu ADMIN)!', 'danger');
+                        return;
+                    }
+
                     localStorage.setItem('jwt_token', token);
                     localStorage.setItem('user_info', JSON.stringify(userObj));
                     localStorage.setItem('sc_auth', JSON.stringify({ token: token, user: userObj }));
@@ -949,9 +952,7 @@
             localStorage.removeItem('sc_auth');
             sessionStorage.clear();
             currentUser = null;
-            updateAuthUI();
-            showToast('Đã đăng xuất khỏi hệ thống', 'info');
-            loadTransporters();
+            window.location.href = '/index.html';
         }
 
         function formatCurrency(value) {
@@ -1060,8 +1061,8 @@
                             <tr>
                                 <td colspan="7" class="text-center py-5">
                                     <i class="fa fa-lock fa-3x text-danger mb-3"></i>
-                                    <h5>Yêu cầu quyền Quản trị viên (ADMIN) hoặc Quản lý (MANAGER)</h5>
-                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản có thẩm quyền để quản lý đơn vị vận chuyển.</p>
+                                    <h5>Yêu cầu quyền Quản trị viên (ADMIN)</h5>
+                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản Quản trị viên để quản lý đơn vị vận chuyển.</p>
                                     <button class="btn btn-male-fashion" onclick="openLoginModal()">
                                         <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
                                     </button>

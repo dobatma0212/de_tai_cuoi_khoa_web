@@ -7,14 +7,17 @@ import com.storechain.group4.model.User;
 import com.storechain.group4.repository.RoleRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -25,15 +28,84 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
     private final TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.ShopRepository shopRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @Override
     public void run(String... args) {
-        initRoles();
-        initDefaultAdmin();
-        initDefaultManager();
-        initDefaultCategories();
-        initDefaultTransporters();
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            cleanupObsoleteRoles();
+            initRoles();
+            initDefaultAdmin();
+            initDefaultManager();
+            initDefaultCategories();
+            initDefaultTransporters();
+            initDefaultShops();
+        });
+    }
+
+    /**
+     * Xóa các role cũ (ROLE_VENDOR, ROLE_SHIPPER) khỏi database.
+     * Đổi vendor thành manager: user có role ROLE_VENDOR chuyển sang ROLE_MANAGER.
+     * User có role ROLE_SHIPPER chuyển sang ROLE_USER.
+     * Sau đó xóa 2 role này khỏi bảng roles để tránh lỗi deserialize enum trong JPA.
+     */
+    private void cleanupObsoleteRoles() {
+        try {
+            // Đảm bảo ROLE_MANAGER và ROLE_USER có sẵn trong bảng roles
+            Role managerRole = roleRepository.findByName(RoleType.ROLE_MANAGER)
+                    .orElseGet(() -> roleRepository.save(new Role(RoleType.ROLE_MANAGER, "Quản lý cửa hàng")));
+            Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
+                    .orElseGet(() -> roleRepository.save(new Role(RoleType.ROLE_USER, "Người dùng / Khách hàng mua sắm")));
+
+            // 1. Chuyển các user có role ROLE_VENDOR sang ROLE_MANAGER
+            @SuppressWarnings("unchecked")
+            List<Object> vendorResults = entityManager
+                    .createNativeQuery("SELECT role_id FROM roles WHERE role_name = 'ROLE_VENDOR'")
+                    .getResultList();
+
+            if (!vendorResults.isEmpty()) {
+                Long vendorRoleId = ((Number) vendorResults.get(0)).longValue();
+                int updated = entityManager
+                        .createNativeQuery("UPDATE users SET role_id = :newRoleId WHERE role_id = :oldRoleId")
+                        .setParameter("newRoleId", managerRole.getId())
+                        .setParameter("oldRoleId", vendorRoleId)
+                        .executeUpdate();
+                log.info("Đã chuyển {} người dùng từ ROLE_VENDOR sang ROLE_MANAGER", updated);
+
+                entityManager
+                        .createNativeQuery("DELETE FROM roles WHERE role_id = :roleId")
+                        .setParameter("roleId", vendorRoleId)
+                        .executeUpdate();
+                log.info("Đã xóa role cũ ROLE_VENDOR khỏi database");
+            }
+
+            // 2. Chuyển các user có role ROLE_SHIPPER sang ROLE_USER
+            @SuppressWarnings("unchecked")
+            List<Object> shipperResults = entityManager
+                    .createNativeQuery("SELECT role_id FROM roles WHERE role_name = 'ROLE_SHIPPER'")
+                    .getResultList();
+
+            if (!shipperResults.isEmpty()) {
+                Long shipperRoleId = ((Number) shipperResults.get(0)).longValue();
+                int updated = entityManager
+                        .createNativeQuery("UPDATE users SET role_id = :newRoleId WHERE role_id = :oldRoleId")
+                        .setParameter("newRoleId", userRole.getId())
+                        .setParameter("oldRoleId", shipperRoleId)
+                        .executeUpdate();
+                log.info("Đã chuyển {} người dùng từ ROLE_SHIPPER sang ROLE_USER", updated);
+
+                entityManager
+                        .createNativeQuery("DELETE FROM roles WHERE role_id = :roleId")
+                        .setParameter("roleId", shipperRoleId)
+                        .executeUpdate();
+                log.info("Đã xóa role cũ ROLE_SHIPPER khỏi database");
+            }
+        } catch (Exception e) {
+            log.error("Lỗi trong quá trình dọn dẹp role cũ: {}", e.getMessage(), e);
+        }
     }
 
     private void initRoles() {
@@ -42,10 +114,8 @@ public class DataInitializer implements CommandLineRunner {
                 String description = switch (roleType) {
                     case ROLE_USER -> "Người dùng / Khách hàng mua sắm";
                     case ROLE_GUEST -> "Khách vãng lai";
-                    case ROLE_VENDOR -> "Nhà bán hàng / Đối tác";
-                    case ROLE_MANAGER -> "Quản lý chuỗi cửa hàng";
+                    case ROLE_MANAGER -> "Quản lý cửa hàng";
                     case ROLE_ADMIN -> "Quản trị viên hệ thống";
-                    case ROLE_SHIPPER -> "Nhân viên giao hàng";
                 };
                 roleRepository.save(new Role(roleType, description));
                 log.info("Khởi tạo role: {} - {}", roleType.name(), description);
@@ -202,5 +272,44 @@ public class DataInitializer implements CommandLineRunner {
             log.info("Khởi tạo đơn vị vận chuyển mặc định thành công (GHN, GHTK, Viettel Post, J&T)");
         }
     }
+
+    private void initDefaultShops() {
+        if (shopRepository.count() == 0) {
+            User defaultManager = userRepository.findByUsername("manager").orElse(null);
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Quận 1")
+                    .slug("male-fashion-chi-nhanh-quan-1")
+                    .address("123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh")
+                    .phone("028 3822 1234")
+                    .description("Chi nhánh trung tâm TP.HCM, trưng bày đầy đủ các bộ sưu tập thời trang nam cao cấp mới nhất.")
+                    .status("active")
+                    .manager(defaultManager)
+                    .build());
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Ba Đình")
+                    .slug("male-fashion-chi-nhanh-ba-dinh")
+                    .address("45 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội")
+                    .phone("024 3747 5678")
+                    .description("Chi nhánh thủ đô Hà Nội, phong cách phục vụ chuyên nghiệp, đa dạng các mẫu âu phục và phụ kiện.")
+                    .status("active")
+                    .manager(null)
+                    .build());
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Hải Châu")
+                    .slug("male-fashion-chi-nhanh-hai-chau")
+                    .address("88 Bạch Đằng, Phường Hải Châu 1, Quận Hải Châu, Đà Nẵng")
+                    .phone("0236 3848 999")
+                    .description("Chi nhánh trung tâm TP. Đà Nẵng bên bờ sông Hàn thơ mộng.")
+                    .status("active")
+                    .manager(null)
+                    .build());
+
+            log.info("Khởi tạo danh sách chi nhánh cửa hàng mặc định thành công!");
+        }
+    }
 }
+
 

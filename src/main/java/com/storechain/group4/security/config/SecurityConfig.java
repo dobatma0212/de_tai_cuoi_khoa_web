@@ -86,13 +86,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 3. Phân quyền theo Role
-                        .requestMatchers("/api/admin/users/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/admin/categories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/admin/transporters/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR", "ADMIN")
-                        .requestMatchers("/api/shipper/**").hasAnyRole("SHIPPER", "ADMIN")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
 
                         // 4. API hồ sơ cá nhân / địa chỉ nhận hàng: mọi người dùng đã đăng nhập
