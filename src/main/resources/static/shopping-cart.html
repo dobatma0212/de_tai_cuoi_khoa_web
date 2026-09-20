@@ -263,19 +263,24 @@
                 </div>
                 <div class="col-lg-4">
                     <div class="cart__discount">
-                        <h6>Discount codes</h6>
-                        <form action="#">
-                            <input type="text" placeholder="Coupon code">
-                            <button type="submit">Apply</button>
+                        <h6>Mã Giảm Giá / Voucher</h6>
+                        <form id="cart-coupon-form" onsubmit="applyCartCoupon(event)">
+                            <input type="text" id="cart-coupon-input" placeholder="Nhập mã ưu đãi..." style="text-transform: uppercase;">
+                            <button type="submit" id="cart-coupon-btn">Áp dụng</button>
                         </form>
+                        <div id="cart-coupon-msg" class="mt-2" style="font-size: 13px; font-weight: 600;"></div>
                     </div>
                     <div class="cart__total">
-                        <h6>Cart total</h6>
+                        <h6>Tổng Giỏ Hàng</h6>
                         <ul>
-                            <li>Subtotal <span>$ 169.50</span></li>
-                            <li>Total <span>$ 169.50</span></li>
+                            <li>Tạm tính <span id="cart-subtotal">500.000 ₫</span></li>
+                            <li id="cart-discount-row" style="display: none; color: #e53637;">
+                                Giảm giá (<span id="cart-coupon-name"></span>)
+                                <span id="cart-discount-val">-0 ₫</span>
+                            </li>
+                            <li>Tổng thanh toán <span id="cart-final-total">500.000 ₫</span></li>
                         </ul>
-                        <a href="#" class="primary-btn">Proceed to checkout</a>
+                        <a href="/checkout.html" class="primary-btn">Tiến hành thanh toán</a>
                     </div>
                 </div>
             </div>
@@ -373,6 +378,73 @@
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
+    <script>
+        let currentSubtotal = 500000;
+        let appliedCoupon = null;
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function applyCartCoupon(e) {
+            e.preventDefault();
+            const code = $('#cart-coupon-input').val().trim().toUpperCase();
+            const msgEl = $('#cart-coupon-msg');
+            const btnEl = $('#cart-coupon-btn');
+
+            if (!code) {
+                msgEl.text('Vui lòng nhập mã ưu đãi!').css('color', '#dc3545');
+                return;
+            }
+
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                msgEl.html('Vui lòng <a href="/login.html" class="text-danger font-weight-bold">đăng nhập</a> để áp dụng voucher!').css('color', '#dc3545');
+                return;
+            }
+
+            btnEl.prop('disabled', true).text('...');
+            msgEl.text('Đang kiểm tra mã...').css('color', '#666');
+
+            $.ajax({
+                url: '/api/public/promotions/check-voucher',
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    code: code,
+                    orderTotal: currentSubtotal
+                }),
+                success: function(res) {
+                    btnEl.prop('disabled', false).text('Áp dụng');
+                    if (res.success && res.data && res.data.valid) {
+                        const d = res.data;
+                        appliedCoupon = d;
+                        msgEl.text('✓ ' + d.message).css('color', '#28a745');
+                        $('#cart-discount-row').show();
+                        $('#cart-coupon-name').text(d.code);
+                        $('#cart-discount-val').text('-' + formatMoney(d.discountAmount));
+                        $('#cart-final-total').text(formatMoney(d.finalTotal));
+                    } else {
+                        appliedCoupon = null;
+                        msgEl.text('✗ ' + (res.data ? res.data.message : res.message)).css('color', '#dc3545');
+                        $('#cart-discount-row').hide();
+                        $('#cart-final-total').text(formatMoney(currentSubtotal));
+                    }
+                },
+                error: function(xhr) {
+                    btnEl.prop('disabled', false).text('Áp dụng');
+                    appliedCoupon = null;
+                    const err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Mã giảm giá không hợp lệ!';
+                    msgEl.text('✗ ' + err).css('color', '#dc3545');
+                    $('#cart-discount-row').hide();
+                    $('#cart-final-total').text(formatMoney(currentSubtotal));
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>
