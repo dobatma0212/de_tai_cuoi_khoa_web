@@ -1,13 +1,11 @@
 package com.storechain.group4.service;
 
 import com.storechain.group4.dto.OrderDto;
-import com.storechain.group4.dto.ProductPageDto;
 import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.PromotionDto;
 import com.storechain.group4.dto.RevenueDto;
 import com.storechain.group4.dto.ShopCategoryDto;
-import com.storechain.group4.dto.ShopHomeDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,11 +13,8 @@ import java.util.List;
 
 public interface ManagerShopService {
 
-    /** Lấy chi nhánh mà manager hiện đang được admin bổ nhiệm phụ trách */
+    /** Lấy chi nhánh mà manager hiện đang được admin bổ nhiệm phụ trách (chỉ đọc, admin mới được sửa) */
     ShopResponseDto getMyShop(Long managerId);
-
-    /** Manager cập nhật thông tin chi nhánh của mình (không đổi trạng thái, không đổi manager) */
-    ShopResponseDto updateMyShop(Long managerId, ShopResponseDto request);
 
     // ============ Danh mục sản phẩm của chi nhánh ============
 
@@ -51,7 +46,12 @@ public interface ManagerShopService {
 
     List<OrderDto> getOrders(Long managerId, String status);
 
-    OrderDto updateOrderStatus(Long managerId, Long orderId, String status);
+    /**
+     * Manager xác nhận (CONFIRMED, kèm transporterId), hủy (CANCELLED, kèm lý do)
+     * hoặc đánh dấu trả hàng (RETURNED) cho đơn của chi nhánh mình.
+     */
+    OrderDto updateOrderStatus(Long managerId, Long orderId, String status,
+                               Long transporterId, String reason);
 
     // ============ Chương trình khuyến mãi ============
 
@@ -64,19 +64,4 @@ public interface ManagerShopService {
     // ============ Doanh thu chi nhánh ============
 
     RevenueDto getRevenue(Long managerId);
-
-    // ============ Trang chủ chi nhánh (public) ============
-
-    /** Dữ liệu trang chủ chi nhánh (dùng cho cả public) */
-    ShopHomeDto getShopHome(Long shopId);
-
-    /**
-     * Danh sách sản phẩm có lọc + phân trang:
-     * từ khóa, danh mục, khoảng giá, size, sắp xếp; tối đa pageSize sản phẩm mỗi trang.
-     */
-    ProductPageDto searchShopProducts(Long shopId, String keyword, Long categoryId,
-                                      java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice,
-                                      String size, String sort, int page, int pageSize);
-
-    List<ProductResponseDto> suggestShopProducts(Long shopId, String keyword);
 }

@@ -5,6 +5,7 @@ import com.storechain.group4.dto.OrderCreateRequest;
 import com.storechain.group4.dto.OrderDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.ReviewDto;
+import com.storechain.group4.model.BranchStock;
 import com.storechain.group4.model.CartItem;
 import com.storechain.group4.model.Order;
 import com.storechain.group4.model.OrderItem;
@@ -16,6 +17,7 @@ import com.storechain.group4.model.ShippingAddress;
 import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.Transporter;
 import com.storechain.group4.model.User;
+import com.storechain.group4.repository.BranchStockRepository;
 import com.storechain.group4.repository.CartItemRepository;
 import com.storechain.group4.repository.OrderItemRepository;
 import com.storechain.group4.repository.OrderRepository;
@@ -24,6 +26,7 @@ import com.storechain.group4.repository.ProductReviewRepository;
 import com.storechain.group4.repository.PromotionRepository;
 import com.storechain.group4.repository.ReviewMediaRepository;
 import com.storechain.group4.repository.ShippingAddressRepository;
+import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
 import com.storechain.group4.service.StorefrontService;
@@ -58,6 +61,8 @@ public class StorefrontServiceImpl implements StorefrontService {
     private final TransporterRepository transporterRepository;
     private final PromotionRepository promotionRepository;
     private final UserRepository userRepository;
+    private final BranchStockRepository branchStockRepository;
+    private final ShopRepository shopRepository;
 
     // ============ Chi tiết sản phẩm ============
 
@@ -70,6 +75,8 @@ public class StorefrontServiceImpl implements StorefrontService {
         dto.setSizesList(parseSizes(p.getSizes()));
         dto.setAvgRating(round1(reviewRepository.averageRatingByProductId(productId)));
         dto.setReviewCount(reviewRepository.countByProductId(productId));
+        // Tồn kho toàn hãng = tổng tồn kho của tất cả chi nhánh
+        dto.setStock(branchStockRepository.sumStockByProductId(productId));
         return dto;
     }
 
@@ -128,12 +135,13 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (!"active".equalsIgnoreCase(product.getStatus())) {
             throw new IllegalArgumentException("Sản phẩm này hiện không còn bán.");
         }
-        if (product.getStock() <= 0) {
+        int totalStock = branchStockRepository.sumStockByProductId(product.getId());
+        if (totalStock <= 0) {
             throw new IllegalArgumentException("Sản phẩm đã hết hàng.");
         }
         int qty = Math.max(1, quantity);
-        if (qty > product.getStock()) {
-            throw new IllegalArgumentException("Chỉ còn " + product.getStock() + " sản phẩm trong kho.");
+        if (qty > totalStock) {
+            throw new IllegalArgumentException("Chỉ còn " + totalStock + " sản phẩm trong kho.");
         }
         List<String> sizes = parseSizes(product.getSizes());
         String chosen = size == null ? "" : size.trim();
@@ -156,8 +164,9 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .build());
         } else {
             int newQty = item.getQuantity() + qty;
-            if (newQty > product.getStock()) {
-                throw new IllegalArgumentException("Tổng số lượng trong giỏ vượt quá tồn kho (" + product.getStock() + ").");
+            if (newQty > branchStockRepository.sumStockByProductId(product.getId())) {
+                throw new IllegalArgumentException("Tổng số lượng trong giỏ vượt quá tồn kho ("
+                        + branchStockRepository.sumStockByProductId(product.getId()) + ").");
             }
             item.setQuantity(newQty);
             item = cartItemRepository.save(item);
@@ -173,8 +182,9 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (quantity < 1) {
             throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
         }
-        if (quantity > item.getProduct().getStock()) {
-            throw new IllegalArgumentException("Vượt quá tồn kho (" + item.getProduct().getStock() + ").");
+        int totalStock = branchStockRepository.sumStockByProductId(item.getProduct().getId());
+        if (quantity > totalStock) {
+            throw new IllegalArgumentException("Vượt quá tồn kho (" + totalStock + ").");
         }
         item.setQuantity(quantity);
         return toCartDto(cartItemRepository.save(item));
@@ -199,7 +209,7 @@ public class StorefrontServiceImpl implements StorefrontService {
         return cartItemRepository.countByUserId(userId);
     }
 
-    // ============ Đặt hàng từ giỏ ============
+    // ============ Đặt hàng từ giỏ (phân phối về chi nhánh gần nhất) ============
 
     @Override
     @Transactional
@@ -219,23 +229,83 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà vận chuyển."));
         }
 
-        // Gom sản phẩm theo chi nhánh -> mỗi chi nhánh một đơn
-        Map<Long, List<CartItem>> byShop = cartItems.stream()
-                .collect(Collectors.groupingBy(ci -> ci.getProduct().getShop().getId()));
+        // Với từng sản phẩm trong giỏ, chọn chi nhánh gần địa chỉ nhận hàng nhất CÒN HÀNG,
+        // rồi gom các sản phẩm theo chi nhánh được phân phối -> mỗi chi nhánh một đơn.
+        Map<Long, List<CartItem>> byShop = new java.util.LinkedHashMap<>();
+        Map<Long, Shop> assignedShops = new java.util.HashMap<>();
+        for (CartItem ci : cartItems) {
+            Shop shop = pickNearestShopWithStock(ci.getProduct(), address);
+            byShop.computeIfAbsent(shop.getId(), k -> new ArrayList<>()).add(ci);
+            assignedShops.putIfAbsent(shop.getId(), shop);
+        }
 
         List<OrderDto> created = new ArrayList<>();
         for (Map.Entry<Long, List<CartItem>> entry : byShop.entrySet()) {
-            created.add(createOrderForShop(userId, entry.getValue(), address, transporter, request));
+            created.add(createOrderForShop(userId, assignedShops.get(entry.getKey()),
+                    entry.getValue(), address, transporter, request));
         }
         cartItemRepository.deleteByUserId(userId);
         return created;
     }
 
-    private OrderDto createOrderForShop(Long userId, List<CartItem> items,
+    /**
+     * Chọn chi nhánh phù hợp nhất để xử lý đơn của một sản phẩm:
+     * 1. Ưu tiên chi nhánh active còn đủ hàng, cùng tỉnh + cùng quận/huyện với địa chỉ nhận.
+     * 2. Sau đó đến chi nhánh cùng tỉnh còn hàng.
+     * 3. Cuối cùng là bất kỳ chi nhánh active nào còn hàng (ưu tiên ít hàng trống trước).
+     * Nếu không chi nhánh nào còn hàng thì ném lỗi.
+     */
+    private Shop pickNearestShopWithStock(Product product, ShippingAddress address) {
+        List<Shop> shops = shopRepository.findByStatus("active");
+        if (shops.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Hệ thống chưa có chi nhánh nào để xử lý đơn hàng của bạn.");
+        }
+        String province = normalizeAddressPart(address.getProvince());
+        String district = normalizeAddressPart(address.getDistrict());
+
+        BranchStock best = null;
+        int bestScore = -1;
+        int bestStock = -1;
+        for (Shop shop : shops) {
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(product.getId(), shop.getId()).orElse(null);
+            int stock = bs == null ? 0 : Math.max(0, bs.getStock());
+            if (stock <= 0) continue;
+
+            int score = 0;
+            String shopAddr = normalizeAddressPart(shop.getAddress());
+            if (!province.isEmpty() && shopAddr.contains(province)) {
+                score = 2;
+                if (!district.isEmpty() && shopAddr.contains(district)) {
+                    score = 3;
+                }
+            }
+            if (score > bestScore || (score == bestScore && stock > bestStock)) {
+                best = bs;
+                bestScore = score;
+                bestStock = stock;
+            }
+        }
+        if (best == null) {
+            throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                    + "\" hiện đã hết hàng tại tất cả chi nhánh.");
+        }
+        return best.getShop();
+    }
+
+    /** Chuẩn hóa một phần địa chỉ để so khớp (bỏ tiền tố, thường hóa) */
+    private String normalizeAddressPart(String part) {
+        if (part == null) return "";
+        String p = part.trim().toLowerCase(java.util.Locale.ROOT);
+        p = p.replaceAll("^(tỉnh|tinh|thành phố|thanh pho|quận|quan|huyện|huyen|q\\.|h\\.)\\s*", "");
+        p = p.replaceAll("\\s+", " ");
+        return p;
+    }
+
+    private OrderDto createOrderForShop(Long userId, Shop shop, List<CartItem> items,
                                         ShippingAddress address, Transporter transporter,
                                         OrderCreateRequest request) {
-        Shop shop = items.get(0).getProduct().getShop();
-
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CartItem ci : items) {
             totalAmount = totalAmount.add(ci.getProduct().getPrice()
@@ -304,9 +374,12 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .quantity(ci.getQuantity())
                     .size(ci.getSize())
                     .build());
-            // Trừ tồn kho
-            p.setStock(Math.max(0, p.getStock() - ci.getQuantity()));
-            productRepository.save(p);
+            // Trừ tồn kho tại chi nhánh được phân phối
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(p.getId(), shop.getId())
+                    .orElse(BranchStock.builder().product(p).shop(shop).stock(0).build());
+            bs.setStock(Math.max(0, bs.getStock() - ci.getQuantity()));
+            branchStockRepository.save(bs);
         }
         return toOrderDto(order);
     }
@@ -329,8 +402,91 @@ public class StorefrontServiceImpl implements StorefrontService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderDto> getMyOrders(Long userId) {
+        autoAdvanceStaleOrders();
         return orderRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream().map(this::toOrderDto).toList();
+    }
+
+    /** Đẩy mốc giao tự động: Đã xác nhận quá 10s -> Đang giao, quá 10s nữa -> Đã giao */
+    private void autoAdvanceStaleOrders() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Order> toSave = new ArrayList<>();
+        orderRepository.findByStatus(Order.STATUS_CONFIRMED).stream()
+                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .peek(o -> o.setStatus(Order.STATUS_SHIPPING))
+                .forEach(toSave::add);
+        orderRepository.findByStatus(Order.STATUS_SHIPPING).stream()
+                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .peek(o -> o.setStatus(Order.STATUS_DELIVERED))
+                .forEach(toSave::add);
+        if (!toSave.isEmpty()) {
+            orderRepository.saveAll(toSave);
+        }
+    }
+
+    @Override
+    @Transactional
+    public OrderDto cancelMyOrder(Long userId, Long orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
+        if (!order.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("Đây không phải đơn hàng của bạn.");
+        }
+        if (!List.of(Order.STATUS_NEW, Order.STATUS_CONFIRMED, Order.STATUS_SHIPPING,
+                Order.STATUS_DELIVERED).contains(order.getStatus())) {
+            throw new IllegalArgumentException(
+                    "Đơn hàng đã được nhận/hoàn tất hoặc đang trong xử lý trả hàng, không thể hủy. Hãy dùng mục trả hàng.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do hủy đơn.");
+        }
+        order.setCancelReason(reason.trim() + " (khách hàng hủy)");
+        order.setStatus(Order.STATUS_CANCELLED);
+        // Hoàn tồn kho về chi nhánh phụ trách
+        for (var oi : orderItemRepository.findByOrderId(order.getId())) {
+            if (oi.getProduct() == null) continue;
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(oi.getProduct().getId(), order.getShop().getId())
+                    .orElse(BranchStock.builder().product(oi.getProduct())
+                            .shop(order.getShop()).stock(0).build());
+            bs.setStock(bs.getStock() + oi.getQuantity());
+            branchStockRepository.save(bs);
+        }
+        return toOrderDto(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional
+    public OrderDto requestReturn(Long userId, Long orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
+        if (!order.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("Đây không phải đơn hàng của bạn.");
+        }
+        if (!List.of(Order.STATUS_DELIVERED, Order.STATUS_RECEIVED).contains(order.getStatus())) {
+            throw new IllegalArgumentException("Chỉ yêu cầu trả hàng khi đơn đã giao/đã nhận.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do trả hàng (VD: hàng lỗi, sai mẫu...).");
+        }
+        order.setCancelReason(reason.trim() + " (khách yêu cầu trả hàng - hoàn tiền)");
+        order.setStatus(Order.STATUS_RETURN_REQUESTED);
+        return toOrderDto(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional
+    public OrderDto receiveMyOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
+        if (!order.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("Đây không phải đơn hàng của bạn.");
+        }
+        if (!Order.STATUS_DELIVERED.equals(order.getStatus())) {
+            throw new IllegalArgumentException("Chỉ xác nhận được khi đơn đã được giao tới bạn.");
+        }
+        order.setStatus(Order.STATUS_RECEIVED);
+        return toOrderDto(orderRepository.save(order));
     }
 
     // ============ Mapper ============
@@ -390,12 +546,10 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .productId(p.getId())
                 .productName(p.getName())
                 .imageUrl(p.getImageUrl())
-                .shopId(p.getShop().getId())
-                .shopName(p.getShop().getName())
                 .price(p.getPrice())
                 .size(ci.getSize())
                 .quantity(ci.getQuantity())
-                .stock(p.getStock())
+                .stock(branchStockRepository.sumStockByProductId(p.getId()))
                 .subtotal(p.getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
                 .build();
     }
@@ -427,6 +581,8 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .grandTotal(o.getGrandTotal())
                 .promoName(o.getPromoName())
                 .transporterName(o.getTransporter() != null ? o.getTransporter().getName() : null)
+                .transporterId(o.getTransporter() != null ? o.getTransporter().getId() : null)
+                .cancelReason(o.getCancelReason())
                 .receiverName(o.getReceiverName())
                 .receiverPhone(o.getReceiverPhone())
                 .receiverAddress(o.getReceiverAddress())
@@ -443,8 +599,10 @@ public class StorefrontServiceImpl implements StorefrontService {
             case Order.STATUS_PICKED_UP -> "Đã lấy hàng";
             case Order.STATUS_SHIPPING -> "Đang giao";
             case Order.STATUS_DELIVERED -> "Đã giao";
+            case Order.STATUS_RECEIVED -> "Đã nhận hàng";
             case Order.STATUS_CANCELLED -> "Hủy";
             case Order.STATUS_RETURNED -> "Trả hàng - hoàn tiền";
+            case Order.STATUS_RETURN_REQUESTED -> "Yêu cầu trả hàng";
             default -> status;
         };
     }

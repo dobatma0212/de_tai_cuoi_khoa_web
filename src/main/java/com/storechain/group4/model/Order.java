@@ -23,8 +23,10 @@ public class Order {
     public static final String STATUS_PICKED_UP = "PICKED_UP";         // Đã lấy hàng
     public static final String STATUS_SHIPPING = "SHIPPING";           // Đang giao
     public static final String STATUS_DELIVERED = "DELIVERED";         // Đã giao
+    public static final String STATUS_RECEIVED = "RECEIVED";           // Khách đã nhận hàng
     public static final String STATUS_CANCELLED = "CANCELLED";         // Hủy
     public static final String STATUS_RETURNED = "RETURNED";           // Trả hàng - hoàn tiền
+    public static final String STATUS_RETURN_REQUESTED = "RETURN_REQUESTED"; // Khách yêu cầu trả hàng
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -81,6 +83,10 @@ public class Order {
 
     @Column(name = "note", length = 500)
     private String note;
+
+    /** Lý do hủy đơn (do chi nhánh hoặc khách nhập) */
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

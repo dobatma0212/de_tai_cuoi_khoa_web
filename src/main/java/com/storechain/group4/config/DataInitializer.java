@@ -45,7 +45,22 @@ public class DataInitializer implements CommandLineRunner {
             initDefaultTransporters();
             initDefaultShops();
             initDefaultShopCategories();
+            initBranchStocks();
         });
+    }
+
+    /**
+     * Migration mô hình mới: sản phẩm là danh mục chung toàn hãng,
+     * tồn kho được giữ theo từng chi nhánh trong bảng branch_stocks.
+     * Với dữ liệu cũ, mỗi sản phẩm được gán tồn kho (cột products.stock)
+     * về chi nhánh đang sở hữu sản phẩm đó.
+     */
+    private void initBranchStocks() {
+        runStandaloneMigration(
+                "INSERT INTO branch_stocks (product_id, shop_id, stock, updated_at) " +
+                "SELECT p.product_id, p.shop_id, p.stock, NOW() FROM products p " +
+                "WHERE NOT EXISTS (SELECT 1 FROM branch_stocks b WHERE b.product_id = p.product_id AND b.shop_id = p.shop_id)",
+                "Bỏ qua migration tồn kho chi nhánh (branch_stocks)");
     }
 
     /**

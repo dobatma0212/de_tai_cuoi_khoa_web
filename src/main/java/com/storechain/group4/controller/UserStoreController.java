@@ -218,4 +218,50 @@ public class UserStoreController {
                 "Lấy danh sách đơn hàng của bạn thành công",
                 storefrontService.getMyOrders(currentUser.getId())));
     }
+
+    /** Khách hủy đơn bất cứ lúc nào trước khi nhận được hàng (kèm lý do) */
+    @PatchMapping("/orders/{id}/cancel")
+    public ResponseEntity<ApiResponse<OrderDto>> cancelMyOrder(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Đã hủy đơn hàng!",
+                    storefrontService.cancelMyOrder(currentUser.getId(), id,
+                            body.getOrDefault("reason", ""))));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Khách đòi trả hàng - hoàn tiền (chờ chi nhánh duyệt) */
+    @PatchMapping("/orders/{id}/return-request")
+    public ResponseEntity<ApiResponse<OrderDto>> requestReturn(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Đã gửi yêu cầu trả hàng - hoàn tiền tới chi nhánh!",
+                    storefrontService.requestReturn(currentUser.getId(), id,
+                            body.getOrDefault("reason", ""))));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Khách xác nhận đã nhận được hàng */
+    @PatchMapping("/orders/{id}/receive")
+    public ResponseEntity<ApiResponse<OrderDto>> receiveMyOrder(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Cảm ơn bạn đã xác nhận nhận hàng!",
+                    storefrontService.receiveMyOrder(currentUser.getId(), id)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

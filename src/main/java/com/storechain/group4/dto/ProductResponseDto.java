@@ -27,6 +27,7 @@ public class ProductResponseDto {
     private Integer stock;
     private String sizes;
     private java.util.List<String> sizesList;
+    private String color;
     private Double avgRating;
     private Long reviewCount;
     private boolean representative;

@@ -40,4 +40,13 @@ public interface StorefrontService {
     List<OrderDto> checkout(Long userId, OrderCreateRequest request);
 
     List<OrderDto> getMyOrders(Long userId);
+
+    /** Khách hủy đơn (kèm lý do) khi đơn chưa được giao tới */
+    OrderDto cancelMyOrder(Long userId, Long orderId, String reason);
+
+    /** Khách xác nhận đã nhận hàng (DELIVERED -> RECEIVED) */
+    OrderDto receiveMyOrder(Long userId, Long orderId);
+
+    /** Khách đòi trả hàng - hoàn tiền (DELIVERED/RECEIVED -> RETURN_REQUESTED, chờ chi nhánh duyệt) */
+    OrderDto requestReturn(Long userId, Long orderId, String reason);
 }

@@ -84,13 +84,11 @@
     function renderProduct(p) {
         document.title = p.name + " | Male-Fashion";
         $("breadcrumbProduct").textContent = p.name;
-        if (p.shopId) {
-            var shopUrl = "/shop-home.html?shopId=" + p.shopId;
-            $("breadcrumbShopLink").href = shopUrl;
-            $("backToShop").href = shopUrl;
-        }
+        var shopUrl = "/shop.html";
+        $("breadcrumbShopLink").href = shopUrl;
+        $("backToShop").href = shopUrl;
         $("pdImage").src = p.imageUrl || "/img/product/product-1.jpg";
-        $("pdCategory").textContent = (p.categoryName || "") + " — " + (p.shopName || "");
+        $("pdCategory").textContent = p.categoryName || "";
         $("pdName").textContent = p.name;
         $("pdPrice").textContent = formatVnd(p.price);
         $("pdStock").textContent = p.stock > 0 ? ("Còn " + p.stock + " sản phẩm") : "Hết hàng";

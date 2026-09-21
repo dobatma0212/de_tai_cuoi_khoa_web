@@ -26,6 +26,9 @@ public class RevenueDto {
     /** Tổng tiền khuyến mãi giảm cho các đơn đã giao */
     private BigDecimal deliveredDiscount;
 
+    /** Phí vận chuyển phải trả cho đơn vị vận chuyển của các đơn bị hủy/trả (làm giảm doanh thu) */
+    private BigDecimal shippingLoss;
+
     private long totalOrders;
     private long deliveredOrders;
     private long cancelledOrders;

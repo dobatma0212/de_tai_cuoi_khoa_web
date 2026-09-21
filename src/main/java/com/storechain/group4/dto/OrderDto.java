@@ -31,6 +31,8 @@ public class OrderDto {
     private BigDecimal grandTotal;
     private String promoName;
     private String transporterName;
+    private Long transporterId;
+    private String cancelReason;
     private String receiverName;
     private String receiverPhone;
     private String receiverAddress;

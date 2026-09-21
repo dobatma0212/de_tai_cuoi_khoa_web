@@ -41,4 +41,8 @@ public class ProductRequestDto {
     /** Các size cách nhau bởi dấu phẩy, VD: S,M,L,XL (tùy chọn) */
     @Size(max = 200, message = "Danh sách size tối đa 200 ký tự")
     private String sizes;
+
+    /** Các màu của sản phẩm, phân tách bằng dấu phẩy (tùy chọn), VD: Đen, Trắng */
+    @Size(max = 250, message = "Danh sách màu tối đa 250 ký tự")
+    private String color;
 }

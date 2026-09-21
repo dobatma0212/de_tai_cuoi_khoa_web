@@ -103,7 +103,7 @@
                 '<a href="/product-detail.html?productId=' + it.productId + '" style="color:inherit;">' +
                 '<b>' + escapeHtml(it.productName) + "</b></a>" +
                 (it.size ? '<div><small class="text-muted">Size: ' + escapeHtml(it.size) + "</small></div>" : "") +
-                '<div><small class="text-muted">' + escapeHtml(it.shopName || "") + " — " +
+                '<div><small class="text-muted">Male Fashion — ' +
                 formatVnd(it.price) + "</small></div>" +
                 "</div>" +
                 '<div class="text-right">' +
@@ -202,13 +202,11 @@
         $("sumSubtotal").textContent = formatVnd(subtotal);
         $("sumShipping").textContent = formatVnd(shipping);
         // Khuyến mãi chỉ server tính chính xác được, hiển thị tạm "-chờ xử lý" khi có mã
-        var promo = $("promoCode").value.trim();
-        $("sumDiscount").textContent = promo ? "áp dụng khi đặt" : "-0₫";
+        $("sumDiscount").textContent = "-0₫";
         $("sumTotal").textContent = formatVnd(subtotal + shipping);
     }
 
     document.addEventListener("input", function (e) {
-        if (e.target && e.target.id === "promoCode") updateSummary();
     });
 
     // ============ Đặt hàng ============
@@ -221,18 +219,18 @@
             return;
         }
         var payload = {
-            promoCode: $("promoCode").value.trim(),
             transporterId: selectedTransporterId,
             note: $("orderNote").value.trim()
         };
         api("POST", "/orders", payload).then(function (res) {
             var orders = res.data || [];
             var lines = orders.map(function (o) {
-                return o.orderCode + " — " + formatVnd(o.grandTotal) + " (" + escapeHtml(o.shopName || "") + ")";
+                return o.orderCode + " — " + formatVnd(o.grandTotal);
             }).join("<br>");
             alertEl.className = "alert auth-alert alert-success mt-2";
             alertEl.innerHTML = "<b>Đặt hàng thành công!</b><br>" + lines +
-                '<br><small class="text-muted">Chi nhánh sẽ liên hệ xác nhận. Xem trạng thái ở "Đơn hàng của tôi".</small>';
+                '<br><small class="text-muted">Hệ thống đã phân phối đơn về chi nhánh gần địa chỉ của bạn nhất. ' +
+                'Chi nhánh sẽ liên hệ xác nhận. Xem trạng thái ở "Đơn hàng của tôi".</small>';
             alertEl.style.display = "block";
             loadCart();
             loadMyOrders();
@@ -263,6 +261,23 @@
                     (it.size ? " (size " + escapeHtml(it.size) + ")" : "") +
                     " x" + it.quantity + "</li>";
             }).join("");
+            // Khách có thể hủy đơn trước khi nhận hàng, xác nhận đã nhận,
+            // hoặc yêu cầu trả hàng - hoàn tiền (chờ chi nhánh duyệt)
+            var actions = "";
+            if (["NEW", "CONFIRMED", "SHIPPING"].indexOf(o.status) !== -1) {
+                actions = '<button type="button" class="btn btn-sm btn-link btn-link-danger" ' +
+                    'data-customer-cancel="' + o.id + '">Hủy đơn</button>';
+            } else if (o.status === "DELIVERED") {
+                actions = '<button type="button" class="btn btn-sm btn-outline-store" ' +
+                    'data-customer-receive="' + o.id + '">Đã nhận được hàng</button> ' +
+                    '<button type="button" class="btn btn-sm btn-link btn-link-danger" ' +
+                    'data-customer-cancel="' + o.id + '">Hủy đơn</button> ' +
+                    '<button type="button" class="btn btn-sm btn-link btn-link-danger" ' +
+                    'data-customer-return="' + o.id + '">Yêu cầu trả hàng</button>';
+            } else if (o.status === "RECEIVED") {
+                actions = '<button type="button" class="btn btn-sm btn-link btn-link-danger" ' +
+                    'data-customer-return="' + o.id + '">Yêu cầu trả hàng</button>';
+            }
             return '<div class="cart-item" style="align-items:flex-start;">' +
                 "<div style='flex:1;'>" +
                 "<b>" + escapeHtml(o.orderCode) + "</b> " +
@@ -271,11 +286,43 @@
                 '<div><small class="text-muted">' + escapeHtml(o.shopName || "") + " — " +
                 escapeHtml(o.createdAt || "") + "</small></div>" +
                 '<ul class="text-muted mb-0 mt-1" style="font-size:13px;">' + items + "</ul>" +
+                (o.cancelReason ? '<small class="text-danger">Lý do hủy/trả: ' + escapeHtml(o.cancelReason) + "</small>" : "") +
+                actions +
                 "</div>" +
                 '<div class="text-right"><b style="color:#e53637;">' + formatVnd(o.grandTotal) + "</b>" +
                 (o.promoName ? '<div><small class="text-success">KM: ' + escapeHtml(o.promoName) + "</small></div>" : "") +
                 (o.transporterName ? '<div><small class="text-muted">VC: ' + escapeHtml(o.transporterName) + "</small></div>" : "") +
                 "</div></div>";
         }).join("");
+
+        container.onclick = function (e) {
+            var btn = e.target.closest("button");
+            if (!btn) return;
+            if (btn.getAttribute("data-customer-cancel") !== null) {
+                var id = btn.getAttribute("data-customer-cancel");
+                var reason = prompt("Lý do bạn muốn hủy đơn này:");
+                if (reason === null) return;
+                if (!reason.trim()) { alert("Vui lòng nhập lý do hủy đơn."); return; }
+                api("PATCH", "/orders/" + id + "/cancel", { reason: reason.trim() }).then(function () {
+                    alert("Đã hủy đơn hàng!");
+                    loadMyOrders();
+                }).catch(function (err) { alert(err.message); });
+            } else if (btn.getAttribute("data-customer-receive") !== null) {
+                var rid = btn.getAttribute("data-customer-receive");
+                api("PATCH", "/orders/" + rid + "/receive", null).then(function () {
+                    alert("Cảm ơn bạn đã xác nhận nhận hàng!");
+                    loadMyOrders();
+                }).catch(function (err) { alert(err.message); });
+            } else if (btn.getAttribute("data-customer-return") !== null) {
+                var tid = btn.getAttribute("data-customer-return");
+                var rreason = prompt("Lý do trả hàng - hoàn tiền (VD: hàng lỗi, sai mẫu...):");
+                if (rreason === null) return;
+                if (!rreason.trim()) { alert("Vui lòng nhập lý do trả hàng."); return; }
+                api("PATCH", "/orders/" + tid + "/return-request", { reason: rreason.trim() }).then(function () {
+                    alert("Đã gửi yêu cầu trả hàng tới chi nhánh!");
+                    loadMyOrders();
+                }).catch(function (err) { alert(err.message); });
+            }
+        };
     }
 })();

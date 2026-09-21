@@ -21,11 +21,24 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     long countByShopIdAndCategoryId(Long shopId, Long categoryId);
 
+    long countByCategoryId(Long categoryId);
+
+    List<Product> findByCategoryIdOrderByCreatedAtDesc(Long categoryId);
+
     @Query("SELECT p FROM Product p WHERE p.shop.id = :shopId AND p.status = 'active' AND " +
             "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<Product> searchProducts(@Param("shopId") Long shopId,
                                  @Param("keyword") String keyword);
+
+    @Query("SELECT p FROM Product p WHERE p.status = 'active' AND " +
+            "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<Product> searchAllProducts(@Param("keyword") String keyword);
+
+    @Query("SELECT p FROM Product p WHERE p.status = 'active' AND " +
+            "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<Product> suggestAllByName(@Param("keyword") String keyword);
 
     @Query("SELECT p FROM Product p WHERE p.shop.id = :shopId AND p.status = 'active' AND " +
             "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")

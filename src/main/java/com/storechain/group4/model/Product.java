@@ -51,6 +51,10 @@ public class Product {
     @Column(name = "sizes", length = 200)
     private String sizes;
 
+    /** Các màu của sản phẩm, phân tách bằng dấu phẩy (VD: Đen, Trắng) */
+    @Column(name = "color", length = 250)
+    private String color;
+
     /** Sản phẩm đại diện cho danh mục (hiển thị ở trang chủ chi nhánh) */
     @Column(name = "is_representative", nullable = false)
     @Builder.Default

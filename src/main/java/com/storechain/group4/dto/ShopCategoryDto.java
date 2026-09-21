@@ -15,4 +15,7 @@ public class ShopCategoryDto {
     private String name;
     private Integer sortOrder;
     private long totalProducts;
+
+    /** Ảnh đại diện của danh mục (ảnh sản phẩm đại diện) */
+    private String imageUrl;
 }

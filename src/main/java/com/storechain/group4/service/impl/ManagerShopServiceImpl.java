@@ -1,19 +1,19 @@
 package com.storechain.group4.service.impl;
 
 import com.storechain.group4.dto.OrderDto;
-import com.storechain.group4.dto.ProductPageDto;
 import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.PromotionDto;
 import com.storechain.group4.dto.RevenueDto;
 import com.storechain.group4.dto.ShopCategoryDto;
-import com.storechain.group4.dto.ShopHomeDto;
 import com.storechain.group4.dto.ShopResponseDto;
+import com.storechain.group4.model.BranchStock;
 import com.storechain.group4.model.Order;
 import com.storechain.group4.model.Product;
 import com.storechain.group4.model.Promotion;
 import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.ShopCategory;
+import com.storechain.group4.repository.BranchStockRepository;
 import com.storechain.group4.repository.OrderItemRepository;
 import com.storechain.group4.repository.OrderRepository;
 import com.storechain.group4.repository.ProductRepository;
@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -54,7 +53,11 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final PromotionRepository promotionRepository;
+    private final BranchStockRepository branchStockRepository;
+    private final com.storechain.group4.repository.TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.CartItemRepository cartItemRepository;
     private final com.storechain.group4.repository.ProductReviewRepository reviewRepository;
+    private final com.storechain.group4.repository.ReviewMediaRepository reviewMediaRepository;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -72,20 +75,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         return toShopDto(shop);
     }
 
-    @Override
-    @Transactional
-    public ShopResponseDto updateMyShop(Long managerId, ShopResponseDto request) {
-        Shop shop = findMyShop(managerId);
-        if (request.getName() != null && !request.getName().isBlank()) {
-            shop.setName(request.getName().trim());
-        }
-        if (request.getAddress() != null) shop.setAddress(request.getAddress().trim());
-        if (request.getPhone() != null) shop.setPhone(request.getPhone().trim());
-        if (request.getDescription() != null) shop.setDescription(request.getDescription().trim());
-        if (request.getLogoUrl() != null) shop.setLogoUrl(request.getLogoUrl().trim());
-        if (request.getBannerUrl() != null) shop.setBannerUrl(request.getBannerUrl().trim());
-        return toShopDto(shopRepository.save(shop));
-    }
+    // Thông tin chi nhánh (tên, địa chỉ, SĐT, mô tả) do admin cập nhật, manager chỉ được xem
 
     private Shop findMyShop(Long managerId) {
         List<Shop> shops = shopRepository.findByManagerId(managerId);
@@ -223,8 +213,11 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .imageUrl(request.getImageUrl())
                 .stock(request.getStock() == null ? 0 : Math.max(0, request.getStock()))
                 .sizes(normalizeSizes(request.getSizes()))
+                .color(request.getColor() == null ? null : request.getColor().trim())
                 .build();
+        // Tồn kho cũ (cột products.stock) giờ là tồn kho của chi nhánh tạo sản phẩm
         Product saved = productRepository.save(product);
+        syncBranchStock(shop, saved, product.getStock());
         // Sản phẩm đầu tiên của danh mục tự động làm đại diện
         if (!productRepository.existsByShopIdAndCategoryIdAndRepresentativeTrue(
                 shop.getId(), category.getId())) {
@@ -248,8 +241,11 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         product.setImageUrl(request.getImageUrl());
         if (request.getStock() != null) {
             product.setStock(Math.max(0, request.getStock()));
+            // Cập nhật tồn kho của chi nhánh quản lý sản phẩm này
+            syncBranchStock(product.getShop(), product, product.getStock());
         }
         product.setSizes(normalizeSizes(request.getSizes()));
+        product.setColor(request.getColor() == null ? null : request.getColor().trim());
         if (categoryChanged) {
             product.setRepresentative(false);
             Product saved = productRepository.save(product);
@@ -270,6 +266,20 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         boolean wasRepresentative = product.isRepresentative();
         Long categoryId = product.getCategory().getId();
         Long shopId = product.getShop().getId();
+
+        // Dọn dữ liệu liên quan để không văng lỗi khóa ngoại:
+        // tồn kho chi nhánh, giỏ hàng, đánh giá (kèm ảnh/video), tham chiếu trong đơn hàng
+        branchStockRepository.deleteAll(branchStockRepository.findByProductId(productId));
+        cartItemRepository.deleteAll(cartItemRepository.findByProductId(productId));
+        reviewRepository.findByProductIdOrderByCreatedAtDesc(productId).forEach(review -> {
+            reviewMediaRepository.deleteAll(reviewMediaRepository.findByReviewId(review.getId()));
+            reviewRepository.delete(review);
+        });
+        orderItemRepository.findByProductId(productId).forEach(oi -> {
+            oi.setProduct(null); // đơn hàng vẫn giữ snapshot tên/ảnh/giá
+            orderItemRepository.save(oi);
+        });
+
         productRepository.delete(product);
 
         // Nếu xóa sản phẩm đại diện thì chọn sản phẩm khác thay thế
@@ -317,6 +327,18 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         }
     }
 
+    /**
+     * Đồng bộ tồn kho của một sản phẩm tại một chi nhánh:
+     * giá trị trong cột products.stock được coi là tồn kho của chi nhánh sở hữu sản phẩm.
+     */
+    private void syncBranchStock(Shop shop, Product product, int stock) {
+        BranchStock bs = branchStockRepository
+                .findByProductIdAndShopId(product.getId(), shop.getId())
+                .orElse(BranchStock.builder().product(product).shop(shop).stock(0).build());
+        bs.setStock(Math.max(0, stock));
+        branchStockRepository.save(bs);
+    }
+
     private Product findOwnedProduct(Long managerId, Long productId) {
         Shop shop = findMyShop(managerId);
         Product product = productRepository.findById(productId)
@@ -362,157 +384,95 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         }
     }
 
-    // ============ Trang chủ chi nhánh (public) ============
-
-    @Override
-    @Transactional
-    public ShopHomeDto getShopHome(Long shopId) {
-        Shop shop = shopRepository.findById(shopId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh."));
-        ensureDefaultCategories(shop);
-        List<ShopHomeDto.CategoryBlock> blocks = new ArrayList<>();
-        for (ShopCategory category : shopCategoryRepository
-                .findByShopIdOrderBySortOrderAscIdAsc(shop.getId())) {
-            List<Product> products = productRepository
-                    .findByShopIdAndCategoryIdOrderByCreatedAtDesc(shop.getId(), category.getId());
-            Product rep = products.stream().filter(Product::isRepresentative).findFirst()
-                    .orElse(products.stream().findFirst().orElse(null));
-            blocks.add(ShopHomeDto.CategoryBlock.builder()
-                    .categoryId(category.getId())
-                    .label(category.getName())
-                    .representativeProduct(rep == null ? null : toProductDto(rep))
-                    .totalProducts(products.size())
-                    .build());
-        }
-        return ShopHomeDto.builder()
-                .shop(toShopDto(shop))
-                .categories(blocks)
-                .build();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ProductPageDto searchShopProducts(Long shopId, String keyword, Long categoryId,
-                                             BigDecimal minPrice, BigDecimal maxPrice,
-                                             String size, String sort, int page, int pageSize) {
-        String kw = keyword == null ? "" : keyword.trim();
-        List<Product> products;
-        if (categoryId != null && categoryId > 0) {
-            products = productRepository.findByShopIdAndCategoryIdOrderByCreatedAtDesc(shopId, categoryId);
-        } else if (!kw.isEmpty()) {
-            products = productRepository.searchProducts(shopId, kw);
-        } else {
-            products = productRepository.findByShopIdOrderByCreatedAtDesc(shopId);
-        }
-
-        final String kwLower = kw.toLowerCase(Locale.ROOT);
-        List<Product> filtered = products.stream()
-                .filter(p -> "active".equalsIgnoreCase(p.getStatus()))
-                .filter(p -> kw.isEmpty()
-                        || p.getName().toLowerCase(Locale.ROOT).contains(kwLower)
-                        || (p.getDescription() != null && p.getDescription()
-                                .toLowerCase(Locale.ROOT).contains(kwLower)))
-                .filter(p -> minPrice == null
-                        || p.getPrice().compareTo(minPrice) >= 0)
-                .filter(p -> maxPrice == null
-                        || p.getPrice().compareTo(maxPrice) <= 0)
-                .filter(p -> size == null || size.isBlank()
-                        || sizeMatches(p.getSizes(), size.trim()))
-                .collect(Collectors.toList());
-
-        if ("priceAsc".equals(sort)) {
-            filtered.sort((a, b) -> a.getPrice().compareTo(b.getPrice()));
-        } else if ("priceDesc".equals(sort)) {
-            filtered.sort((a, b) -> b.getPrice().compareTo(a.getPrice()));
-        } else if ("name".equals(sort)) {
-            filtered.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
-        } // mặc định: mới nhất (đã sort theo created_at từ repository)
-
-        int safePageSize = pageSize <= 0 ? 10 : pageSize;
-        int safePage = Math.max(0, page);
-        int totalPages = (int) Math.ceil((double) filtered.size() / safePageSize);
-        int from = Math.min(safePage * safePageSize, filtered.size());
-        int to = Math.min(from + safePageSize, filtered.size());
-
-        List<ProductResponseDto> content = filtered.subList(from, to)
-                .stream().map(this::toProductDto).collect(Collectors.toList());
-        // Điểm đánh giá từng sản phẩm (chỉ 10 phần tử/trang nên chi phí thấp)
-        for (ProductResponseDto dto : content) {
-            dto.setAvgRating(round1(reviewRepository.averageRatingByProductId(dto.getId())));
-            dto.setReviewCount(reviewRepository.countByProductId(dto.getId()));
-        }
-
-        return ProductPageDto.builder()
-                .content(content)
-                .page(safePage)
-                .pageSize(safePageSize)
-                .totalElements(filtered.size())
-                .totalPages(totalPages)
-                .build();
-    }
-
-    /** Kiểm tra size có nằm trong danh sách size của sản phẩm (VD: "M" trong "S,M,L") */
-    private boolean sizeMatches(String sizes, String wanted) {
-        if (sizes == null || sizes.isBlank()) return false;
-        return Arrays.stream(sizes.split(","))
-                .map(String::trim)
-                .anyMatch(s -> s.equalsIgnoreCase(wanted));
-    }
-
-    /** "S,M,L" -> ["S","M","L"] */
-    private List<String> parseSizes(String sizes) {
-        if (sizes == null || sizes.isBlank()) return List.of();
-        return Arrays.stream(sizes.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .toList();
-    }
-
-    private Double round1(Double v) {
-        if (v == null) return 0.0;
-        return BigDecimal.valueOf(v).setScale(1, java.math.RoundingMode.HALF_UP).doubleValue();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<ProductResponseDto> suggestShopProducts(Long shopId, String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return List.of();
-        }
-        return productRepository.suggestByName(shopId, keyword.trim())
-                .stream().limit(8).map(this::toProductDto).toList();
-    }
-
     // ============ Quản lý đơn hàng của chi nhánh ============
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderDto> getOrders(Long managerId, String status) {
         Shop shop = findMyShop(managerId);
+        autoAdvanceStaleOrders();
         List<Order> orders = (status == null || status.isBlank())
                 ? orderRepository.findByShopIdOrderByCreatedAtDesc(shop.getId())
                 : orderRepository.findByShopIdAndStatusOrderByCreatedAtDesc(shop.getId(), status);
         return orders.stream().map(this::toOrderDto).toList();
     }
 
+    /**
+     * Manager chỉ được:
+     * - CONFIRMED: xác nhận đơn NEW (kèm chọn đơn vị vận chuyển), giao hàng tự động sau đó
+     * - CANCELLED: hủy đơn NEW/CONFIRMED/SHIPPING (bắt buộc ghi lý do), hoàn tồn kho về chi nhánh
+     * - RETURNED: đánh dấu trả hàng - hoàn tiền cho đơn đã giao/khách đã nhận
+     * Trạng thái SHIPPING/DELIVERED/RECEIVED do hệ thống và khách hàng tự cập nhật.
+     */
     @Override
     @Transactional
-    public OrderDto updateOrderStatus(Long managerId, Long orderId, String status) {
+    public OrderDto updateOrderStatus(Long managerId, Long orderId, String status,
+                                      Long transporterId, String reason) {
         Shop shop = findMyShop(managerId);
-        List<String> allowed = List.of(
-                Order.STATUS_NEW, Order.STATUS_CONFIRMED, Order.STATUS_PICKED_UP,
-                Order.STATUS_SHIPPING, Order.STATUS_DELIVERED,
-                Order.STATUS_CANCELLED, Order.STATUS_RETURNED);
-        if (!allowed.contains(status)) {
-            throw new IllegalArgumentException("Trạng thái không hợp lệ.");
-        }
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
         if (!order.getShop().getId().equals(shop.getId())) {
             throw new IllegalArgumentException("Đơn hàng này không thuộc chi nhánh bạn quản lý.");
         }
-        order.setStatus(status);
+        String current = order.getStatus();
+        switch (status == null ? "" : status) {
+            case Order.STATUS_CONFIRMED -> {
+                if (!Order.STATUS_NEW.equals(current)) {
+                    throw new IllegalArgumentException("Chỉ đơn ở trạng thái mới mới có thể xác nhận.");
+                }
+                if (transporterId == null) {
+                    throw new IllegalArgumentException("Vui lòng chọn đơn vị vận chuyển trước khi xác nhận.");
+                }
+                var transporter = transporterRepository.findById(transporterId)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị vận chuyển."));
+                order.setTransporter(transporter);
+                if (order.getShippingFee() == null || order.getShippingFee().compareTo(BigDecimal.ZERO) <= 0) {
+                    order.setShippingFee(transporter.getBaseFee() == null ? BigDecimal.ZERO : transporter.getBaseFee());
+                    order.setGrandTotal(order.getTotalAmount()
+                            .add(order.getShippingFee())
+                            .subtract(order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount()));
+                }
+                order.setStatus(Order.STATUS_CONFIRMED);
+            }
+            case Order.STATUS_CANCELLED -> {
+                if (!List.of(Order.STATUS_NEW, Order.STATUS_CONFIRMED, Order.STATUS_SHIPPING).contains(current)) {
+                    throw new IllegalArgumentException("Không thể hủy đơn ở trạng thái hiện tại.");
+                }
+                if (reason == null || reason.isBlank()) {
+                    throw new IllegalArgumentException("Vui lòng nhập lý do hủy đơn (VD: tồn kho chi nhánh đã hết).");
+                }
+                order.setCancelReason(reason.trim());
+                order.setStatus(Order.STATUS_CANCELLED);
+                restockOrder(order);
+            }
+            case Order.STATUS_RETURNED -> {
+                if (!List.of(Order.STATUS_SHIPPING, Order.STATUS_DELIVERED,
+                        Order.STATUS_RECEIVED, Order.STATUS_RETURN_REQUESTED).contains(current)) {
+                    throw new IllegalArgumentException("Chỉ đơn đang giao/đã giao/đã nhận/yêu cầu trả hàng mới duyệt trả được.");
+                }
+                if (reason != null && !reason.isBlank()) {
+                    order.setCancelReason(reason.trim());
+                }
+                order.setStatus(Order.STATUS_RETURNED);
+                restockOrder(order);
+            }
+            default -> throw new IllegalArgumentException(
+                    "Bạn chỉ có thể xác nhận, hủy (kèm lý do) hoặc đánh dấu trả hàng cho đơn.");
+        }
         return toOrderDto(orderRepository.save(order));
+    }
+
+    /** Hoàn lại tồn kho các sản phẩm của đơn bị hủy về chi nhánh */
+    private void restockOrder(Order order) {
+        for (var oi : orderItemRepository.findByOrderId(order.getId())) {
+            if (oi.getProduct() == null) continue;
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(oi.getProduct().getId(), order.getShop().getId())
+                    .orElse(BranchStock.builder().product(oi.getProduct())
+                            .shop(order.getShop()).stock(0).build());
+            bs.setStock(bs.getStock() + oi.getQuantity());
+            branchStockRepository.save(bs);
+        }
     }
 
     // ============ Chương trình khuyến mãi ============
@@ -588,6 +548,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         Map<String, Long> statusCounts = orders.stream()
                 .collect(Collectors.groupingBy(o -> o.getStatus() == null ? "" : o.getStatus(),
                         Collectors.counting()));
+        BigDecimal shippingLoss = BigDecimal.ZERO; // phí VC mất đi cho đơn hủy/trả hàng
 
         for (Order o : orders) {
             if (Order.STATUS_DELIVERED.equals(o.getStatus())) {
@@ -598,11 +559,19 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 discountTotal = discountTotal.add(o.getDiscountAmount() == null ? BigDecimal.ZERO : o.getDiscountAmount());
             } else if (Order.STATUS_CANCELLED.equals(o.getStatus())) {
                 cancelled++;
+                // Đơn đã chuyển đi rồi mới hủy/trả thì chi nhánh vẫn mất phí vận chuyển
+                if (o.getTransporter() != null) {
+                    shippingLoss = shippingLoss.add(shippingCostOf(o));
+                }
             } else if (Order.STATUS_RETURNED.equals(o.getStatus())) {
                 returned++;
+                shippingLoss = shippingLoss.add(shippingCostOf(o));
             }
         }
+        // Doanh thu thực nhận = tiền các đơn đã giao trừ phí VC của đơn hủy/trả (có thể âm)
+        revenue = revenue.subtract(shippingLoss);
         return RevenueDto.builder()
+                .shippingLoss(shippingLoss)
                 .totalRevenue(revenue)
                 .deliveredProductAmount(productAmount)
                 .deliveredShippingFee(shippingTotal)
@@ -615,7 +584,46 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .build();
     }
 
+    /**
+     * Đẩy mốc giao hàng tự động theo thời gian, chạy mỗi lần mở danh sách đơn
+     * (không phụ thuộc job nền): Đã xác nhận quá 10s -> Đang giao, quá 20s -> Đã giao.
+     */
+    private void autoAdvanceStaleOrders() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Order> toSave = new java.util.ArrayList<>();
+        orderRepository.findByStatus(Order.STATUS_CONFIRMED).stream()
+                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .peek(o -> o.setStatus(Order.STATUS_SHIPPING))
+                .forEach(toSave::add);
+        orderRepository.findByStatus(Order.STATUS_SHIPPING).stream()
+                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .peek(o -> o.setStatus(Order.STATUS_DELIVERED))
+                .forEach(toSave::add);
+        if (!toSave.isEmpty()) {
+            orderRepository.saveAll(toSave);
+        }
+    }
+
+    /** Phí VC phải trả cho đơn hủy/trả: lấy phí đã thu, chưa có thì lấy phí của đơn vị vận chuyển */
+    private BigDecimal shippingCostOf(Order o) {
+        if (o.getShippingFee() != null && o.getShippingFee().compareTo(BigDecimal.ZERO) > 0) {
+            return o.getShippingFee();
+        }
+        return o.getTransporter() != null && o.getTransporter().getBaseFee() != null
+                ? o.getTransporter().getBaseFee()
+                : BigDecimal.ZERO;
+    }
+
     // ============ Mapper ============
+
+    /** "S,M,L" -> ["S","M","L"] */
+    private List<String> parseSizes(String sizes) {
+        if (sizes == null || sizes.isBlank()) return List.of();
+        return Arrays.stream(sizes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+    }
 
     private ShopResponseDto toShopDto(Shop shop) {
         return ShopResponseDto.builder()
@@ -650,6 +658,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .stock(p.getStock())
                 .sizes(p.getSizes())
                 .sizesList(parseSizes(p.getSizes()))
+                .color(p.getColor())
                 .representative(p.isRepresentative())
                 .status(p.getStatus())
                 .createdAt(p.getCreatedAt())
@@ -683,6 +692,8 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .grandTotal(o.getGrandTotal())
                 .promoName(o.getPromoName())
                 .transporterName(o.getTransporter() != null ? o.getTransporter().getName() : null)
+                .transporterId(o.getTransporter() != null ? o.getTransporter().getId() : null)
+                .cancelReason(o.getCancelReason())
                 .receiverName(o.getReceiverName())
                 .receiverPhone(o.getReceiverPhone())
                 .receiverAddress(o.getReceiverAddress())
@@ -699,8 +710,10 @@ public class ManagerShopServiceImpl implements ManagerShopService {
             case Order.STATUS_PICKED_UP -> "Đã lấy hàng";
             case Order.STATUS_SHIPPING -> "Đang giao";
             case Order.STATUS_DELIVERED -> "Đã giao";
+            case Order.STATUS_RECEIVED -> "Đã nhận hàng";
             case Order.STATUS_CANCELLED -> "Hủy";
             case Order.STATUS_RETURNED -> "Trả hàng - hoàn tiền";
+            case Order.STATUS_RETURN_REQUESTED -> "Yêu cầu trả hàng";
             default -> status;
         };
     }

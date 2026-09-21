@@ -20,7 +20,7 @@ import java.util.Map;
 
 /**
  * API quản lý chi nhánh dành cho Manager:
- * - Xem / cập nhật thông tin chi nhánh do admin bổ nhiệm
+ * - Xem thông tin chi nhánh do admin bổ nhiệm (chỉ đọc, chỉ admin được sửa thông tin chi nhánh)
  * - Quản lý sản phẩm theo danh mục (Bộ áo quần / Phụ kiện), đặt sản phẩm đại diện
  * - Tải ảnh sản phẩm từ máy lên
  */
@@ -41,19 +41,6 @@ public class ManagerShopController {
                     managerShopService.getMyShop(currentUser.getId())));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PutMapping
-    public ResponseEntity<ApiResponse<ShopResponseDto>> updateMyShop(
-            @RequestBody ShopResponseDto request,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success(
-                    "Cập nhật thông tin chi nhánh thành công!",
-                    managerShopService.updateMyShop(currentUser.getId(), request)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 

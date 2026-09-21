@@ -178,25 +178,6 @@
             display: block;
         }
 
-        .shop-banner {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #eee;
-        }
-
-        .shop-logo {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #e53637;
-            margin-top: -35px;
-            background: #fff;
-            position: relative;
-        }
-
         .product-card-mgr {
             border: 1px solid #e8e8e8;
             border-radius: 8px;
@@ -339,10 +320,55 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
         }
 
-        /* Nhóm ngày bắt đầu/kết thúc khuyến mãi co giãn đều */
-        #promoForm .col-md-3 .form-control,
-        #promoForm input[type="datetime-local"] {
-            width: 100%;
+        /* Nút thao tác (Sửa / Xóa / Đại diện...) dạng pill đồng bộ */
+        .btn-act {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1.5px solid transparent;
+            background: #fff;
+            cursor: pointer;
+            transition: all .2s ease;
+            line-height: 1.6;
+        }
+
+        .btn-act i { font-size: 12px; }
+
+        .btn-act-edit { color: #0d6efd; border-color: #0d6efd; }
+        .btn-act-edit:hover { background: #0d6efd; color: #fff; }
+
+        .btn-act-delete { color: #e53637; border-color: #e53637; }
+        .btn-act-delete:hover { background: #e53637; color: #fff; }
+
+        .btn-act-rep { color: #e53637; border-color: #e53637; }
+        .btn-act-rep:hover, .btn-act-rep.is-on { background: #e53637; color: #fff; }
+
+        .btn-act-toggle { color: #198754; border-color: #198754; }
+        .btn-act-toggle:hover { background: #198754; color: #fff; }
+
+        .color-swatch-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .color-swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            display: inline-block;
+        }
+
+        .color-swatch.active {
+            border-color: #e53637;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, .35);
         }
 
         .badge-representative {
@@ -465,6 +491,7 @@
                                 <button type="button" class="tab-btn active" data-tab="tabInfo">Thông tin cá nhân</button>
                                 <button type="button" class="tab-btn" data-tab="tabPassword">Đổi mật khẩu</button>
                                 <button type="button" class="tab-btn" data-tab="tabShop" id="tabShopBtn" style="display:none;">Quản lý chi nhánh</button>
+                                <button type="button" class="tab-btn" data-tab="tabUserOrders">Đơn hàng của tôi</button>
                                 <button type="button" class="tab-btn" data-tab="tabAddress">Địa chỉ nhận hàng</button>
                             </div>
 
@@ -533,57 +560,34 @@
                                 <div id="shopManagerWrapper" style="display:none;">
                                     <div class="shop-subtabs">
                                         <button type="button" class="shop-subbtn active" data-sub="shopSubInfo">Thông tin chi nhánh</button>
-                                        <button type="button" class="shop-subbtn" data-sub="shopSubHome">Trang chủ chi nhánh</button>
                                         <button type="button" class="shop-subbtn" data-sub="shopSubProducts">Quản lý sản phẩm</button>
                                         <button type="button" class="shop-subbtn" data-sub="shopSubOrders">Đơn hàng</button>
-                                        <button type="button" class="shop-subbtn" data-sub="shopSubPromos">Khuyến mãi</button>
-                                        <button type="button" class="shop-subbtn" data-sub="shopSubTransporters">Nhà vận chuyển</button>
+                                                                                <button type="button" class="shop-subbtn" data-sub="shopSubTransporters">Nhà vận chuyển</button>
                                         <button type="button" class="shop-subbtn" data-sub="shopSubRevenue">Doanh thu</button>
                                     </div>
 
-                                    <!-- Sub-tab: Thông tin chi nhánh -->
+                                    <!-- Sub-tab: Thông tin chi nhánh (chỉ đọc - do admin cập nhật) -->
                                     <div id="shopSubInfo" class="shop-subcontent active">
-                                        <img id="shopBannerPreview" src="/img/banner/banner-1.jpg" class="shop-banner" alt="banner">
-                                        <img id="shopLogoPreview" src="/img/logo.png" class="shop-logo" alt="logo">
-                                        <div class="alert auth-alert" id="shopInfoAlert" style="display:none;"></div>
-                                        <form id="shopInfoForm" class="mt-4">
+                                        <div class="mt-4">
                                             <div class="row">
                                                 <div class="col-md-6 form-group">
-                                                    <label class="profile-info-label">Tên chi nhánh (*)</label>
-                                                    <input type="text" id="shopName" class="form-control" maxlength="100" required>
+                                                    <label class="profile-info-label">Tên chi nhánh</label>
+                                                    <input type="text" id="shopName" class="form-control" maxlength="100" readonly>
                                                 </div>
                                                 <div class="col-md-6 form-group">
                                                     <label class="profile-info-label">Số điện thoại</label>
-                                                    <input type="text" id="shopPhone" class="form-control" maxlength="20">
+                                                    <input type="text" id="shopPhone" class="form-control" maxlength="20" readonly>
                                                 </div>
                                                 <div class="col-md-12 form-group">
                                                     <label class="profile-info-label">Địa chỉ</label>
-                                                    <input type="text" id="shopAddress" class="form-control" maxlength="255">
+                                                    <input type="text" id="shopAddress" class="form-control" maxlength="255" readonly>
                                                 </div>
                                                 <div class="col-md-12 form-group">
                                                     <label class="profile-info-label">Mô tả chi nhánh</label>
-                                                    <textarea id="shopDescription" class="form-control" rows="3" maxlength="2000"></textarea>
-                                                </div>
-                                                <div class="col-md-6 form-group">
-                                                    <label class="profile-info-label">Logo chi nhánh (URL)</label>
-                                                    <input type="text" id="shopLogoUrl" class="form-control" placeholder="https://... hoặc /uploads/products/...">
-                                                </div>
-                                                <div class="col-md-6 form-group">
-                                                    <label class="profile-info-label">Ảnh banner (URL)</label>
-                                                    <input type="text" id="shopBannerUrl" class="form-control" placeholder="https://... hoặc /uploads/products/...">
+                                                    <textarea id="shopDescription" class="form-control" rows="3" maxlength="2000" readonly></textarea>
                                                 </div>
                                             </div>
-                                            <button type="submit" class="btn-store">Lưu thông tin chi nhánh</button>
-                                        </form>
-                                    </div>
-
-                                    <!-- Sub-tab: Trang chủ chi nhánh -->
-                                    <div id="shopSubHome" class="shop-subcontent">
-                                        <p class="text-muted">Trang chủ chi nhánh hiển thị các danh mục (Bộ áo quần / Phụ kiện) cùng sản phẩm đại diện được chọn ở mục <b>Quản lý sản phẩm</b>.</p>
-                                        <a id="btnViewShopHome" href="#" target="_blank" class="btn-store" style="display:inline-block; text-decoration:none;">
-                                            <i class="fa fa-external-link"></i> Mở trang chủ chi nhánh
-                                        </a>
-                                        <div id="shopHomePreview" class="mt-4"></div>
+                                        </div>
                                     </div>
 
                                     <!-- Sub-tab: Quản lý sản phẩm -->
@@ -628,6 +632,11 @@
                                                     <div class="col-md-6 form-group">
                                                         <label class="profile-info-label">Các size (cách nhau bởi dấu phẩy)</label>
                                                         <input type="text" id="productSizes" class="form-control" maxlength="200" placeholder="VD: S,M,L,XL">
+                                                    </div>
+                                                    <div class="col-md-6 form-group">
+                                                        <label class="profile-info-label">Màu sắc <small class="text-muted">(chọn được nhiều màu)</small></label>
+                                                        <input type="hidden" id="productColor">
+                                                        <div id="productColorSwatches" class="color-swatch-list"></div>
                                                     </div>
                                                     <div class="col-md-12 form-group">
                                                         <label class="profile-info-label">Mô tả sản phẩm (*)</label>
@@ -675,92 +684,8 @@
                                     </div>
 
                                     <!-- Sub-tab: Khuyến mãi -->
-                                    <div id="shopSubPromos" class="shop-subcontent">
-                                        <div id="promoFormCard" class="address-card mb-4">
-                                            <h6 class="font-weight-bold mb-3" id="promoFormTitle">Thêm chương trình khuyến mãi</h6>
-                                            <form id="promoForm">
-                                                <input type="hidden" id="promoId">
-                                                <div class="row">
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Tên khuyến mãi (*)</label>
-                                                        <input type="text" id="promoName" class="form-control" maxlength="150" required>
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Mã khuyến mãi (khách nhập khi đặt hàng)</label>
-                                                        <input type="text" id="promoCode" class="form-control" maxlength="30" placeholder="VD: SALE10">
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Loại khuyến mãi (*)</label>
-                                                        <select id="promoType" class="form-control">
-                                                            <option value="PERCENT">Giảm % giá sản phẩm</option>
-                                                            <option value="SHIPPING">Giảm phí vận chuyển (VND)</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Giá trị (*) <small class="text-muted">(% hoặc số tiền VND)</small></label>
-                                                        <input type="number" id="promoValue" class="form-control" min="1" required>
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Đơn tối thiểu (VND)</label>
-                                                        <input type="number" id="promoMinOrder" class="form-control" min="0" value="0">
-                                                    </div>
-                                                    <div class="col-md-3 form-group">
-                                                        <label class="profile-info-label">Bắt đầu</label>
-                                                        <input type="datetime-local" id="promoStart" class="form-control">
-                                                    </div>
-                                                    <div class="col-md-3 form-group">
-                                                        <label class="profile-info-label">Kết thúc</label>
-                                                        <input type="datetime-local" id="promoEnd" class="form-control">
-                                                    </div>
-                                                    <div class="col-md-12 form-check mb-3 ml-2">
-                                                        <input type="checkbox" class="form-check-input" id="promoActive" checked>
-                                                        <label class="form-check-label" for="promoActive">Kích hoạt</label>
-                                                    </div>
-                                                </div>
-                                                <button type="submit" class="btn-store" id="btnSavePromo">Lưu khuyến mãi</button>
-                                                <button type="button" class="btn btn-link btn-link-danger" id="btnCancelPromo" style="display:none;">Hủy chỉnh sửa</button>
-                                            </form>
-                                        </div>
-                                        <div class="alert auth-alert" id="promoAlert" style="display:none;"></div>
-                                        <div id="promoList"></div>
-                                    </div>
-
-                                    <!-- Sub-tab: Nhà vận chuyển -->
+                                    <!-- Sub-tab: Nhà vận chuyển (chỉ xem - do admin quản lý) -->
                                     <div id="shopSubTransporters" class="shop-subcontent">
-                                        <p class="text-muted">Quản lý nhà vận chuyển (tên, phí vận chuyển VND) áp dụng cho đơn hàng của chi nhánh.</p>
-                                        <div id="transporterFormCard" class="address-card mb-4">
-                                            <h6 class="font-weight-bold mb-3" id="transporterFormTitle">Thêm nhà vận chuyển</h6>
-                                            <form id="transporterForm">
-                                                <input type="hidden" id="transporterId">
-                                                <div class="row">
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Tên nhà vận chuyển (*)</label>
-                                                        <input type="text" id="transporterName" class="form-control" maxlength="100" required>
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Số điện thoại</label>
-                                                        <input type="text" id="transporterPhone" class="form-control" maxlength="20">
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Email</label>
-                                                        <input type="email" id="transporterEmail" class="form-control" maxlength="100">
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Phí vận chuyển - VND (*)</label>
-                                                        <input type="number" id="transporterFee" class="form-control" min="0" step="1000" required>
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Trạng thái</label>
-                                                        <select id="transporterStatus" class="form-control">
-                                                            <option value="active">Đang hoạt động</option>
-                                                            <option value="inactive">Tạm dừng</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <button type="submit" class="btn-store" id="btnSaveTransporter">Lưu</button>
-                                                <button type="button" class="btn btn-link btn-link-danger" id="btnCancelTransporter" style="display:none;">Hủy chỉnh sửa</button>
-                                            </form>
-                                        </div>
                                         <div class="alert auth-alert" id="transporterAlert" style="display:none;"></div>
                                         <div id="transporterList"></div>
                                     </div>
@@ -770,6 +695,15 @@
                                         <div id="revenueSummary"></div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Tab: Đơn hàng của tôi (mọi người dùng) -->
+                            <div id="tabUserOrders" class="profile-tab-content">
+                                <div class="alert auth-alert" id="userOrderAlert" style="display:none;"></div>
+                                <p class="text-muted">Theo dõi đơn hàng: khi đơn <b>Đã giao</b> tới nơi, bấm
+                                    "Đã nhận được hàng" để xác nhận; có thể hủy đơn trước khi nhận, hoặc yêu cầu
+                                    trả hàng - hoàn tiền nếu hàng có vấn đề (chi nhánh sẽ duyệt).</p>
+                                <div id="userOrderList"></div>
                             </div>
 
                             <!-- Tab: Địa chỉ nhận hàng -->
