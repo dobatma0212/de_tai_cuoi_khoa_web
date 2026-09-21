@@ -42,6 +42,15 @@ public interface EmployeeService {
     List<com.storechain.group4.dto.OrderDto> getMyOrders(Long employeeId, String status);
 
     /**
+     * Tạo đơn hàng offline (bán trực tiếp tại quầy): nhân viên chỉ chọn sản phẩm
+     * của chi nhánh mình + số lượng + size; giá/tên sản phẩm do hệ thống tự lấy,
+     * tồn kho chi nhánh bị trừ ngay, đơn hoàn tất (DELIVERED) và gắn handledBy
+     * là nhân viên nhập nên được tính hoa hồng như đơn online đã giao.
+     */
+    com.storechain.group4.dto.OrderDto createOfflineOrder(Long employeeId,
+                                                          com.storechain.group4.dto.OfflineOrderRequest request);
+
+    /**
      * Nhân viên cập nhật trạng thái đơn (giới hạn như manager):
      * xác nhận (CONFIRMED, kèm transporterId — đơn được gắn handledBy là nhân viên
      * để tính hoa hồng khi giao thành công), hủy (CANCELLED, kèm lý do),

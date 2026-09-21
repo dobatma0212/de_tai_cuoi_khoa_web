@@ -57,6 +57,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final ReviewMediaRepository reviewMediaRepository;
     private final EmployeeWorkdayRepository workdayRepository;
     private final com.storechain.group4.repository.TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.RoleRepository roleRepository;
     private final ManagerShopService managerShopService; // dùng chung logic upload ảnh
 
     @Value("${app.employee.commission-rate:0.02}")
@@ -363,8 +364,131 @@ public class EmployeeServiceImpl implements EmployeeService {
         return toOrderDto(orderRepository.save(order));
     }
 
-    /** Hoàn lại tồn kho các sản phẩm của đơn bị hủy/trả về chi nhánh */
-    private void restockOrder(Order order) {
+    /**
+     * Tạo đơn hàng offline (bán tại quầy): nhân viên chỉ chọn sản phẩm + số lượng + size.
+     * Giá và tên sản phẩm lấy từ sản phẩm của chi nhánh (không cho nhập tay),
+     * kiểm tra và trừ tồn kho chi nhánh, đơn hoàn tất ngay (DELIVERED) —
+     * gắn handledBy là nhân viên nhập để tính hoa hồng như đơn online đã giao.
+     */
+    @Override
+    @Transactional
+    public com.storechain.group4.dto.OrderDto createOfflineOrder(Long employeeId,
+                                                                 com.storechain.group4.dto.OfflineOrderRequest request) {
+        Shop shop = findMyShop(employeeId);
+        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm.");
+        }
+
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nhân viên."));
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<com.storechain.group4.model.OrderItem> items = new java.util.ArrayList<>();
+        List<BranchStock> stocksToUpdate = new java.util.ArrayList<>();
+        for (var reqItem : request.getItems()) {
+            if (reqItem.getProductId() == null) {
+                throw new IllegalArgumentException("Vui lòng chọn đầy đủ sản phẩm cho từng dòng trong đơn.");
+            }
+            int quantity = reqItem.getQuantity() == null ? 0 : reqItem.getQuantity();
+            if (quantity < 1) {
+                throw new IllegalArgumentException("Số lượng mỗi sản phẩm phải ít nhất là 1.");
+            }
+            Product product = productRepository.findById(reqItem.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong đơn."));
+            if (!product.getShop().getId().equals(shop.getId())) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" không thuộc chi nhánh bạn đang làm việc.");
+            }
+            // Kiểm tra size: nếu sản phẩm có danh sách size thì phải chọn đúng size có sẵn
+            List<String> validSizes = product.getSizes() == null || product.getSizes().isBlank() ? List.of()
+                    : Arrays.stream(product.getSizes().split(",")).map(String::trim)
+                    .filter(s -> !s.isEmpty()).toList();
+            String size = reqItem.getSize() == null || reqItem.getSize().isBlank() ? null : reqItem.getSize().trim();
+            if (!validSizes.isEmpty() && (size == null || !validSizes.contains(size))) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" phải chọn size thuộc danh sách: " + String.join(", ", validSizes) + ".");
+            }
+
+            // Kiểm tra tồn kho chi nhánh (nguồn chính khi bán tại quầy)
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(product.getId(), shop.getId())
+                    .orElse(null);
+            int available = bs == null ? 0 : Math.max(0, bs.getStock());
+            if (available < quantity) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" chỉ còn " + available + " cái tại chi nhánh.");
+            }
+            bs.setStock(available - quantity);
+            stocksToUpdate.add(bs);
+
+            BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
+            totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(quantity)));
+            items.add(com.storechain.group4.model.OrderItem.builder()
+                    .product(product)
+                    .productName(product.getName())
+                    .imageUrl(product.getImageUrl())
+                    .price(price)
+                    .quantity(quantity)
+                    .size(size)
+                    .color(product.getColor())
+                    .build());
+        }
+
+        Order order = Order.builder()
+                .orderCode(generateOfflineOrderCode())
+                .user(findOrCreateWalkInUser())
+                .shop(shop)
+                .status(Order.STATUS_DELIVERED) // bán tại quầy: hoàn tất ngay -> tính hoa hồng
+                .orderType(Order.TYPE_OFFLINE)
+                .totalAmount(totalAmount)
+                .shippingFee(BigDecimal.ZERO)
+                .discountAmount(BigDecimal.ZERO)
+                .grandTotal(totalAmount)
+                .handledBy(employee)
+                .receiverName(request.getCustomerName() == null || request.getCustomerName().isBlank()
+                        ? null : request.getCustomerName().trim())
+                .receiverPhone(request.getCustomerPhone() == null || request.getCustomerPhone().isBlank()
+                        ? null : request.getCustomerPhone().trim())
+                .receiverAddress(shop.getAddress())
+                .note(request.getNote() == null || request.getNote().isBlank() ? null : request.getNote().trim())
+                .build();
+        // FK nằm ở phía OrderItem (owning side) nên phải set order cho từng dòng
+        items.forEach(oi -> oi.setOrder(order));
+        order.getItems().addAll(items);
+
+        Order saved = orderRepository.save(order);
+        // Trừ tồn kho chi nhánh sau khi tạo đơn thành công
+        branchStockRepository.saveAll(stocksToUpdate);
+        return toOrderDto(saved);
+    }
+
+    /** Mã đơn offline: OFF-<millis>-<4 ký tự> */
+    private String generateOfflineOrderCode() {
+        return "OFF-" + System.currentTimeMillis() + "-"
+                + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Đơn offline của khách vãng lai không có tài khoản, nhưng orders.user_id là NOT NULL
+     * nên gắn vào một tài khoản hệ thống "Khách vãng lai" (tạo mới nếu chưa có).
+     */
+    private User findOrCreateWalkInUser() {
+        return userRepository.findByUsername(WALK_IN_USERNAME)
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .role(roleRepository.findByName(com.storechain.group4.model.RoleType.ROLE_USER)
+                                .orElseGet(() -> roleRepository.save(new com.storechain.group4.model.Role(
+                                        com.storechain.group4.model.RoleType.ROLE_USER, "Khách vãng lai"))))
+                        .username(WALK_IN_USERNAME)
+                        .email("walkin@storechain.local")
+                        .password(java.util.UUID.randomUUID().toString())
+                        .fullName("Khách vãng lai")
+                        .status("active")
+                        .build()));
+    }
+
+    private static final String WALK_IN_USERNAME = "khachvanglai";
+
+    /** Hoàn lại tồn kho các sản phẩm của đơn bị hủy/trả về chi nhánh */    private void restockOrder(Order order) {
         for (var oi : orderItemRepository.findByOrderId(order.getId())) {
             if (oi.getProduct() == null) continue;
             BranchStock bs = branchStockRepository
@@ -411,10 +535,15 @@ public class EmployeeServiceImpl implements EmployeeService {
         return com.storechain.group4.dto.OrderDto.builder()
                 .id(o.getId())
                 .orderCode(o.getOrderCode())
+                .orderType(Order.TYPE_OFFLINE.equals(o.getOrderType()) ? Order.TYPE_OFFLINE : Order.TYPE_ONLINE)
                 .shopId(o.getShop().getId())
                 .shopName(o.getShop().getName())
-                .userId(o.getUser().getId())
-                .customerName(o.getUser().getFullName())
+                .userId(o.getUser() != null ? o.getUser().getId() : null)
+                // Đơn offline: khách vãng lai, tên khách thật lưu ở receiverName
+                .customerName(Order.TYPE_OFFLINE.equals(o.getOrderType())
+                        ? (o.getReceiverName() != null && !o.getReceiverName().isBlank()
+                                ? o.getReceiverName() : "Khách vãng lai")
+                        : o.getUser().getFullName())
                 .status(o.getStatus())
                 .statusLabel(statusLabel(o.getStatus()))
                 .totalAmount(o.getTotalAmount())

@@ -752,6 +752,7 @@
                                     <div class="shop-subtabs">
                                         <button type="button" class="emp-subbtn active" data-sub="empSubProducts">Thuộc chi nhánh</button>
                                         <button type="button" class="emp-subbtn" data-sub="empSubOrders">Đơn hàng</button>
+                                        <button type="button" class="emp-subbtn" data-sub="empSubOffline">Bán tại quầy</button>
                                         <button type="button" class="emp-subbtn" data-sub="empSubWork">Công &amp; Hoa hồng</button>
                                     </div>
 
@@ -874,9 +875,66 @@
                                         <div id="empStatsSummary"></div>
                                         <div id="empWorkLog"></div>
                                     </div>
+
+                                    <!-- Sub-tab: Bán tại quầy (tạo đơn offline + in hóa đơn) -->
+                                    <div id="empSubOffline" class="shop-subcontent">
+                                        <div class="alert auth-alert" id="empOfflineAlert" style="display:none;"></div>
+                                        <p class="text-muted">Chọn sản phẩm, số lượng và size — giá do hệ thống tự lấy theo sản phẩm
+                                            của chi nhánh để tránh nhập sai. Lưu đơn xong có thể in hóa đơn ngay.</p>
+                                        <div class="address-card" style="margin-bottom:20px;">
+                                            <h6 class="font-weight-bold mb-3">Thêm sản phẩm vào đơn</h6>
+                                            <div class="row">
+                                                <div class="col-md-5 form-group">
+                                                    <label class="profile-info-label">Sản phẩm (*)</label>
+                                                    <select id="empOfflineProduct" class="form-control">
+                                                        <option value="">— Chọn sản phẩm —</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2 form-group">
+                                                    <label class="profile-info-label">Size</label>
+                                                    <select id="empOfflineSize" class="form-control"><option value="">—</option></select>
+                                                </div>
+                                                <div class="col-md-2 form-group">
+                                                    <label class="profile-info-label">Số lượng</label>
+                                                    <input type="number" id="empOfflineQty" class="form-control" min="1" value="1">
+                                                </div>
+                                                <div class="col-md-3 form-group d-flex align-items-end">
+                                                    <button type="button" id="empOfflineAdd" class="btn-store" style="padding:9px 18px;font-size:13px;">
+                                                        <i class="fa fa-plus"></i> Thêm vào đơn
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted" id="empOfflineProductHint"></small>
+                                        </div>
+
+                                        <h6 class="font-weight-bold mb-2">Sản phẩm trong đơn</h6>
+                                        <div id="empOfflineCart"></div>
+
+                                        <div class="row mt-3">
+                                            <div class="col-md-4 form-group">
+                                                <label class="profile-info-label">Tên khách hàng (*)</label>
+                                                <input type="text" id="empOfflineCustomerName" class="form-control" maxlength="100" placeholder="VD: Nguyễn Văn A">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label class="profile-info-label">Số điện thoại</label>
+                                                <input type="text" id="empOfflineCustomerPhone" class="form-control" maxlength="15" placeholder="VD: 0901234567">
+                                            </div>
+                                            <div class="col-md-4 form-group">
+                                                <label class="profile-info-label">Tiền khách trả (VND)</label>
+                                                <input type="number" id="empOfflinePaid" class="form-control" min="0" step="1000" placeholder="Để tính tiền thừa">
+                                            </div>
+                                            <div class="col-md-12 form-group">
+                                                <label class="profile-info-label">Ghi chú</label>
+                                                <textarea id="empOfflineNote" class="form-control" rows="2" maxlength="500"></textarea>
+                                            </div>
+                                        </div>
+                                        <button type="button" id="empOfflineSave" class="btn-store" style="padding:10px 24px;">
+                                            <i class="fa fa-check"></i> Lưu đơn &amp; xuất hóa đơn
+                                        </button>
+                                    </div>
+
                                 </div>
                             </div>
-
                             <!-- Tab: Đơn hàng của tôi (mọi người dùng) -->
                             <div id="tabUserOrders" class="profile-tab-content">
                                 <div class="alert auth-alert" id="userOrderAlert" style="display:none;"></div>

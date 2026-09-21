@@ -28,6 +28,10 @@ public class Order {
     public static final String STATUS_RETURNED = "RETURNED";           // Trả hàng - hoàn tiền
     public static final String STATUS_RETURN_REQUESTED = "RETURN_REQUESTED"; // Khách yêu cầu trả hàng
 
+    // Loại đơn hàng: online (đặt qua web) hoặc offline (bán trực tiếp tại quầy)
+    public static final String TYPE_ONLINE = "onl";
+    public static final String TYPE_OFFLINE = "off";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
@@ -61,6 +65,10 @@ public class Order {
 
     @Column(name = "grand_total", nullable = false, precision = 13, scale = 0)
     private BigDecimal grandTotal;
+
+    @Column(name = "order_type", length = 10)
+    @Builder.Default
+    private String orderType = TYPE_ONLINE;
 
     /** Tên chương trình khuyến mãi áp dụng (nếu có) */
     @Column(name = "promo_name", length = 150)

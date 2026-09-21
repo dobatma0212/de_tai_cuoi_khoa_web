@@ -168,6 +168,24 @@ public class EmployeeController {
     }
 
     /**
+     * Tạo đơn hàng offline (bán trực tiếp tại quầy): nhân viên chọn sản phẩm của
+     * chi nhánh + số lượng + size, hệ thống tự lấy giá, trừ tồn kho, hoàn tất đơn
+     * và gắn handledBy để tính hoa hồng. Trả về đơn để in hóa đơn.
+     */
+    @PostMapping("/orders/offline")
+    public ResponseEntity<ApiResponse<com.storechain.group4.dto.OrderDto>> createOfflineOrder(
+            @RequestBody com.storechain.group4.dto.OfflineOrderRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+                    "Tạo đơn bán tại quầy thành công!",
+                    employeeService.createOfflineOrder(currentUser.getId(), request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
      * Xác nhận đơn (CONFIRMED kèm transporterId — đơn được gắn cho nhân viên để tính hoa hồng),
      * hủy đơn (CANCELLED kèm lý do, hoàn tồn kho), trả hàng (RETURNED).
      */

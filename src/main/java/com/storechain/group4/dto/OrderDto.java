@@ -19,6 +19,8 @@ public class OrderDto {
 
     private Long id;
     private String orderCode;
+    /** onl = đặt qua web, off = bán trực tiếp tại quầy */
+    private String orderType;
     private Long shopId;
     private String shopName;
     private Long userId;
