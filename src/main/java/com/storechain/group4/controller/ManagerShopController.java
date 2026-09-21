@@ -209,7 +209,25 @@ public class ManagerShopController {
         }
     }
 
-    /** Sa thải nhân viên: trả về quyền khách hàng, gỡ khỏi chi nhánh (không xóa tài khoản) */
+    /**
+     * Xem thống kê của một nhân viên theo tháng (số công, đơn đã bán, doanh số,
+     * hoa hồng) — dùng được cả cho nhân viên đang làm việc và đã sa thải.
+     */
+    @GetMapping("/employees/{id}/stats")
+    public ResponseEntity<ApiResponse<com.storechain.group4.dto.EmployeeStatsDto>> getEmployeeStats(
+            @PathVariable Long id,
+            @RequestParam(required = false) String month,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Lấy thống kê nhân viên thành công",
+                    managerShopService.getEmployeeStats(currentUser.getId(), id, month)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Sa thải nhân viên: trả về quyền khách hàng (không xóa tài khoản, giữ lịch sử để tra cứu) */
     @DeleteMapping("/employees/{id}")
     public ResponseEntity<ApiResponse<String>> fireEmployee(
             @PathVariable Long id,

@@ -65,6 +65,15 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final com.storechain.group4.repository.RoleRepository roleRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
+    /**
+     * Dùng để tính thống kê công/hoa hồng của nhân viên. Inject @Lazy (không qua
+     * constructor) vì EmployeeServiceImpl cũng cần ManagerShopService (upload ảnh) —
+     * tránh vòng phụ thuộc bean.
+     */
+    @org.springframework.context.annotation.Lazy
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.storechain.group4.service.EmployeeService employeeService;
+
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
@@ -637,8 +646,10 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     @Transactional(readOnly = true)
     public List<com.storechain.group4.dto.EmployeeDto> getMyEmployees(Long managerId) {
         Shop shop = findMyShop(managerId);
-        return userRepository.findByRoleType(RoleType.ROLE_EMPLOYEE).stream()
-                .filter(u -> u.getShop() != null && shop.getId().equals(u.getShop().getId()))
+        // Bao gồm cả nhân viên đã sa thải (role USER nhưng vẫn gắn với chi nhánh)
+        // để quản lý tra cứu lịch sử công việc và hoa hồng
+        return userRepository.findByShopIdAndRoleNameIn(shop.getId(),
+                        java.util.List.of(RoleType.ROLE_EMPLOYEE, RoleType.ROLE_USER)).stream()
                 .map(this::toEmployeeDto)
                 .toList();
     }
@@ -661,9 +672,13 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 throw new IllegalArgumentException(
                         "Chỉ có thể bổ nhiệm người dùng thông thường (USER) làm nhân viên.");
             }
-            if (employee.getShop() != null) {
+            if (employee.getShop() != null && !shop.getId().equals(employee.getShop().getId())) {
                 throw new IllegalArgumentException("Người dùng này đã thuộc một chi nhánh khác.");
             }
+            if (RoleType.ROLE_EMPLOYEE.equals(employee.getRole() == null ? null : employee.getRole().getName())) {
+                throw new IllegalArgumentException("Người này hiện đã là nhân viên của một chi nhánh.");
+            }
+            // Người dùng từng là nhân viên của chi nhánh này (đã sa thải) được thuê lại
             employee.setRole(employeeRole);
             employee.setShop(shop);
         } else {
@@ -708,12 +723,34 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 || employee.getShop() == null || !shop.getId().equals(employee.getShop().getId())) {
             throw new IllegalArgumentException("Người này không phải nhân viên của chi nhánh bạn.");
         }
-        // Sa thải = trả về quyền khách hàng và gỡ khỏi chi nhánh (không xóa tài khoản)
+        // Sa thải = trả về quyền khách hàng (không xóa tài khoản).
+        // Vẫn giữ gắn với chi nhánh để quản lý tra cứu được lịch sử công/hoa hồng
+        // của nhân viên đã sa thải (getMyEmployees lọc theo role nên họ không
+        // xuất hiện trong danh sách "đang làm việc" nữa).
         Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
                 .orElseThrow(() -> new IllegalArgumentException("Role USER chưa được khởi tạo."));
         employee.setRole(userRole);
-        employee.setShop(null);
         userRepository.save(employee);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.storechain.group4.dto.EmployeeStatsDto getEmployeeStats(Long managerId,
+            Long employeeId, String month) {
+        Shop shop = findMyShop(managerId);
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên."));
+        // Nhân viên đang làm việc (ROLE_EMPLOYEE) hoặc đã sa thải (ROLE_USER)
+        // nhưng từng thuộc chi nhánh của quản lý
+        RoleType role = employee.getRole() == null ? null : employee.getRole().getName();
+        boolean belongsToShop = employee.getShop() != null
+                && shop.getId().equals(employee.getShop().getId());
+        boolean isStaffOrFormer = RoleType.ROLE_EMPLOYEE.equals(role)
+                || RoleType.ROLE_USER.equals(role);
+        if (!belongsToShop || !isStaffOrFormer) {
+            throw new IllegalArgumentException("Người này không phải nhân viên (hiện tại hoặc cũ) của chi nhánh bạn.");
+        }
+        return employeeService.getMyStats(employeeId, month);
     }
 
     private com.storechain.group4.dto.EmployeeDto toEmployeeDto(User u) {
@@ -724,6 +761,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .email(u.getEmail())
                 .phone(u.getPhone())
                 .status(u.getStatus())
+                .employed(u.getRole() != null && RoleType.ROLE_EMPLOYEE.equals(u.getRole().getName()))
                 .createdAt(u.getCreatedAt())
                 .build();
     }

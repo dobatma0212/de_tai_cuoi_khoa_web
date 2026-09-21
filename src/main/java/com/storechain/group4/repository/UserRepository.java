@@ -47,4 +47,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.role.name = :roleType ORDER BY u.fullName ASC")
     java.util.List<User> findByRoleType(@Param("roleType") RoleType roleType);
+
+    /** Tất cả nhân viên (đang làm việc + đã sa thải) từng thuộc chi nhánh */
+    @Query("SELECT u FROM User u WHERE u.shop.id = :shopId AND u.role.name IN :roleTypes "
+            + "ORDER BY u.fullName ASC")
+    java.util.List<User> findByShopIdAndRoleNameIn(@Param("shopId") Long shopId,
+            @Param("roleTypes") java.util.Collection<RoleType> roleTypes);
 }

@@ -82,4 +82,12 @@ public interface ManagerShopService {
      * (không xóa tài khoản, giữ lịch sử đơn hàng).
      */
     void fireEmployee(Long managerId, Long employeeId);
+
+    /**
+     * Xem thống kê của một nhân viên (số công, đơn đã bán, doanh số, hoa hồng)
+     * theo tháng — áp dụng cả nhân viên đang làm việc và đã bị sa thải,
+     * để quản lý kiểm soát sau khi nhân viên nghỉ việc.
+     */
+    com.storechain.group4.dto.EmployeeStatsDto getEmployeeStats(Long managerId,
+            Long employeeId, String month);
 }

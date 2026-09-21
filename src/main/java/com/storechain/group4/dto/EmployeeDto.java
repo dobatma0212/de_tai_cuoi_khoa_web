@@ -28,5 +28,8 @@ public class EmployeeDto {
 
     private String status;
 
+    /** Còn đang là nhân viên chi nhánh (false = đã bị sa thải, chỉ còn là khách hàng) */
+    private boolean employed;
+
     private LocalDateTime createdAt;
 }
