@@ -66,7 +66,77 @@ public class ManagerStoreController {
         }
     }
 
-    // (Tạm bỏ phần khuyến mãi — sẽ bổ sung lại sau; nghiệp vụ còn giữ trong ManagerShopService)
+    // ==================== Khuyến mãi ====================
+
+    @GetMapping("/promotions")
+    public ResponseEntity<ApiResponse<List<PromotionDto>>> getPromotions(
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Lấy danh sách khuyến mãi thành công",
+                    managerShopService.getPromotions(currentUser.getId())));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/promotions")
+    public ResponseEntity<ApiResponse<PromotionDto>> createPromotion(
+            @RequestBody PromotionDto request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+                    "Tạo khuyến mãi thành công!",
+                    managerShopService.savePromotion(currentUser.getId(), request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/promotions/{id}")
+    public ResponseEntity<ApiResponse<PromotionDto>> updatePromotion(
+            @PathVariable Long id,
+            @RequestBody PromotionDto request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            request.setId(id);
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Cập nhật khuyến mãi thành công!",
+                    managerShopService.savePromotion(currentUser.getId(), request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/promotions/{id}/active")
+    public ResponseEntity<ApiResponse<PromotionDto>> togglePromotion(
+            @PathVariable Long id,
+            @RequestParam boolean active,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            PromotionDto current = managerShopService.getPromotions(currentUser.getId())
+                    .stream().filter(p -> p.getId().equals(id)).findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khuyến mãi."));
+            current.setActive(active);
+            return ResponseEntity.ok(ApiResponse.success(
+                    active ? "Đã kích hoạt khuyến mãi!" : "Đã tạm dừng khuyến mãi!",
+                    managerShopService.savePromotion(currentUser.getId(), current)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/promotions/{id}")
+    public ResponseEntity<ApiResponse<String>> deletePromotion(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            managerShopService.deletePromotion(currentUser.getId(), id);
+            return ResponseEntity.ok(ApiResponse.success("Xóa khuyến mãi thành công!", null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 
     // ==================== Nhà vận chuyển (chỉ xem - thêm/sửa/xóa do admin quản lý) ====================
 

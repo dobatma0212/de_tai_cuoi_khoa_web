@@ -377,6 +377,7 @@
                 // Load dữ liệu theo sub-tab vừa mở
                 var sub = btn.getAttribute("data-sub");
                 if (sub === "shopSubOrders") loadOrders();
+                else if (sub === "shopSubPromos") loadPromotions();
                 else if (sub === "shopSubTransporters") loadTransporters();
                 else if (sub === "shopSubRevenue") loadRevenue();
             });
@@ -394,6 +395,9 @@
                 onAddCategory();
             }
         });
+
+        $("promoForm").addEventListener("submit", onSavePromo);
+        $("btnCancelPromo").addEventListener("click", resetPromoForm);
 
         renderColorSwatches();
     }
@@ -882,6 +886,127 @@
                     }).catch(function (err) { alert(err.message); });
             }
         };
+    }
+
+    // ==================================================================
+    // ========= Chương trình khuyến mãi (Manager) =======================
+    // ==================================================================
+
+    function loadPromotions() {
+        mgrBaseApi("GET", "/promotions").then(function (res) {
+            renderPromotions(res.data || []);
+        }).catch(function (err) {
+            showAlert($("promoAlert"), err.message, "error");
+        });
+    }
+
+    function renderPromotions(list) {
+        var container = $("promoList");
+        if (!list.length) {
+            container.innerHTML = '<p class="text-muted">Chưa có chương trình khuyến mãi nào.</p>';
+            return;
+        }
+        container.innerHTML = list.map(function (p) {
+            var valueText = p.promoType === "PERCENT"
+                ? "Giảm " + p.value + "%"
+                : "Giảm " + formatVnd(p.value) + " phí vận chuyển";
+            return '<div class="address-card' + (p.active ? " is-default" : "") + '">' +
+                '<div class="d-flex justify-content-between align-items-start flex-wrap">' +
+                "<div><b>" + escapeHtml(p.name) + "</b>" +
+                (p.code ? ' <span class="badge-representative">' + escapeHtml(p.code) + "</span>" : "") +
+                (p.active ? "" : ' <span class="badge badge-secondary">Tạm dừng</span>') +
+                '<div><small class="text-muted">' + valueText +
+                (p.minOrderAmount > 0 ? " — đơn tối thiểu " + formatVnd(p.minOrderAmount) : "") + "</small></div>" +
+                '<div><small class="text-muted">' + escapeHtml(p.startDate || "") + " → " +
+                escapeHtml(p.endDate || "không giới hạn") + "</small></div></div>" +
+                '<div class="mt-2">' +
+                '<button type="button" class="btn btn-sm btn-outline-store" data-toggle-promo="' + p.id + '">' +
+                (p.active ? "Tạm dừng" : "Kích hoạt") + "</button> " +
+                '<button type="button" class="btn btn-sm btn-outline-secondary" data-edit-promo="' + p.id + '">Sửa</button> ' +
+                '<button type="button" class="btn btn-sm btn-link btn-link-danger" data-del-promo="' + p.id + '">Xóa</button>' +
+                "</div></div></div>";
+        }).join("");
+
+        container.onclick = function (e) {
+            var btn = e.target.closest("button");
+            if (!btn) return;
+            if (btn.getAttribute("data-toggle-promo") !== null) {
+                var id = btn.getAttribute("data-toggle-promo");
+                var makeActive = btn.textContent.trim() === "Kích hoạt";
+                mgrBaseApi("PATCH", "/promotions/" + id + "/active?active=" + makeActive).then(function () {
+                    showAlert($("promoAlert"), "Cập nhật trạng thái khuyến mãi thành công!", "success");
+                    loadPromotions();
+                }).catch(function (err) { alert(err.message); });
+            } else if (btn.getAttribute("data-edit-promo") !== null) {
+                startEditPromo(parseInt(btn.getAttribute("data-edit-promo"), 10));
+            } else if (btn.getAttribute("data-del-promo") !== null) {
+                if (!confirm("Xóa chương trình khuyến mãi này?")) return;
+                mgrBaseApi("DELETE", "/promotions/" + btn.getAttribute("data-del-promo")).then(function () {
+                    showAlert($("promoAlert"), "Xóa khuyến mãi thành công!", "success");
+                    loadPromotions();
+                }).catch(function (err) { alert(err.message); });
+            }
+        };
+    }
+
+    function startEditPromo(id) {
+        mgrBaseApi("GET", "/promotions").then(function (res) {
+            var p = (res.data || []).find(function (x) { return x.id === id; });
+            if (!p) return;
+            $("promoId").value = p.id;
+            $("promoName").value = p.name || "";
+            $("promoCode").value = p.code || "";
+            $("promoType").value = p.promoType || "PERCENT";
+            $("promoValue").value = p.value;
+            $("promoMinOrder").value = p.minOrderAmount || 0;
+            $("promoStart").value = toLocalInput(p.startDate);
+            $("promoEnd").value = toLocalInput(p.endDate);
+            $("promoActive").checked = !!p.active;
+            $("promoFormTitle").textContent = "Cập nhật khuyến mãi";
+            $("btnCancelPromo").style.display = "";
+            $("promoFormCard").scrollIntoView({ behavior: "smooth" });
+        });
+    }
+
+    function toLocalInput(dt) {
+        if (!dt) return "";
+        // "2026-09-16 15:30:00" -> "2026-09-16T15:30"
+        return String(dt).replace(" ", "T").slice(0, 16);
+    }
+
+    function onSavePromo(e) {
+        e.preventDefault();
+        hideAlert($("promoAlert"));
+        var payload = {
+            name: $("promoName").value.trim(),
+            code: $("promoCode").value.trim(),
+            promoType: $("promoType").value,
+            value: $("promoValue").value ? Number($("promoValue").value) : null,
+            minOrderAmount: $("promoMinOrder").value ? Number($("promoMinOrder").value) : 0,
+            // Định dạng khớp @JsonFormat "yyyy-MM-dd'T'HH:mm" của PromotionDto
+            startDate: $("promoStart").value || null,
+            endDate: $("promoEnd").value || null,
+            active: $("promoActive").checked
+        };
+        var id = $("promoId").value;
+        var request = id
+            ? mgrBaseApi("PUT", "/promotions/" + id, payload)
+            : mgrBaseApi("POST", "/promotions", payload);
+        request.then(function () {
+            showAlert($("promoAlert"), id ? "Cập nhật khuyến mãi thành công!" : "Tạo khuyến mãi thành công!", "success");
+            resetPromoForm();
+            loadPromotions();
+        }).catch(function (err) {
+            showAlert($("promoAlert"), err.message, "error");
+        });
+    }
+
+    function resetPromoForm() {
+        $("promoForm").reset();
+        $("promoId").value = "";
+        $("promoActive").checked = true;
+        $("promoFormTitle").textContent = "Thêm chương trình khuyến mãi";
+        $("btnCancelPromo").style.display = "none";
     }
 
     // ==================================================================

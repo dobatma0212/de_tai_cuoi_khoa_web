@@ -25,7 +25,7 @@ public class Promotion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "promo_id")
+    @Column(name = "promotion_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
