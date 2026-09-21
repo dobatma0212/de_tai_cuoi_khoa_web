@@ -17,5 +17,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByStatus(String status);
 
+    /** Các đơn do một nhân viên phụ trách (tính hoa hồng) */
+    List<Order> findByHandledByIdOrderByCreatedAtDesc(Long employeeId);
+
     boolean existsByOrderCode(String orderCode);
 }

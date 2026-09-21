@@ -29,6 +29,13 @@
         return n.toLocaleString("vi-VN") + "₫";
     }
 
+    /** "Đen, Trắng" -> ["Đen","Trắng"] */
+    function parseColorList(value) {
+        return String(value || "").split(",")
+            .map(function (s) { return s.trim(); })
+            .filter(function (s) { return s.length > 0; });
+    }
+
     function starsHtml(rating) {
         var html = "";
         for (var i = 1; i <= 5; i++) {
@@ -40,6 +47,7 @@
     var productId = null;
     var product = null;
     var selectedSize = "";
+    var selectedColor = "";
     var pickedRating = 0;
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -119,6 +127,37 @@
             $("pdSizes").querySelector(".size-btn").classList.add("active");
         }
 
+        // Chọn màu (vòng tròn màu, giống bảng màu bên trang quản lý)
+        var colors = parseColorList(p.color);
+        var COLOR_HEX = {
+            "Đen": "#222222", "Trắng": "#ffffff", "Xám": "#9e9e9e",
+            "Xanh navy": "#1b2a4a", "Đỏ": "#d32f2f", "Be": "#d9c8a9",
+            "Nâu": "#7a4b2a", "Xanh lá": "#2e7d32", "Vàng": "#f2c200", "Hồng": "#f4a7b9"
+        };
+        if (colors.length) {
+            $("pdColorSection").style.display = "block";
+            $("pdColors").innerHTML = colors.map(function (c) {
+                var hex = COLOR_HEX[c] || "#cccccc";
+                return '<span class="color-dot" data-color="' + escapeHtml(c) + '" title="' + escapeHtml(c) + '"' +
+                    ' style="background:' + hex + ';"></span>';
+            }).join("");
+            Array.prototype.forEach.call($("pdColors").querySelectorAll(".color-dot"), function (dot) {
+                dot.addEventListener("click", function () {
+                    selectedColor = dot.getAttribute("data-color");
+                    $("pdColorName").textContent = "— " + selectedColor;
+                    Array.prototype.forEach.call($("pdColors").querySelectorAll(".color-dot"), function (d) {
+                        d.classList.remove("active");
+                    });
+                    dot.classList.add("active");
+                });
+            });
+            selectedColor = colors[0];
+            $("pdColorName").textContent = "— " + selectedColor;
+            $("pdColors").querySelector(".color-dot").classList.add("active");
+        } else {
+            selectedColor = "";
+        }
+
         $("pdMain").style.display = "block";
         $("pdReviews").style.display = "block";
 
@@ -144,12 +183,14 @@
             body: JSON.stringify({
                 productId: productId,
                 size: selectedSize,
+                color: selectedColor,
                 quantity: qty
             })
         }).then(function (r) { return r.json(); }).then(function (data) {
             if (data.success === false) throw new Error(data.message);
             alert("Đã thêm vào giỏ hàng: " + product.name +
-                (selectedSize ? " (size " + selectedSize + ")" : "") + " x" + qty);
+                (selectedSize ? " (size " + selectedSize + ")" : "") +
+                (selectedColor ? " - màu " + selectedColor : "") + " x" + qty);
         }).catch(function (err) {
             alert(err.message || "Không thể thêm vào giỏ hàng.");
         });

@@ -42,4 +42,8 @@ public class OrderItem {
 
     @Column(name = "size", length = 10)
     private String size;
+
+    /** Màu đã chọn (snapshot từ giỏ hàng) */
+    @Column(name = "color", length = 50)
+    private String color;
 }

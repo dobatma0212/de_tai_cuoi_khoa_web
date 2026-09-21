@@ -71,6 +71,11 @@ public class Order {
     @JoinColumn(name = "transporter_id")
     private Transporter transporter;
 
+    /** Nhân viên phụ trách đơn (bán trực tiếp tại chi nhánh / xử lý đơn), dùng tính hoa hồng */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "handled_by")
+    private User handledBy;
+
     /** Địa chỉ nhận hàng snapshot */
     @Column(name = "receiver_name", length = 100)
     private String receiverName;

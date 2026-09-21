@@ -709,8 +709,7 @@
         ["DELIVERED", "Đã giao"],
         ["RECEIVED", "Đã nhận hàng"],
         ["CANCELLED", "Đã hủy"],
-        ["RETURNED", "Trả hàng - hoàn tiền"],
-        ["RETURN_REQUESTED", "Yêu cầu trả hàng"]
+        ["RETURN", "Trả hàng - hoàn tiền"]
     ];
     var transporters = [];
     var currentOrderStatus = "";
@@ -739,6 +738,12 @@
 
     function filterOrders() {
         if (!currentOrderStatus) return orderCache;
+        // Chip "Trả hàng - hoàn tiền" gộp cả 2 trạng thái: đã trả + khách yêu cầu trả
+        if (currentOrderStatus === "RETURN") {
+            return orderCache.filter(function (o) {
+                return o.status === "RETURNED" || o.status === "RETURN_REQUESTED";
+            });
+        }
         return orderCache.filter(function (o) { return o.status === currentOrderStatus; });
     }
 
@@ -747,7 +752,7 @@
         container.innerHTML = ORDER_STATUSES.map(function (s) {
             var count = s[0] === ""
                 ? orderCache.length
-                : orderCache.filter(function (o) { return o.status === s[0]; }).length;
+                : filterOrders().filter(function (o) { return s[0] === "RETURN" || o.status === s[0]; }).length;
             var active = currentOrderStatus === s[0] ? " active" : "";
             return '<div class="order-filter-item' + active + '" data-status="' + s[0] + '">' +
                 "<span>" + s[1] + "</span>" +
@@ -935,8 +940,12 @@
             ["Đơn bị hủy", r.cancelledOrders, "#dc3545"],
             ["Trả hàng/hoàn tiền", r.returnedOrders, "#6c757d"]
         ];
+        var extraLabels = {
+            RETURNED: "Trả hàng - hoàn tiền",
+            RETURN_REQUESTED: "Yêu cầu trả hàng"
+        };
         var statusRows = Object.keys(r.statusCounts || {}).map(function (k) {
-            var label = k;
+            var label = extraLabels[k] || k;
             ORDER_STATUSES.forEach(function (s) { if (s[0] === k) label = s[1]; });
             return "<li>" + label + ": <b>" + r.statusCounts[k] + "</b> đơn</li>";
         }).join("");

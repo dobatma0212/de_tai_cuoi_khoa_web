@@ -51,6 +51,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class StorefrontServiceImpl implements StorefrontService {
 
+    /** Số phút đơn đã xác nhận chuyển sang Đang giao (mặc định 2 phút) */
+    @org.springframework.beans.factory.annotation.Value("${app.order.shipping-delay-minutes:2}")
+    private long shippingDelayMinutes;
+
+    /** Số phút đơn Đang giao chuyển sang Đã giao (mặc định 5 phút) */
+    @org.springframework.beans.factory.annotation.Value("${app.order.deliver-delay-minutes:5}")
+    private long deliverDelayMinutes;
+
     private final ProductRepository productRepository;
     private final ProductReviewRepository reviewRepository;
     private final ReviewMediaRepository reviewMediaRepository;
@@ -129,7 +137,7 @@ public class StorefrontServiceImpl implements StorefrontService {
 
     @Override
     @Transactional
-    public CartItemDto addToCart(Long userId, Long productId, String size, int quantity) {
+    public CartItemDto addToCart(Long userId, Long productId, String size, String color, int quantity) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
         if (!"active".equalsIgnoreCase(product.getStatus())) {
@@ -151,15 +159,24 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (sizes.isEmpty()) {
             chosen = "";
         }
-        // Trùng sản phẩm + size thì cộng dồn số lượng
+        List<String> colors = parseSizes(product.getColor());
+        String chosenColor = color == null ? "" : color.trim();
+        if (!colors.isEmpty() && !colors.contains(chosenColor)) {
+            throw new IllegalArgumentException("Vui lòng chọn màu: " + String.join(", ", colors));
+        }
+        if (colors.isEmpty()) {
+            chosenColor = "";
+        }
+        // Trùng sản phẩm + size + màu thì cộng dồn số lượng
         CartItem item = cartItemRepository
-                .findByUserIdAndProductIdAndSize(userId, productId, chosen)
+                .findByUserIdAndProductIdAndSizeAndColor(userId, productId, chosen, chosenColor)
                 .orElse(null);
         if (item == null) {
             item = cartItemRepository.save(CartItem.builder()
                     .user(User.builder().id(userId).build())
                     .product(product)
                     .size(chosen)
+                    .color(chosenColor)
                     .quantity(qty)
                     .build());
         } else {
@@ -373,6 +390,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .price(p.getPrice())
                     .quantity(ci.getQuantity())
                     .size(ci.getSize())
+                    .color(ci.getColor())
                     .build());
             // Trừ tồn kho tại chi nhánh được phân phối
             BranchStock bs = branchStockRepository
@@ -407,16 +425,18 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .stream().map(this::toOrderDto).toList();
     }
 
-    /** Đẩy mốc giao tự động: Đã xác nhận quá 10s -> Đang giao, quá 10s nữa -> Đã giao */
+    /** Đơn phải được xác nhận trước rồi mới tự trượt: Đã xác nhận qua X phút -> Đang giao -> Đã giao. Đơn NEW không bao giờ tự chuyển. */
     private void autoAdvanceStaleOrders() {
         LocalDateTime now = LocalDateTime.now();
         List<Order> toSave = new ArrayList<>();
         orderRepository.findByStatus(Order.STATUS_CONFIRMED).stream()
-                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .filter(o -> o.getUpdatedAt() != null
+                        && o.getUpdatedAt().plusMinutes(shippingDelayMinutes).isBefore(now))
                 .peek(o -> o.setStatus(Order.STATUS_SHIPPING))
                 .forEach(toSave::add);
         orderRepository.findByStatus(Order.STATUS_SHIPPING).stream()
-                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .filter(o -> o.getUpdatedAt() != null
+                        && o.getUpdatedAt().plusMinutes(deliverDelayMinutes).isBefore(now))
                 .peek(o -> o.setStatus(Order.STATUS_DELIVERED))
                 .forEach(toSave::add);
         if (!toSave.isEmpty()) {
@@ -517,6 +537,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .stock(p.getStock())
                 .sizes(p.getSizes())
                 .sizesList(sizesList)
+                .color(p.getColor())
                 .representative(p.isRepresentative())
                 .status(p.getStatus())
                 .createdAt(p.getCreatedAt())
@@ -548,6 +569,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .imageUrl(p.getImageUrl())
                 .price(p.getPrice())
                 .size(ci.getSize())
+                .color(ci.getColor())
                 .quantity(ci.getQuantity())
                 .stock(branchStockRepository.sumStockByProductId(p.getId()))
                 .subtotal(p.getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
@@ -563,6 +585,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                         .price(oi.getPrice())
                         .quantity(oi.getQuantity())
                         .size(oi.getSize())
+                        .color(oi.getColor())
                         .subtotal(oi.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())))
                         .build())
                 .collect(Collectors.toList());

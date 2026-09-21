@@ -11,8 +11,11 @@ import com.storechain.group4.model.BranchStock;
 import com.storechain.group4.model.Order;
 import com.storechain.group4.model.Product;
 import com.storechain.group4.model.Promotion;
+import com.storechain.group4.model.Role;
+import com.storechain.group4.model.RoleType;
 import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.ShopCategory;
+import com.storechain.group4.model.User;
 import com.storechain.group4.repository.BranchStockRepository;
 import com.storechain.group4.repository.OrderItemRepository;
 import com.storechain.group4.repository.OrderRepository;
@@ -58,9 +61,20 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final com.storechain.group4.repository.CartItemRepository cartItemRepository;
     private final com.storechain.group4.repository.ProductReviewRepository reviewRepository;
     private final com.storechain.group4.repository.ReviewMediaRepository reviewMediaRepository;
+    private final com.storechain.group4.repository.UserRepository userRepository;
+    private final com.storechain.group4.repository.RoleRepository roleRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
+
+    /** Số phút đơn đã xác nhận chuyển sang Đang giao (mặc định 2 phút) */
+    @Value("${app.order.shipping-delay-minutes:2}")
+    private long shippingDelayMinutes;
+
+    /** Số phút đơn Đang giao chuyển sang Đã giao (mặc định 5 phút) */
+    @Value("${app.order.deliver-delay-minutes:5}")
+    private long deliverDelayMinutes;
 
     private static final String DEFAULT_CATEGORY_CLOTHING = "Bộ áo quần";
     private static final String DEFAULT_CATEGORY_ACCESSORY = "Phụ kiện";
@@ -551,7 +565,8 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         BigDecimal shippingLoss = BigDecimal.ZERO; // phí VC mất đi cho đơn hủy/trả hàng
 
         for (Order o : orders) {
-            if (Order.STATUS_DELIVERED.equals(o.getStatus())) {
+            // Đơn thành công = đã giao HOẶC khách đã xác nhận nhận hàng
+            if (Order.STATUS_DELIVERED.equals(o.getStatus()) || Order.STATUS_RECEIVED.equals(o.getStatus())) {
                 delivered++;
                 revenue = revenue.add(o.getGrandTotal() == null ? BigDecimal.ZERO : o.getGrandTotal());
                 productAmount = productAmount.add(o.getTotalAmount() == null ? BigDecimal.ZERO : o.getTotalAmount());
@@ -592,11 +607,13 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         LocalDateTime now = LocalDateTime.now();
         List<Order> toSave = new java.util.ArrayList<>();
         orderRepository.findByStatus(Order.STATUS_CONFIRMED).stream()
-                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .filter(o -> o.getUpdatedAt() != null
+                        && o.getUpdatedAt().plusMinutes(shippingDelayMinutes).isBefore(now))
                 .peek(o -> o.setStatus(Order.STATUS_SHIPPING))
                 .forEach(toSave::add);
         orderRepository.findByStatus(Order.STATUS_SHIPPING).stream()
-                .filter(o -> o.getUpdatedAt() != null && o.getUpdatedAt().plusSeconds(10).isBefore(now))
+                .filter(o -> o.getUpdatedAt() != null
+                        && o.getUpdatedAt().plusMinutes(deliverDelayMinutes).isBefore(now))
                 .peek(o -> o.setStatus(Order.STATUS_DELIVERED))
                 .forEach(toSave::add);
         if (!toSave.isEmpty()) {
@@ -612,6 +629,103 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         return o.getTransporter() != null && o.getTransporter().getBaseFee() != null
                 ? o.getTransporter().getBaseFee()
                 : BigDecimal.ZERO;
+    }
+
+    // ============ Quản lý nhân viên chi nhánh ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.storechain.group4.dto.EmployeeDto> getMyEmployees(Long managerId) {
+        Shop shop = findMyShop(managerId);
+        return userRepository.findByRoleType(RoleType.ROLE_EMPLOYEE).stream()
+                .filter(u -> u.getShop() != null && shop.getId().equals(u.getShop().getId()))
+                .map(this::toEmployeeDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public com.storechain.group4.dto.EmployeeDto hireEmployee(Long managerId,
+            com.storechain.group4.dto.HireEmployeeRequest request) {
+        Shop shop = findMyShop(managerId);
+        Role employeeRole = roleRepository.findByName(RoleType.ROLE_EMPLOYEE)
+                .orElseThrow(() -> new IllegalArgumentException("Role EMPLOYEE chưa được khởi tạo."));
+
+        User employee;
+        if (request.getUserId() != null) {
+            // Bổ nhiệm người dùng hiện có: chỉ ROLE_USER mới được thăng làm nhân viên
+            employee = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng có ID này."));
+            if (employee.getRole() == null
+                    || !RoleType.ROLE_USER.equals(employee.getRole().getName())) {
+                throw new IllegalArgumentException(
+                        "Chỉ có thể bổ nhiệm người dùng thông thường (USER) làm nhân viên.");
+            }
+            if (employee.getShop() != null) {
+                throw new IllegalArgumentException("Người dùng này đã thuộc một chi nhánh khác.");
+            }
+            employee.setRole(employeeRole);
+            employee.setShop(shop);
+        } else {
+            // Tạo tài khoản nhân viên mới
+            String username = request.getUsername() == null ? "" : request.getUsername().trim();
+            String email = request.getEmail() == null ? "" : request.getEmail().trim();
+            String fullName = request.getFullName() == null ? "" : request.getFullName().trim();
+            String password = request.getPassword() == null ? "" : request.getPassword();
+            if (username.isEmpty() || email.isEmpty() || fullName.isEmpty() || password.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Vui lòng nhập đủ tên đăng nhập, email, họ tên và mật khẩu để tạo tài khoản nhân viên.");
+            }
+            if (password.length() < 6) {
+                throw new IllegalArgumentException("Mật khẩu nhân viên tối thiểu 6 ký tự.");
+            }
+            if (userRepository.existsByUsername(username)) {
+                throw new IllegalArgumentException("Tên đăng nhập \"" + username + "\" đã tồn tại.");
+            }
+            if (userRepository.existsByEmail(email)) {
+                throw new IllegalArgumentException("Email \"" + email + "\" đã được sử dụng.");
+            }
+            employee = User.builder()
+                    .username(username)
+                    .email(email)
+                    .password(passwordEncoder.encode(password))
+                    .fullName(fullName)
+                    .phone(request.getPhone() == null ? null : request.getPhone().trim())
+                    .role(employeeRole)
+                    .shop(shop)
+                    .build();
+        }
+        return toEmployeeDto(userRepository.save(employee));
+    }
+
+    @Override
+    @Transactional
+    public void fireEmployee(Long managerId, Long employeeId) {
+        Shop shop = findMyShop(managerId);
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên."));
+        if (employee.getRole() == null || !RoleType.ROLE_EMPLOYEE.equals(employee.getRole().getName())
+                || employee.getShop() == null || !shop.getId().equals(employee.getShop().getId())) {
+            throw new IllegalArgumentException("Người này không phải nhân viên của chi nhánh bạn.");
+        }
+        // Sa thải = trả về quyền khách hàng và gỡ khỏi chi nhánh (không xóa tài khoản)
+        Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
+                .orElseThrow(() -> new IllegalArgumentException("Role USER chưa được khởi tạo."));
+        employee.setRole(userRole);
+        employee.setShop(null);
+        userRepository.save(employee);
+    }
+
+    private com.storechain.group4.dto.EmployeeDto toEmployeeDto(User u) {
+        return com.storechain.group4.dto.EmployeeDto.builder()
+                .id(u.getId())
+                .username(u.getUsername())
+                .fullName(u.getFullName())
+                .email(u.getEmail())
+                .phone(u.getPhone())
+                .status(u.getStatus())
+                .createdAt(u.getCreatedAt())
+                .build();
     }
 
     // ============ Mapper ============
@@ -674,6 +788,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                         .price(oi.getPrice())
                         .quantity(oi.getQuantity())
                         .size(oi.getSize())
+                        .color(oi.getColor())
                         .subtotal(oi.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())))
                         .build())
                 .collect(Collectors.toList());

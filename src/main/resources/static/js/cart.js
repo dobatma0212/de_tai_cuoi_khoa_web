@@ -103,6 +103,7 @@
                 '<a href="/product-detail.html?productId=' + it.productId + '" style="color:inherit;">' +
                 '<b>' + escapeHtml(it.productName) + "</b></a>" +
                 (it.size ? '<div><small class="text-muted">Size: ' + escapeHtml(it.size) + "</small></div>" : "") +
+                (it.color ? '<div><small class="text-muted">Màu: ' + escapeHtml(it.color) + "</small></div>" : "") +
                 '<div><small class="text-muted">Male Fashion — ' +
                 formatVnd(it.price) + "</small></div>" +
                 "</div>" +
@@ -259,6 +260,7 @@
             var items = (o.items || []).map(function (it) {
                 return "<li>" + escapeHtml(it.productName) +
                     (it.size ? " (size " + escapeHtml(it.size) + ")" : "") +
+                    (it.color ? " - màu " + escapeHtml(it.color) : "") +
                     " x" + it.quantity + "</li>";
             }).join("");
             // Khách có thể hủy đơn trước khi nhận hàng, xác nhận đã nhận,

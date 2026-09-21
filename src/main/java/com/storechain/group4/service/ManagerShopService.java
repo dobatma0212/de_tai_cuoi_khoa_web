@@ -64,4 +64,22 @@ public interface ManagerShopService {
     // ============ Doanh thu chi nhánh ============
 
     RevenueDto getRevenue(Long managerId);
+
+    // ============ Quản lý nhân viên chi nhánh ============
+
+    /** Danh sách nhân viên đang làm việc tại chi nhánh của quản lý */
+    List<com.storechain.group4.dto.EmployeeDto> getMyEmployees(Long managerId);
+
+    /**
+     * Bổ nhiệm nhân viên: tạo tài khoản mới hoặc thăng ROLE_USER hiện có
+     * thành ROLE_EMPLOYEE và gán vào chi nhánh của quản lý.
+     */
+    com.storechain.group4.dto.EmployeeDto hireEmployee(Long managerId,
+            com.storechain.group4.dto.HireEmployeeRequest request);
+
+    /**
+     * Sa thải nhân viên: trả vai trò về ROLE_USER và gỡ khỏi chi nhánh
+     * (không xóa tài khoản, giữ lịch sử đơn hàng).
+     */
+    void fireEmployee(Long managerId, Long employeeId);
 }

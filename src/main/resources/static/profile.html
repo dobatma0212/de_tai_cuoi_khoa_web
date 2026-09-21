@@ -491,6 +491,7 @@
                                 <button type="button" class="tab-btn active" data-tab="tabInfo">Thông tin cá nhân</button>
                                 <button type="button" class="tab-btn" data-tab="tabPassword">Đổi mật khẩu</button>
                                 <button type="button" class="tab-btn" data-tab="tabShop" id="tabShopBtn" style="display:none;">Quản lý chi nhánh</button>
+                                <button type="button" class="tab-btn" data-tab="tabEmployee" id="tabEmployeeBtn" style="display:none;">Nhân viên chi nhánh</button>
                                 <button type="button" class="tab-btn" data-tab="tabUserOrders">Đơn hàng của tôi</button>
                                 <button type="button" class="tab-btn" data-tab="tabAddress">Địa chỉ nhận hàng</button>
                             </div>
@@ -564,6 +565,7 @@
                                         <button type="button" class="shop-subbtn" data-sub="shopSubOrders">Đơn hàng</button>
                                                                                 <button type="button" class="shop-subbtn" data-sub="shopSubTransporters">Nhà vận chuyển</button>
                                         <button type="button" class="shop-subbtn" data-sub="shopSubRevenue">Doanh thu</button>
+                                        <button type="button" class="shop-subbtn" data-sub="shopSubStaff">Nhân viên</button>
                                     </div>
 
                                     <!-- Sub-tab: Thông tin chi nhánh (chỉ đọc - do admin cập nhật) -->
@@ -694,6 +696,184 @@
                                     <div id="shopSubRevenue" class="shop-subcontent">
                                         <div id="revenueSummary"></div>
                                     </div>
+
+                                    <!-- Sub-tab: Nhân viên chi nhánh (bổ nhiệm / sa thải) -->
+                                    <div id="shopSubStaff" class="shop-subcontent">
+                                        <div class="alert auth-alert" id="staffAlert" style="display:none;"></div>
+                                        <div id="hireFormCard" class="address-card" style="margin-bottom:20px;">
+                                            <h6 class="font-weight-bold mb-3">Bổ nhiệm nhân viên mới</h6>
+                                            <p class="text-muted mb-2" style="font-size:13px;">
+                                                Tạo tài khoản nhân viên mới, hoặc nhập <b>ID người dùng hiện có</b> để thăng người dùng thông thường thành nhân viên chi nhánh.
+                                            </p>
+                                            <form id="hireForm">
+                                                <div class="row">
+                                                    <div class="col-md-4 form-group">
+                                                        <label class="profile-info-label">ID người dùng hiện có (tùy chọn)</label>
+                                                        <input type="number" id="hireUserId" class="form-control" min="1" placeholder="Để trống nếu tạo mới">
+                                                    </div>
+                                                    <div class="col-md-4 form-group">
+                                                        <label class="profile-info-label">Tên đăng nhập (*)</label>
+                                                        <input type="text" id="hireUsername" class="form-control" maxlength="50">
+                                                    </div>
+                                                    <div class="col-md-4 form-group">
+                                                        <label class="profile-info-label">Mật khẩu (*)</label>
+                                                        <input type="password" id="hirePassword" class="form-control" minlength="6" placeholder="Tối thiểu 6 ký tự">
+                                                    </div>
+                                                    <div class="col-md-4 form-group">
+                                                        <label class="profile-info-label">Email (*)</label>
+                                                        <input type="email" id="hireEmail" class="form-control" maxlength="100">
+                                                    </div>
+                                                    <div class="col-md-4 form-group">
+                                                        <label class="profile-info-label">Họ và tên (*)</label>
+                                                        <input type="text" id="hireFullName" class="form-control" maxlength="100">
+                                                    </div>
+                                                    <div class="col-md-4 form-group">
+                                                        <label class="profile-info-label">Số điện thoại</label>
+                                                        <input type="text" id="hirePhone" class="form-control" maxlength="15">
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn-store" style="padding:9px 18px;font-size:13px;">
+                                                    <i class="fa fa-user-plus"></i> Bổ nhiệm
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <h6 class="font-weight-bold" id="staffListTitle">Danh sách nhân viên</h6>
+                                        <div id="staffList"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: Nhân viên chi nhánh (chỉ Employee) -->
+                            <div id="tabEmployee" class="profile-tab-content">
+                                <div id="empNoShop" style="display:none;" class="alert alert-warning">
+                                    Bạn chưa được phân công vào chi nhánh nào.
+                                </div>
+                                <div id="empWrapper" style="display:none;">
+                                    <div class="shop-subtabs">
+                                        <button type="button" class="emp-subbtn active" data-sub="empSubProducts">Thuộc chi nhánh</button>
+                                        <button type="button" class="emp-subbtn" data-sub="empSubOrders">Đơn hàng</button>
+                                        <button type="button" class="emp-subbtn" data-sub="empSubWork">Công &amp; Hoa hồng</button>
+                                    </div>
+
+                                    <!-- Sub-tab: Thuộc chi nhánh (thông tin chi nhánh + quản lý sản phẩm) -->
+                                    <div id="empSubProducts" class="shop-subcontent active">
+                                        <div class="row">
+                                            <div class="col-md-6 form-group">
+                                                <label class="profile-info-label">Tên chi nhánh</label>
+                                                <input type="text" id="empShopName" class="form-control" maxlength="100" readonly>
+                                            </div>
+                                            <div class="col-md-6 form-group">
+                                                <label class="profile-info-label">Quản lý chi nhánh</label>
+                                                <input type="text" id="empShopManager" class="form-control" maxlength="100" readonly placeholder="Chưa có quản lý">
+                                            </div>
+                                            <div class="col-md-6 form-group">
+                                                <label class="profile-info-label">Số điện thoại</label>
+                                                <input type="text" id="empShopPhone" class="form-control" maxlength="20" readonly>
+                                            </div>
+                                            <div class="col-md-12 form-group">
+                                                <label class="profile-info-label">Địa chỉ</label>
+                                                <input type="text" id="empShopAddress" class="form-control" maxlength="255" readonly>
+                                            </div>
+                                            <div class="col-md-12 form-group">
+                                                <label class="profile-info-label">Mô tả chi nhánh</label>
+                                                <textarea id="empShopDescription" class="form-control" rows="2" maxlength="2000" readonly></textarea>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-md-3 mb-3">
+                                                <h6 class="font-weight-bold mb-2" style="font-size:14px;">Danh mục sản phẩm</h6>
+                                                <div class="order-filter-list" id="empCategoryChips"></div>
+                                            </div>
+                                            <div class="col-md-9">
+                                                <div class="alert auth-alert" id="empProductAlert" style="display:none;"></div>
+                                                <div id="empProductFormCard" class="address-card" style="margin-bottom:20px;">
+                                                    <h6 class="font-weight-bold mb-3" id="empProductFormTitle">Thêm sản phẩm mới</h6>
+                                                    <form id="empProductForm">
+                                                        <input type="hidden" id="empProductId">
+                                                        <input type="hidden" id="empProductCategory">
+                                                        <div class="row">
+                                                            <div class="col-md-6 form-group">
+                                                                <label class="profile-info-label">Tên sản phẩm (*)</label>
+                                                                <input type="text" id="empProductName" class="form-control" maxlength="150" required>
+                                                            </div>
+                                                            <div class="col-md-6 form-group">
+                                                                <label class="profile-info-label">Giá bán - VND (*)</label>
+                                                                <input type="number" id="empProductPrice" class="form-control" min="0" step="1000" required placeholder="VD: 250000">
+                                                            </div>
+                                                            <div class="col-md-6 form-group">
+                                                                <label class="profile-info-label">Tồn kho</label>
+                                                                <input type="number" id="empProductStock" class="form-control" min="0" value="0">
+                                                            </div>
+                                                            <div class="col-md-6 form-group">
+                                                                <label class="profile-info-label">Các size (cách nhau bởi dấu phẩy)</label>
+                                                                <input type="text" id="empProductSizes" class="form-control" maxlength="200" placeholder="VD: S,M,L,XL">
+                                                            </div>
+                                                            <div class="col-md-6 form-group">
+                                                                <label class="profile-info-label">Màu sắc <small class="text-muted">(chọn được nhiều màu)</small></label>
+                                                                <input type="hidden" id="empProductColor">
+                                                                <div id="empProductColorSwatches" class="color-swatch-list"></div>
+                                                            </div>
+                                                            <div class="col-md-12 form-group">
+                                                                <label class="profile-info-label">Mô tả sản phẩm (*)</label>
+                                                                <textarea id="empProductDescription" class="form-control" rows="3" maxlength="5000" required></textarea>
+                                                            </div>
+                                                            <div class="col-md-12 form-group">
+                                                                <label class="profile-info-label">Hình ảnh sản phẩm (*)</label>
+                                                                <div class="row">
+                                                                    <div class="col-md-6">
+                                                                        <label class="profile-info-label">Tải ảnh từ máy</label>
+                                                                        <input type="file" id="empProductImageFile" class="form-control-file" accept="image/*">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="profile-info-label">Hoặc dùng URL ảnh</label>
+                                                                        <input type="text" id="empProductImageUrl" class="form-control" maxlength="500" placeholder="https://...">
+                                                                    </div>
+                                                                </div>
+                                                                <img id="empProductImagePreview" class="image-preview-box mt-2" alt="preview" style="display:none;">
+                                                            </div>
+                                                        </div>
+                                                        <button type="submit" class="btn-store" id="empBtnSaveProduct">Lưu sản phẩm</button>
+                                                        <button type="button" class="btn btn-link btn-link-danger" id="empBtnCancelProduct" style="display:none;">Hủy chỉnh sửa</button>
+                                                    </form>
+                                                </div>
+                                                <h6 class="font-weight-bold" id="empProductListTitle">Danh sách sản phẩm</h6>
+                                                <div id="empProductList"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sub-tab: Đơn hàng của chi nhánh -->
+                                    <div id="empSubOrders" class="shop-subcontent">
+                                        <div class="row">
+                                            <div class="col-md-3 mb-3">
+                                                <div class="order-filter-list" id="empOrderStatusChips"></div>
+                                            </div>
+                                            <div class="col-md-9">
+                                                <div class="alert auth-alert" id="empOrderAlert" style="display:none;"></div>
+                                                <div id="empOrderList"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sub-tab: Công & Hoa hồng -->
+                                    <div id="empSubWork" class="shop-subcontent">
+                                        <div class="alert auth-alert" id="empWorkAlert" style="display:none;"></div>
+                                        <div class="row align-items-center mb-3">
+                                            <div class="col-md-6">
+                                                <button type="button" id="empBtnCheckIn" class="btn-store" style="padding:9px 18px;font-size:13px;">
+                                                    <i class="fa fa-check-circle"></i> Chấm công hôm nay
+                                                </button>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-center justify-content-end">
+                                                <label class="profile-info-label mb-0 mr-2">Tháng</label>
+                                                <input type="month" id="empMonth" class="form-control" style="max-width:180px;">
+                                                <button type="button" id="empBtnLoadStats" class="btn-store ml-2" style="padding:9px 14px;font-size:13px;">Xem</button>
+                                            </div>
+                                        </div>
+                                        <div id="empStatsSummary"></div>
+                                        <div id="empWorkLog"></div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -793,6 +973,8 @@
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/profile.js"></script>
+    <script src="/js/employee.js"></script>
+    <script src="/js/manager-employees.js"></script>
 </body>
 
 </html>

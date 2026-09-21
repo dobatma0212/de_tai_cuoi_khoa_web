@@ -38,12 +38,14 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             cleanupObsoleteRoles();
+            fixLegacySchema();
             initRoles();
             initDefaultAdmin();
             initDefaultManager();
             initDefaultCategories();
             initDefaultTransporters();
             initDefaultShops();
+            initDefaultEmployee();
             initDefaultShopCategories();
             initBranchStocks();
         });
@@ -125,6 +127,72 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    /**
+     * Sửa schema legacy còn sót từ mô hình cũ (ddl-auto=update chỉ thêm cột mới,
+     * không tự xóa/sửa cột cũ nên làm hỏng INSERT):
+     * 1. shops.name (cột cũ, NOT NULL) chặn INSERT vì entity giờ map shop_name -> cho phép NULL.
+     * 2. products.category_id còn khóa ngoại trỏ về bảng categories (danh mục toàn hãng cũ)
+     *    trong khi entity dùng shop_categories -> xóa FK legacy.
+     */
+    private void fixLegacySchema() {
+        runStandaloneMigration("ALTER TABLE shops MODIFY `name` VARCHAR(150) NULL",
+                "Bỏ qua sửa cột legacy shops.name");
+
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> legacyFks = entityManager.createNativeQuery(
+                    "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' " +
+                    "AND COLUMN_NAME = 'category_id' AND REFERENCED_TABLE_NAME = 'categories'")
+                    .getResultList();
+            for (Object fkName : legacyFks) {
+                runStandaloneMigration("ALTER TABLE products DROP FOREIGN KEY `" + fkName + "`",
+                        "Bỏ qua xóa khóa ngoại legacy products -> categories");
+                log.info("Đã xóa khóa ngoại legacy products.category_id -> categories ({})", fkName);
+            }
+
+            // Đảm bảo có FK đúng sang shop_categories (bảng danh mục chi nhánh hiện tại)
+            Object fkCount = entityManager.createNativeQuery(
+                    "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' " +
+                    "AND COLUMN_NAME = 'category_id' AND REFERENCED_TABLE_NAME = 'shop_categories'")
+                    .getSingleResult();
+            if (((Number) fkCount).intValue() == 0) {
+                runStandaloneMigration("ALTER TABLE products ADD CONSTRAINT FK_products_shop_category " +
+                        "FOREIGN KEY (category_id) REFERENCES shop_categories(category_id)",
+                        "Bỏ qua thêm FK products -> shop_categories");
+                log.info("Đã thêm khóa ngoại products.category_id -> shop_categories");
+            }
+            // cart_items: unique cũ (user_id, product_id, size) chặn lưu 2 màu khác nhau
+            // cùng size -> đổi thành (user_id, product_id, size, color)
+            try {
+                @SuppressWarnings("unchecked")
+                List<Object> oldIdx = entityManager.createNativeQuery(
+                        "SELECT INDEX_NAME FROM information_schema.STATISTICS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart_items' AND NON_UNIQUE = 0 " +
+                        "AND INDEX_NAME <> 'PRIMARY' " +
+                        "GROUP BY INDEX_NAME " +
+                        "HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = 'user_id,product_id,size'")
+                        .getResultList();
+                if (!oldIdx.isEmpty()) {
+                    runStandaloneMigration(
+                            "ALTER TABLE cart_items ADD CONSTRAINT UK_cart_user_product_size_color " +
+                            "UNIQUE (user_id, product_id, size, color)",
+                            "Bỏ qua thêm unique cart_items (user, product, size, color)");
+                    for (Object idxName : oldIdx) {
+                        runStandaloneMigration("ALTER TABLE cart_items DROP INDEX `" + idxName + "`",
+                                "Bỏ qua xóa unique cart_items cũ");
+                    }
+                    log.info("Đã đổi unique cart_items sang (user_id, product_id, size, color)");
+                }
+            } catch (Exception e) {
+                log.info("Bỏ qua kiểm tra unique cart_items: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.info("Bỏ qua kiểm tra khóa ngoại legacy của products: {}", e.getMessage());
+        }
+    }
+
     private void initRoles() {
         Arrays.stream(RoleType.values()).forEach(roleType -> {
             if (roleRepository.findByName(roleType).isEmpty()) {
@@ -132,6 +200,7 @@ public class DataInitializer implements CommandLineRunner {
                     case ROLE_USER -> "Người dùng / Khách hàng mua sắm";
                     case ROLE_GUEST -> "Khách vãng lai";
                     case ROLE_MANAGER -> "Quản lý cửa hàng";
+                    case ROLE_EMPLOYEE -> "Nhân viên chi nhánh";
                     case ROLE_ADMIN -> "Quản trị viên hệ thống";
                 };
                 roleRepository.save(new Role(roleType, description));
@@ -177,6 +246,32 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(manager);
             log.info("Tạo tài khoản Manager mặc định: username = manager, password = manager123, email = manager@storechain.com");
+        }
+    }
+
+    /** Nhân viên mẫu, gán vào chi nhánh đầu tiên (Quận 1) */
+    private void initDefaultEmployee() {
+        if (!userRepository.existsByUsername("employee")) {
+            Role employeeRole = roleRepository.findByName(RoleType.ROLE_EMPLOYEE)
+                    .orElseThrow(() -> new RuntimeException("Role EMPLOYEE không tồn tại"));
+
+            var shops = shopRepository.findAll();
+            var shop = shops.isEmpty() ? null : shops.get(0);
+
+            User employee = User.builder()
+                    .username("employee")
+                    .email("employee@storechain.com")
+                    .password(passwordEncoder.encode("employee123"))
+                    .fullName("Nhân viên chi nhánh")
+                    .phone("0901234567")
+                    .status("active")
+                    .role(employeeRole)
+                    .shop(shop)
+                    .build();
+
+            userRepository.save(employee);
+            log.info("Tạo tài khoản Employee mặc định: username = employee, password = employee123, chi nhánh = {}",
+                    shop != null ? shop.getName() : "(chưa gán)");
         }
     }
 

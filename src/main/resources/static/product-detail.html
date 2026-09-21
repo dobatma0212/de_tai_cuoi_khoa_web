@@ -158,6 +158,14 @@
         .back-link:hover {
             color: #e53637;
         }
+    
+        .color-dot {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid #ddd; cursor: pointer; display: inline-block;
+            transition: transform .12s, border-color .12s;
+        }
+        .color-dot:hover { transform: scale(1.1); }
+        .color-dot.active { border-color: #e53637; box-shadow: 0 0 0 2px rgba(229,54,55,.25); }
     </style>
 </head>
 
@@ -268,6 +276,10 @@
                         <div id="pdSizeSection" style="display:none;" class="mb-3">
                             <b>Chọn size:</b>
                             <div id="pdSizes" class="d-flex gap-2 flex-wrap mt-2"></div>
+                        </div>
+                        <div id="pdColorSection" style="display:none;" class="mb-3">
+                            <b>Chọn màu:</b> <small id="pdColorName" class="text-muted"></small>
+                            <div id="pdColors" class="d-flex gap-2 flex-wrap mt-2"></div>
                         </div>
                         <div class="mb-3">
                             <b>Số lượng:</b>

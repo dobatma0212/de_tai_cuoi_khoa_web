@@ -55,6 +55,7 @@ public class OrderDto {
         private BigDecimal price;
         private int quantity;
         private String size;
+        private String color;
         private BigDecimal subtotal;
     }
 }

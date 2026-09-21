@@ -21,6 +21,7 @@ public class CartItemDto {
     private String shopName;
     private BigDecimal price;
     private String size;
+    private String color;
     private int quantity;
     private int stock;
     private BigDecimal subtotal;

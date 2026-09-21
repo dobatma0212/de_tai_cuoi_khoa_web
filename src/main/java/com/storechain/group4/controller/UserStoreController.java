@@ -156,10 +156,11 @@ public class UserStoreController {
         try {
             Long productId = body.get("productId") instanceof Number n ? n.longValue() : null;
             String size = body.get("size") == null ? "" : String.valueOf(body.get("size"));
+            String color = body.get("color") == null ? "" : String.valueOf(body.get("color"));
             int quantity = body.get("quantity") instanceof Number n ? n.intValue() : 1;
             return ResponseEntity.ok(ApiResponse.success(
                     "Đã thêm sản phẩm vào giỏ hàng!",
-                    storefrontService.addToCart(currentUser.getId(), productId, size, quantity)));
+                    storefrontService.addToCart(currentUser.getId(), productId, size, color, quantity)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }

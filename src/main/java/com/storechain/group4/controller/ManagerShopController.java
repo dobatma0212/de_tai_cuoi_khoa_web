@@ -180,4 +180,46 @@ public class ManagerShopController {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    // ==================== Quản lý nhân viên chi nhánh ====================
+
+    @GetMapping("/employees")
+    public ResponseEntity<ApiResponse<List<com.storechain.group4.dto.EmployeeDto>>> getMyEmployees(
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Lấy danh sách nhân viên thành công",
+                    managerShopService.getMyEmployees(currentUser.getId())));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Bổ nhiệm nhân viên: tạo tài khoản mới hoặc thăng USER hiện có thành nhân viên chi nhánh */
+    @PostMapping("/employees")
+    public ResponseEntity<ApiResponse<com.storechain.group4.dto.EmployeeDto>> hireEmployee(
+            @RequestBody com.storechain.group4.dto.HireEmployeeRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+                    "Bổ nhiệm nhân viên thành công!",
+                    managerShopService.hireEmployee(currentUser.getId(), request)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /** Sa thải nhân viên: trả về quyền khách hàng, gỡ khỏi chi nhánh (không xóa tài khoản) */
+    @DeleteMapping("/employees/{id}")
+    public ResponseEntity<ApiResponse<String>> fireEmployee(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            managerShopService.fireEmployee(currentUser.getId(), id);
+            return ResponseEntity.ok(ApiResponse.success("Đã sa thải nhân viên.",
+                    "Nhân viên ID: " + id + " đã được gỡ khỏi chi nhánh."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
 }

@@ -36,6 +36,11 @@ public class CartItem {
     @Builder.Default
     private String size = "";
 
+    /** Màu đã chọn (rỗng nếu sản phẩm không phân màu) */
+    @Column(name = "color", length = 50)
+    @Builder.Default
+    private String color = "";
+
     @Column(name = "quantity", nullable = false)
     @Builder.Default
     private int quantity = 1;

@@ -24,7 +24,7 @@ public interface StorefrontService {
 
     List<CartItemDto> getCart(Long userId);
 
-    CartItemDto addToCart(Long userId, Long productId, String size, int quantity);
+    CartItemDto addToCart(Long userId, Long productId, String size, String color, int quantity);
 
     CartItemDto updateQuantity(Long userId, Long itemId, int quantity);
 
