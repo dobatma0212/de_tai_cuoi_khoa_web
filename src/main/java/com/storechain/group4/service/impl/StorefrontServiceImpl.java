@@ -14,8 +14,6 @@ import com.storechain.group4.model.OrderItem;
 import com.storechain.group4.model.Product;
 import com.storechain.group4.model.ProductReview;
 import com.storechain.group4.model.Promotion;
-import com.storechain.group4.model.PromotionType;
-import com.storechain.group4.model.PromotionUsage;
 import com.storechain.group4.model.ReviewMedia;
 import com.storechain.group4.model.ShippingAddress;
 import com.storechain.group4.model.Shop;
@@ -28,14 +26,12 @@ import com.storechain.group4.repository.OrderRepository;
 import com.storechain.group4.repository.ProductRepository;
 import com.storechain.group4.repository.ProductReviewRepository;
 import com.storechain.group4.repository.PromotionRepository;
-import com.storechain.group4.repository.PromotionUsageRepository;
 import com.storechain.group4.repository.ReviewMediaRepository;
 import com.storechain.group4.repository.ShippingAddressRepository;
 import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
 import com.storechain.group4.service.PaymentService;
-import com.storechain.group4.service.PromotionCalculator;
 import com.storechain.group4.service.StorefrontService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,8 +75,6 @@ public class StorefrontServiceImpl implements StorefrontService {
     private final BranchStockRepository branchStockRepository;
     private final ShopRepository shopRepository;
     private final PaymentService paymentService;
-    private final PromotionCalculator promotionCalculator;
-    private final PromotionUsageRepository promotionUsageRepository;
 
     // ============ Chi tiết sản phẩm ============
 
@@ -90,6 +84,7 @@ public class StorefrontServiceImpl implements StorefrontService {
         Product p = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
         ProductResponseDto dto = toProductDto(p);
+        dto.setSizesList(parseSizes(p.getSizes()));
         dto.setAvgRating(round1(reviewRepository.averageRatingByProductId(productId)));
         dto.setReviewCount(reviewRepository.countByProductId(productId));
         // Tồn kho toàn hãng = tổng tồn kho của tất cả chi nhánh
@@ -160,9 +155,22 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (qty > totalStock) {
             throw new IllegalArgumentException("Chỉ còn " + totalStock + " sản phẩm trong kho.");
         }
-        // Product mới không phân size/màu — chỉ lưu lựa chọn của khách nếu có gửi lên
+        List<String> sizes = parseSizes(product.getSizes());
         String chosen = size == null ? "" : size.trim();
+        if (!sizes.isEmpty() && !sizes.contains(chosen)) {
+            throw new IllegalArgumentException("Vui lòng chọn size: " + String.join(", ", sizes));
+        }
+        if (sizes.isEmpty()) {
+            chosen = "";
+        }
+        List<String> colors = parseSizes(product.getColor());
         String chosenColor = color == null ? "" : color.trim();
+        if (!colors.isEmpty() && !colors.contains(chosenColor)) {
+            throw new IllegalArgumentException("Vui lòng chọn màu: " + String.join(", ", colors));
+        }
+        if (colors.isEmpty()) {
+            chosenColor = "";
+        }
         // Trùng sản phẩm + size + màu thì cộng dồn số lượng
         CartItem item = cartItemRepository
                 .findByUserIdAndProductIdAndSizeAndColor(userId, productId, chosen, chosenColor)
@@ -251,16 +259,6 @@ public class StorefrontServiceImpl implements StorefrontService {
         // rồi gom các sản phẩm theo chi nhánh được phân phối -> mỗi chi nhánh một đơn.
         List<ShopCart> groups = groupCartByShop(cartItems, address);
 
-        // Voucher là chương trình toàn cục: validate một lần trên tổng giỏ,
-        // rồi phân bổ số tiền giảm về từng đơn chi nhánh theo tỷ lệ giá trị đơn.
-        BigDecimal cartSubtotal = cartItems.stream()
-                .map(ci -> ci.getProduct().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        Promotion voucher = findValidVoucher(request.getPromoCode(), cartSubtotal, userId);
-        BigDecimal totalDiscount = voucher == null ? BigDecimal.ZERO
-                : promotionCalculator.calculateDiscount(voucher, cartSubtotal);
-        Map<Long, BigDecimal> discountByShop = allocateDiscount(groups, cartSubtotal, totalDiscount);
-
         // Các đơn tách từ một lần đặt dùng chung mã giao dịch thanh toán
         String paymentRef = Order.PAYMENT_COD.equals(paymentMethod)
                 ? null
@@ -270,22 +268,9 @@ public class StorefrontServiceImpl implements StorefrontService {
         List<OrderDto> created = new ArrayList<>();
         for (ShopCart group : groups) {
             created.add(createOrderForShop(userId, group, address, transporter,
-                    request, paymentMethod, paymentRef,
-                    discountByShop.getOrDefault(group.shop().getId(), BigDecimal.ZERO),
-                    voucher != null && totalDiscount.signum() > 0 ? voucher.getName() : null));
+                    request, paymentMethod, paymentRef));
         }
         cartItemRepository.deleteByUserId(userId);
-
-        // Ghi nhận lượt dùng voucher sau khi mọi đơn đã tạo thành công
-        if (voucher != null && totalDiscount.signum() > 0) {
-            promotionRepository.incrementUsedCount(voucher.getId());
-            promotionUsageRepository.save(PromotionUsage.builder()
-                    .promotion(voucher)
-                    .userId(userId)
-                    .discountAmount(totalDiscount)
-                    .orderTotal(cartSubtotal)
-                    .build());
-        }
 
         BigDecimal totalGrand = created.stream()
                 .map(OrderDto::getGrandTotal)
@@ -344,9 +329,7 @@ public class StorefrontServiceImpl implements StorefrontService {
      * Nếu không chi nhánh nào còn hàng thì ném lỗi.
      */
     private Shop pickNearestShopWithStock(Product product, ShippingAddress address) {
-        List<Shop> shops = shopRepository.findAll().stream()
-                .filter(s -> "active".equalsIgnoreCase(s.getStatus()))
-                .toList();
+        List<Shop> shops = shopRepository.findByStatus("active");
         if (shops.isEmpty()) {
             throw new IllegalArgumentException(
                     "Hệ thống chưa có chi nhánh nào để xử lý đơn hàng của bạn.");
@@ -395,8 +378,7 @@ public class StorefrontServiceImpl implements StorefrontService {
 
     private OrderDto createOrderForShop(Long userId, ShopCart group, ShippingAddress address,
                                         Transporter transporter, OrderCreateRequest request,
-                                        String paymentMethod, String paymentRef,
-                                        BigDecimal discount, String promoName) {
+                                        String paymentMethod, String paymentRef) {
         Shop shop = group.shop();
         List<CartItem> items = group.items();
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -409,6 +391,11 @@ public class StorefrontServiceImpl implements StorefrontService {
                 ? transporter.getBaseFee()
                 : BigDecimal.ZERO;
 
+        // Áp khuyến mãi của chi nhánh (nếu nhập mã hợp lệ) — ném lỗi nếu mã không dùng được
+        Promotion promo = findValidPromotion(shop.getId(), request.getPromoCode(),
+                totalAmount, shippingFee);
+        BigDecimal discount = calcDiscount(promo, totalAmount, shippingFee);
+
         BigDecimal grandTotal = totalAmount.add(shippingFee).subtract(discount);
 
         Order order = orderRepository.save(Order.builder()
@@ -420,7 +407,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .shippingFee(shippingFee)
                 .discountAmount(discount)
                 .grandTotal(grandTotal)
-                .promoName(promoName)
+                .promoName(promo != null ? promo.getName() : null)
                 .transporter(transporter)
                 .paymentMethod(paymentMethod)
                 .paymentStatus(Order.PAYMENT_COD.equals(paymentMethod)
@@ -456,60 +443,49 @@ public class StorefrontServiceImpl implements StorefrontService {
     }
 
     /**
-     * Tìm voucher hợp lệ theo mã (null nếu không nhập mã). Voucher thuộc hệ
-     * khuyến mãi toàn cục — validate qua PromotionCalculator (trạng thái, thời gian,
-     * lượt dùng, giá trị tối thiểu). Ném lỗi nếu mã không dùng được.
+     * Tìm khuyến mãi hợp lệ của chi nhánh theo mã (null nếu không nhập mã).
+     * Ném lỗi nếu mã không tồn tại, hết hạn hoặc không đủ giá trị tối thiểu
+     * (khi truyền totalAmount). Caller xem trước có tự bắt lỗi để hiển thị
+     * promoError thay vì chặn cả giao dịch.
      */
-    private Promotion findValidVoucher(String promoCode, BigDecimal orderTotal, Long userId) {
+    private Promotion findValidPromotion(Long shopId, String promoCode, BigDecimal totalAmount,
+                                         BigDecimal shippingFee) {
         if (promoCode == null || promoCode.isBlank()) {
             return null;
         }
-        Promotion promo = promotionRepository.findByCodeIgnoreCase(promoCode.trim())
-                .orElseThrow(() -> new IllegalArgumentException("Mã giảm giá \"" + promoCode
-                        + "\" không tồn tại."));
-        if (promo.getPromotionType() != PromotionType.VOUCHER) {
-            throw new IllegalArgumentException("Mã \"" + promoCode
-                    + "\" không phải mã giảm giá dùng khi thanh toán.");
+        Promotion promo = promotionRepository
+                .findByShopIdAndCodeIgnoreCaseAndActiveTrue(shopId, promoCode.trim())
+                .orElse(null);
+        if (promo == null) {
+            throw new IllegalArgumentException("Mã khuyến mãi \"" + promoCode
+                    + "\" không tồn tại hoặc đã hết hiệu lực.");
         }
-        long userUsageCount = promotionUsageRepository
-                .countByPromotionIdAndUserId(promo.getId(), userId);
-        String error = promotionCalculator.validateVoucher(promo, orderTotal, userUsageCount);
-        if (error != null) {
-            throw new IllegalArgumentException("Mã \"" + promoCode + "\": " + error);
+        LocalDateTime now = LocalDateTime.now();
+        if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
+            throw new IllegalArgumentException("Khuyến mãi \"" + promo.getName() + "\" đã hết hạn.");
+        }
+        if (totalAmount != null && promo.getMinOrderValue() != null
+                && totalAmount.compareTo(promo.getMinOrderValue()) < 0) {
+            throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderValue()
+                    + "₫ để áp dụng khuyến mãi \"" + promo.getName() + "\".");
         }
         return promo;
     }
 
-    /**
-     * Phân bổ tổng số tiền giảm về từng đơn chi nhánh theo tỷ lệ giá trị đơn
-     * (đơn cuối nhận phần lẻ để tổng khớp chính xác).
-     */
-    private Map<Long, BigDecimal> allocateDiscount(List<ShopCart> groups,
-                                                   BigDecimal cartSubtotal,
-                                                   BigDecimal totalDiscount) {
-        Map<Long, BigDecimal> result = new java.util.LinkedHashMap<>();
-        if (totalDiscount == null || totalDiscount.signum() <= 0
-                || cartSubtotal.signum() <= 0) {
-            groups.forEach(g -> result.put(g.shop().getId(), BigDecimal.ZERO));
-            return result;
-        }
-        BigDecimal allocated = BigDecimal.ZERO;
-        for (int i = 0; i < groups.size(); i++) {
-            ShopCart g = groups.get(i);
-            BigDecimal groupTotal = g.items().stream()
-                    .map(ci -> ci.getProduct().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal share;
-            if (i == groups.size() - 1) {
-                share = totalDiscount.subtract(allocated);
-            } else {
-                share = totalDiscount.multiply(groupTotal)
-                        .divide(cartSubtotal, 0, RoundingMode.HALF_UP);
-                allocated = allocated.add(share);
+    /** Tính số tiền giảm theo DiscountType của Promotion (PERCENTAGE / FIXED_AMOUNT). */
+    private BigDecimal calcDiscount(Promotion promo, BigDecimal totalAmount, BigDecimal shippingFee) {
+        if (promo == null) return BigDecimal.ZERO;
+        BigDecimal value = promo.getDiscountValue() != null ? promo.getDiscountValue() : BigDecimal.ZERO;
+        if (promo.getDiscountType() == com.storechain.group4.model.DiscountType.PERCENTAGE) {
+            BigDecimal discount = totalAmount.multiply(value)
+                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+            if (promo.getMaxDiscountAmount() != null) {
+                discount = discount.min(promo.getMaxDiscountAmount());
             }
-            result.put(g.shop().getId(), share.max(BigDecimal.ZERO));
+            return discount.min(totalAmount);
         }
-        return result;
+        // FIXED_AMOUNT: giảm số tiền cố định (áp cho giá trị đơn, không vượt quá tạm tính)
+        return value.min(totalAmount != null ? totalAmount : value);
     }
 
     private String generateOrderCode() {
@@ -549,50 +525,55 @@ public class StorefrontServiceImpl implements StorefrontService {
         }
 
         List<ShopCart> groups = groupCartByShop(cartItems, address);
-        BigDecimal subtotal = groups.stream()
-                .flatMap(g -> g.items().stream())
-                .map(ci -> ci.getProduct().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Voucher toàn cục: validate một lần trên tổng giỏ, phân bổ theo tỷ lệ đơn
-        Promotion voucher = null;
-        BigDecimal totalDiscount = BigDecimal.ZERO;
-        String promoError = null;
-        if (promoCode != null && !promoCode.isBlank()) {
-            try {
-                voucher = findValidVoucher(promoCode, subtotal, userId);
-                totalDiscount = promotionCalculator.calculateDiscount(voucher, subtotal);
-            } catch (IllegalArgumentException e) {
-                promoError = e.getMessage();
-            }
-        }
-        Map<Long, BigDecimal> discountByShop = allocateDiscount(groups, subtotal, totalDiscount);
-
         List<PromoPreviewDto.ShopPreview> shops = new ArrayList<>();
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal discountSum = BigDecimal.ZERO;
+        boolean allValid = true;
+        String promoName = null;
+
         for (ShopCart group : groups) {
-            BigDecimal total = group.items().stream()
-                    .map(ci -> ci.getProduct().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal discount = discountByShop.getOrDefault(group.shop().getId(), BigDecimal.ZERO);
-            shops.add(PromoPreviewDto.ShopPreview.builder()
+            BigDecimal total = BigDecimal.ZERO;
+            for (CartItem ci : group.items()) {
+                total = total.add(ci.getProduct().getPrice()
+                        .multiply(BigDecimal.valueOf(ci.getQuantity())));
+            }
+            subtotal = subtotal.add(total);
+
+            PromoPreviewDto.ShopPreview.ShopPreviewBuilder b = PromoPreviewDto.ShopPreview.builder()
                     .shopId(group.shop().getId())
                     .shopName(group.shop().getName())
-                    .totalAmount(total)
-                    .discountAmount(discount)
-                    .grandTotal(total.add(shippingFee).subtract(discount))
-                    .promoName(voucher != null ? voucher.getName() : null)
-                    .promoError(promoError)
-                    .build());
+                    .totalAmount(total);
+            if (promoCode != null && !promoCode.isBlank()) {
+                try {
+                    Promotion promo = findValidPromotion(group.shop().getId(), promoCode,
+                            total, shippingFee);
+                    BigDecimal discount = calcDiscount(promo, total, shippingFee);
+                    discountSum = discountSum.add(discount);
+                    promoName = promo.getName();
+                    b.discountAmount(discount)
+                            .grandTotal(total.add(shippingFee).subtract(discount))
+                            .promoName(promo.getName());
+                } catch (IllegalArgumentException e) {
+                    // Mã không áp dụng được cho chi nhánh này — báo lỗi từng đơn
+                    allValid = false;
+                    b.discountAmount(BigDecimal.ZERO)
+                            .grandTotal(total.add(shippingFee))
+                            .promoError(e.getMessage());
+                }
+            } else {
+                b.discountAmount(BigDecimal.ZERO).grandTotal(total.add(shippingFee));
+            }
+            shops.add(b.build());
         }
 
-        BigDecimal grandTotal = subtotal.add(shippingFee).subtract(totalDiscount);
+        BigDecimal grandTotal = subtotal.add(shippingFee).subtract(discountSum);
         return PromoPreviewDto.builder()
                 .promoCode(promoCode == null || promoCode.isBlank() ? null : promoCode.trim())
-                .promoName(voucher != null ? voucher.getName() : null)
-                .valid(voucher != null && promoError == null)
+                .promoName(promoName)
+                .valid(promoCode != null && !promoCode.isBlank() && allValid)
                 .subtotal(subtotal)
                 .shippingFee(shippingFee)
-                .discountAmount(totalDiscount)
+                .discountAmount(discountSum)
                 .grandTotal(grandTotal)
                 .shops(shops)
                 .build();
@@ -747,6 +728,7 @@ public class StorefrontServiceImpl implements StorefrontService {
     }
 
     private ProductResponseDto toProductDto(Product p) {
+        List<String> sizesList = parseSizes(p.getSizes());
         return ProductResponseDto.builder()
                 .id(p.getId())
                 .shopId(p.getShop().getId())
@@ -758,6 +740,10 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .description(p.getDescription())
                 .imageUrl(p.getImageUrl())
                 .stock(p.getStock())
+                .sizes(p.getSizes())
+                .sizesList(sizesList)
+                .color(p.getColor())
+                .representative(p.isRepresentative())
                 .status(p.getStatus())
                 .createdAt(p.getCreatedAt())
                 .build();

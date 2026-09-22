@@ -4,7 +4,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * Đánh giá sản phẩm của người dùng.
+ */
 @Entity
 @Table(name = "product_reviews")
 @Getter
@@ -27,7 +32,6 @@ public class ProductReview {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /** Điểm đánh giá 1..5 sao */
     @Column(name = "rating", nullable = false)
     private int rating;
 
@@ -36,6 +40,10 @@ public class ProductReview {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ReviewMedia> media = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

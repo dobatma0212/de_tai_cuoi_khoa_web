@@ -1,19 +1,15 @@
 <!DOCTYPE html>
-<html lang="zxx">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="Male_Fashion Template">
-    <meta name="keywords" content="Male_Fashion, unica, creative, html">
+    <meta name="description" content="StoreChain — Giỏ hàng">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Male-Fashion | Template</title>
+    <title>StoreChain | Giỏ hàng</title>
 
-    <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
-    rel="stylesheet">
+        rel="stylesheet">
 
-    <!-- Css Styles -->
     <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
     <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
@@ -23,69 +19,148 @@
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
     <link rel="stylesheet" href="/css/auth.css" type="text/css">
+    <style>
+        .checkout-block {
+            background: #fff;
+            border: 1px solid #ebebeb;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .checkout-block h6 {
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #111;
+            margin-bottom: 14px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #f1f1f1;
+            padding: 12px 0;
+            align-items: center;
+        }
+        .cart-item img {
+            width: 72px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .qty-box {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #ebebeb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .qty-box button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: #f5f5f5;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .qty-box input {
+            width: 36px;
+            height: 28px;
+            border: none;
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .transporter-option {
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #ebebeb;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .transporter-option.active {
+            border-color: #e53637;
+            background: #fff7f7;
+        }
+        .order-status-badge {
+            display: inline-block;
+            border-radius: 10px;
+            padding: 2px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            background: #999;
+        }
+        .order-status-badge.status-NEW { background: #0d6efd; }
+        .order-status-badge.status-CONFIRMED,
+        .order-status-badge.status-PICKED_UP { background: #6610f2; }
+        .order-status-badge.status-SHIPPING { background: #fd7e14; }
+        .order-status-badge.status-DELIVERED { background: #20c997; }
+        .order-status-badge.status-RECEIVED { background: #28a745; }
+        .order-status-badge.status-CANCELLED,
+        .order-status-badge.status-FAILED { background: #dc3545; }
+        .order-status-badge.status-RETURN_REQUESTED,
+        .order-status-badge.status-RETURNED { background: #e83e8c; }
+        .btn-store {
+            background: #e53637;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .btn-store:hover { color: #fff; opacity: .9; }
+        .btn-outline-store {
+            border: 1px solid #e53637;
+            color: #e53637;
+            background: #fff;
+            border-radius: 4px;
+            padding: 8px 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-outline-store:hover { background: #fff7f7; }
+    </style>
 </head>
 
 <body>
-    <!-- Page Preloder -->
-    <div id="preloder">
-        <div class="loader"></div>
-    </div>
+    <div id="preloder"><div class="loader"></div></div>
 
-    <!-- Offcanvas Menu Begin -->
     <div class="offcanvas-menu-overlay"></div>
     <div class="offcanvas-menu-wrapper">
         <div class="offcanvas__option">
             <div class="offcanvas__links">
-                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Sign in</a>
-                <a href="#">FAQs</a>
-            </div>
-            <div class="offcanvas__top__hover">
-                <span>Usd <i class="arrow_carrot-down"></i></span>
-                <ul>
-                    <li>USD</li>
-                    <li>EUR</li>
-                    <li>USD</li>
-                </ul>
+                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Đăng nhập</a>
+                <a href="/profile.html">Tài khoản</a>
+                <a href="/orders.html">Đơn hàng</a>
             </div>
         </div>
         <div class="offcanvas__nav__option">
-            <a href="#" class="search-switch"><img src="/img/icon/search.png" alt=""></a>
-            <a href="#"><img src="/img/icon/heart.png" alt=""></a>
-            <a href="#"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
-            <div class="price">$0.00</div>
+            <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
         </div>
         <div id="mobile-menu-wrap"></div>
-        <div class="offcanvas__text">
-            <p>Free shipping, 30-day return or refund guarantee.</p>
-        </div>
     </div>
-    <!-- Offcanvas Menu End -->
 
-    <!-- Header Section Begin -->
     <header class="header">
         <div class="header__top">
             <div class="container">
                 <div class="row">
                     <div class="col-lg-6 col-md-7">
                         <div class="header__top__left">
-                            <p>Free shipping, 30-day return or refund guarantee.</p>
+                            <p>Miễn phí giao hàng cho đơn từ 1.000.000₫ — đổi trả trong 30 ngày.</p>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-5">
                         <div class="header__top__right">
                             <div class="header__top__links">
-                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Sign in</a>
+                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Đăng nhập</a>
                                 <a href="/profile.html">Tài khoản</a>
-                                <a href="/order-history.html">Đơn hàng</a>
-                                <a href="#">FAQs</a>
-                            </div>
-                            <div class="header__top__hover">
-                                <span>Usd <i class="arrow_carrot-down"></i></span>
-                                <ul>
-                                    <li>USD</li>
-                                    <li>EUR</li>
-                                    <li>USD</li>
-                                </ul>
+                                <a href="/orders.html">Đơn hàng</a>
+                                <a href="/shopping-cart.html">Giỏ hàng</a>
                             </div>
                         </div>
                     </div>
@@ -96,358 +171,156 @@
             <div class="row">
                 <div class="col-lg-3 col-md-3">
                     <div class="header__logo">
-                        <a href="./index.html"><img src="/img/logo.png" alt=""></a>
+                        <a href="/index.html"><img src="/img/logo.png" alt=""></a>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-6">
                     <nav class="header__menu mobile-menu">
                         <ul>
-                            <li><a href="./index.html">Home</a></li>
-                            <li class="active"><a href="./shop.html">Shop</a></li>
-                            <li><a href="#">Pages</a>
-                                <ul class="dropdown">
-                                    <li><a href="./about.html">About Us</a></li>
-                                    <li><a href="./shop-details.html">Shop Details</a></li>
-                                    <li><a href="./shopping-cart.html">Shopping Cart</a></li>
-                                    <li><a href="./checkout.html">Check Out</a></li>
-                                    <li><a href="./order-history.html">Lịch sử mua hàng</a></li>
-                                    <li><a href="./blog-details.html">Blog Details</a></li>
-                                </ul>
-                            </li>
-                            <li><a href="./blog.html">Blog</a></li>
-                            <li><a href="./contact.html">Contacts</a></li>
+                            <li><a href="/index.html">Trang chủ</a></li>
+                            <li><a href="/shop.html">Cửa hàng</a></li>
+                            <li class="active"><a href="/shopping-cart.html">Giỏ hàng</a></li>
+                            <li><a href="/contact.html">Liên hệ</a></li>
                         </ul>
                     </nav>
                 </div>
                 <div class="col-lg-3 col-md-3">
                     <div class="header__nav__option">
-                        <a href="#" class="search-switch"><img src="/img/icon/search.png" alt=""></a>
-                        <a href="#"><img src="/img/icon/heart.png" alt=""></a>
-                        <a href="#"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
-                        <div class="price">$0.00</div>
+                        <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
                     </div>
                 </div>
             </div>
             <div class="canvas__open"><i class="fa fa-bars"></i></div>
         </div>
     </header>
-    <!-- Header Section End -->
 
-    <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-option">
         <div class="container">
             <div class="row">
                 <div class="col-lg-12">
                     <div class="breadcrumb__text">
-                        <h4>Shopping Cart</h4>
+                        <h4>Giỏ hàng</h4>
                         <div class="breadcrumb__links">
-                            <a href="./index.html">Home</a>
-                            <a href="./shop.html">Shop</a>
-                            <span>Shopping Cart</span>
+                            <a href="/index.html">Trang chủ</a>
+                            <span>Giỏ hàng</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    <!-- Breadcrumb Section End -->
 
-    <!-- Shopping Cart Section Begin -->
-    <section class="shopping-cart spad">
+    <section class="shopping-cart spad" style="padding-top: 40px;">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="shopping__cart__table">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Total</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="product__cart__item">
-                                        <div class="product__cart__item__pic">
-                                            <img src="/img/shopping-cart/cart-1.jpg" alt="">
-                                        </div>
-                                        <div class="product__cart__item__text">
-                                            <h6>T-shirt Contrast Pocket</h6>
-                                            <h5>$98.49</h5>
-                                        </div>
-                                    </td>
-                                    <td class="quantity__item">
-                                        <div class="quantity">
-                                            <div class="pro-qty-2">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="cart__price">$ 30.00</td>
-                                    <td class="cart__close"><i class="fa fa-close"></i></td>
-                                </tr>
-                                <tr>
-                                    <td class="product__cart__item">
-                                        <div class="product__cart__item__pic">
-                                            <img src="/img/shopping-cart/cart-2.jpg" alt="">
-                                        </div>
-                                        <div class="product__cart__item__text">
-                                            <h6>Diagonal Textured Cap</h6>
-                                            <h5>$98.49</h5>
-                                        </div>
-                                    </td>
-                                    <td class="quantity__item">
-                                        <div class="quantity">
-                                            <div class="pro-qty-2">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="cart__price">$ 32.50</td>
-                                    <td class="cart__close"><i class="fa fa-close"></i></td>
-                                </tr>
-                                <tr>
-                                    <td class="product__cart__item">
-                                        <div class="product__cart__item__pic">
-                                            <img src="/img/shopping-cart/cart-3.jpg" alt="">
-                                        </div>
-                                        <div class="product__cart__item__text">
-                                            <h6>Basic Flowing Scarf</h6>
-                                            <h5>$98.49</h5>
-                                        </div>
-                                    </td>
-                                    <td class="quantity__item">
-                                        <div class="quantity">
-                                            <div class="pro-qty-2">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="cart__price">$ 47.00</td>
-                                    <td class="cart__close"><i class="fa fa-close"></i></td>
-                                </tr>
-                                <tr>
-                                    <td class="product__cart__item">
-                                        <div class="product__cart__item__pic">
-                                            <img src="/img/shopping-cart/cart-4.jpg" alt="">
-                                        </div>
-                                        <div class="product__cart__item__text">
-                                            <h6>Basic Flowing Scarf</h6>
-                                            <h5>$98.49</h5>
-                                        </div>
-                                    </td>
-                                    <td class="quantity__item">
-                                        <div class="quantity">
-                                            <div class="pro-qty-2">
-                                                <input type="text" value="1">
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="cart__price">$ 30.00</td>
-                                    <td class="cart__close"><i class="fa fa-close"></i></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="row">
-                        <div class="col-lg-6 col-md-6 col-sm-6">
-                            <div class="continue__btn">
-                                <a href="#">Continue Shopping</a>
+            <div id="cartNotLoggedIn" style="display:none;" class="text-center py-5">
+                <p class="mb-3">Bạn cần đăng nhập để xem giỏ hàng.</p>
+                <a href="/login.html" class="btn-store" style="display:inline-block;text-decoration:none;padding:12px 24px;">Đăng nhập</a>
+            </div>
+
+            <div id="cartWrapper" style="display:none;">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="checkout-block">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">Sản phẩm trong giỏ</h6>
+                                <button type="button" id="btnClearCart" class="btn-outline-store">Xóa tất cả</button>
+                            </div>
+                            <div id="cartItems">
+                                <p class="text-muted">Đang tải giỏ hàng...</p>
                             </div>
                         </div>
-                        <div class="col-lg-6 col-md-6 col-sm-6">
-                            <div class="continue__btn update__btn">
-                                <a href="#"><i class="fa fa-spinner"></i> Update cart</a>
+
+                        <div class="checkout-block">
+                            <h6>Địa chỉ nhận hàng mặc định</h6>
+                            <div id="addressBox">Đang tải...</div>
+                            <p class="mt-2 mb-0"><small><a href="/profile.html">Quản lý địa chỉ tại Hồ sơ cá nhân</a></small></p>
+                        </div>
+
+                        <div class="checkout-block">
+                            <h6>Đơn hàng của tôi</h6>
+                            <div id="myOrders">
+                                <p class="text-muted">Đang tải đơn hàng...</p>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="cart__discount">
-                        <h6>Mã Giảm Giá / Voucher</h6>
-                        <form id="cart-coupon-form" onsubmit="applyCartCoupon(event)">
-                            <input type="text" id="cart-coupon-input" placeholder="Nhập mã ưu đãi..." style="text-transform: uppercase;">
-                            <button type="submit" id="cart-coupon-btn">Áp dụng</button>
-                        </form>
-                        <div id="cart-coupon-msg" class="mt-2" style="font-size: 13px; font-weight: 600;"></div>
-                    </div>
-                    <div class="cart__total">
-                        <h6>Tổng Giỏ Hàng</h6>
-                        <ul>
-                            <li>Tạm tính <span id="cart-subtotal">500.000 ₫</span></li>
-                            <li id="cart-discount-row" style="display: none; color: #e53637;">
-                                Giảm giá (<span id="cart-coupon-name"></span>)
-                                <span id="cart-discount-val">-0 ₫</span>
-                            </li>
-                            <li>Tổng thanh toán <span id="cart-final-total">500.000 ₫</span></li>
-                        </ul>
-                        <a href="/checkout.html" class="primary-btn">Tiến hành thanh toán</a>
+
+                    <div class="col-lg-4">
+                        <div class="checkout-block">
+                            <h6>Nhà vận chuyển</h6>
+                            <div id="transporterBox">Đang tải...</div>
+                        </div>
+                        <div class="checkout-block">
+                            <h6>Tóm tắt đơn hàng</h6>
+                            <ul class="checkout__total__all" style="list-style:none;padding:0;">
+                                <li>Tạm tính <span id="sumSubtotal">0₫</span></li>
+                                <li>Phí vận chuyển <span id="sumShipping">0₫</span></li>
+                                <li style="color:#1d7a1d;">Giảm giá <span id="sumDiscount">-0₫</span></li>
+                                <li style="font-size:18px;color:#e53637;">Tổng cộng <span id="sumTotal">0₫</span></li>
+                            </ul>
+                            <button type="button" id="btnCheckout" class="btn-store w-100 mt-2">Tiến hành thanh toán</button>
+                            <a href="/shop.html" class="d-block text-center mt-3" style="color:#111;">← Tiếp tục mua sắm</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    <!-- Shopping Cart Section End -->
 
-    <!-- Footer Section Begin -->
     <footer class="footer">
         <div class="container">
             <div class="row">
                 <div class="col-lg-3 col-md-6 col-sm-6">
                     <div class="footer__about">
                         <div class="footer__logo">
-                            <a href="#"><img src="/img/footer-logo.png" alt=""></a>
+                            <a href="/index.html"><img src="/img/footer-logo.png" alt=""></a>
                         </div>
-                        <p>The customer is at the heart of our unique business model, which includes design.</p>
-                        <a href="#"><img src="/img/payment.png" alt=""></a>
+                        <p>Cửa hàng thời trang trực tuyến — giao hàng toàn quốc.</p>
                     </div>
                 </div>
                 <div class="col-lg-2 offset-lg-1 col-md-3 col-sm-6">
                     <div class="footer__widget">
-                        <h6>Shopping</h6>
+                        <h6>Mua sắm</h6>
                         <ul>
-                            <li><a href="#">Clothing Store</a></li>
-                            <li><a href="#">Trending Shoes</a></li>
-                            <li><a href="#">Accessories</a></li>
-                            <li><a href="#">Sale</a></li>
+                            <li><a href="/shop.html">Cửa hàng</a></li>
+                            <li><a href="/shopping-cart.html">Giỏ hàng</a></li>
+                            <li><a href="/orders.html">Đơn hàng</a></li>
+                            <li><a href="/checkout.html">Thanh toán</a></li>
                         </ul>
                     </div>
                 </div>
                 <div class="col-lg-2 col-md-3 col-sm-6">
                     <div class="footer__widget">
-                        <h6>Shopping</h6>
+                        <h6>Hỗ trợ</h6>
                         <ul>
-                            <li><a href="#">Contact Us</a></li>
-                            <li><a href="#">Payment Methods</a></li>
-                            <li><a href="#">Delivary</a></li>
-                            <li><a href="#">Return & Exchanges</a></li>
+                            <li><a href="/contact.html">Liên hệ</a></li>
+                            <li><a href="/profile.html">Tài khoản</a></li>
                         </ul>
-                    </div>
-                </div>
-                <div class="col-lg-3 offset-lg-1 col-md-6 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>NewLetter</h6>
-                        <div class="footer__newslatter">
-                            <p>Be the first to know about new arrivals, look books, sales & promos!</p>
-                            <form action="#">
-                                <input type="text" placeholder="Your email">
-                                <button type="submit"><span class="icon_mail_alt"></span></button>
-                            </form>
-                        </div>
                     </div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-lg-12 text-center">
                     <div class="footer__copyright__text">
-                        <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-                        <p>Copyright ©
-                            <script>
-                                document.write(new Date().getFullYear());
-                            </script>2020
-                            All rights reserved | This template is made with <i class="fa fa-heart-o"
-                            aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
+                        <p>Copyright &copy;
+                            <script>document.write(new Date().getFullYear());</script> StoreChain
                         </p>
-                        <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
                     </div>
                 </div>
             </div>
         </div>
     </footer>
-    <!-- Footer Section End -->
 
-    <!-- Search Begin -->
-    <div class="search-model">
-        <div class="h-100 d-flex align-items-center justify-content-center">
-            <div class="search-close-switch">+</div>
-            <form class="search-model-form">
-                <input type="text" id="search-input" placeholder="Search here.....">
-            </form>
-        </div>
-    </div>
-    <!-- Search End -->
-
-    <!-- Js Plugins -->
     <script src="/js/jquery-3.3.1.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/jquery.nice-select.min.js"></script>
-    <script src="/js/jquery.nicescroll.min.js"></script>
     <script src="/js/jquery.magnific-popup.min.js"></script>
-    <script src="/js/jquery.countdown.min.js"></script>
     <script src="/js/jquery.slicknav.js"></script>
     <script src="/js/mixitup.min.js"></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
-    <script>
-        let currentSubtotal = 500000;
-        let appliedCoupon = null;
-
-        function formatMoney(amount) {
-            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-        }
-
-        function applyCartCoupon(e) {
-            e.preventDefault();
-            const code = $('#cart-coupon-input').val().trim().toUpperCase();
-            const msgEl = $('#cart-coupon-msg');
-            const btnEl = $('#cart-coupon-btn');
-
-            if (!code) {
-                msgEl.text('Vui lòng nhập mã ưu đãi!').css('color', '#dc3545');
-                return;
-            }
-
-            const token = localStorage.getItem('jwt_token');
-            if (!token) {
-                msgEl.html('Vui lòng <a href="/login.html" class="text-danger font-weight-bold">đăng nhập</a> để áp dụng voucher!').css('color', '#dc3545');
-                return;
-            }
-
-            btnEl.prop('disabled', true).text('...');
-            msgEl.text('Đang kiểm tra mã...').css('color', '#666');
-
-            $.ajax({
-                url: '/api/public/promotions/check-voucher',
-                type: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify({
-                    code: code,
-                    orderTotal: currentSubtotal
-                }),
-                success: function(res) {
-                    btnEl.prop('disabled', false).text('Áp dụng');
-                    if (res.success && res.data && res.data.valid) {
-                        const d = res.data;
-                        appliedCoupon = d;
-                        msgEl.text('✓ ' + d.message).css('color', '#28a745');
-                        $('#cart-discount-row').show();
-                        $('#cart-coupon-name').text(d.code);
-                        $('#cart-discount-val').text('-' + formatMoney(d.discountAmount));
-                        $('#cart-final-total').text(formatMoney(d.finalTotal));
-                    } else {
-                        appliedCoupon = null;
-                        msgEl.text('✗ ' + (res.data ? res.data.message : res.message)).css('color', '#dc3545');
-                        $('#cart-discount-row').hide();
-                        $('#cart-final-total').text(formatMoney(currentSubtotal));
-                    }
-                },
-                error: function(xhr) {
-                    btnEl.prop('disabled', false).text('Áp dụng');
-                    appliedCoupon = null;
-                    const err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Mã giảm giá không hợp lệ!';
-                    msgEl.text('✗ ' + err).css('color', '#dc3545');
-                    $('#cart-discount-row').hide();
-                    $('#cart-final-total').text(formatMoney(currentSubtotal));
-                }
-            });
-        }
-    </script>
+    <script src="/js/store.js"></script>
+    <script src="/js/cart.js"></script>
 </body>
 
 </html>

@@ -105,10 +105,10 @@
         }
         container.innerHTML = cartItems.map(function (it) {
             return '<div class="cart-item">' +
-                '<a href="/product-detail.html?productId=' + it.productId + '">' +
+                '<a href="/shop-details.html?productId=' + it.productId + '">' +
                 '<img src="' + escapeHtml(it.imageUrl || "/img/product/product-1.jpg") + '" alt=""></a>' +
                 '<div style="flex:1;">' +
-                '<a href="/product-detail.html?productId=' + it.productId + '" style="color:inherit;">' +
+                '<a href="/shop-details.html?productId=' + it.productId + '" style="color:inherit;">' +
                 '<b>' + escapeHtml(it.productName) + "</b></a>" +
                 (it.size ? '<div><small class="text-muted">Size: ' + escapeHtml(it.size) + "</small></div>" : "") +
                 (it.color ? '<div><small class="text-muted">Màu: ' + escapeHtml(it.color) + "</small></div>" : "") +

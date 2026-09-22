@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * Một dòng sản phẩm trong giỏ hàng của người dùng.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,8 +20,6 @@ public class CartItemDto {
     private Long productId;
     private String productName;
     private String imageUrl;
-    private Long shopId;
-    private String shopName;
     private BigDecimal price;
     private String size;
     private String color;

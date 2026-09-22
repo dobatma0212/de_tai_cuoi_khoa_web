@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Đánh giá sản phẩm kèm ảnh/video minh họa.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,10 +33,10 @@ public class ReviewDto {
     @Builder.Default
     private List<MediaDto> media = new ArrayList<>();
 
+    /** Ảnh/video đính kèm đánh giá */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    @Builder
     public static class MediaDto {
         private String url;
         /** IMAGE hoặc VIDEO */

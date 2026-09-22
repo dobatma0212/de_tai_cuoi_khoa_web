@@ -72,4 +72,9 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     // Find active flash sales for specific product
     @Query("SELECT p FROM Promotion p JOIN p.products prod WHERE prod.id = :productId AND p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")
     List<Promotion> findActiveFlashSalesForProduct(@Param("productId") Long productId, @Param("now") LocalDateTime now);
+
+    /** Tìm voucher active theo mã (không gắn shop). shopId giữ để tương thích API storefront. */
+    @Query("SELECT p FROM Promotion p WHERE LOWER(p.code) = LOWER(:code) AND LOWER(p.status) = 'active'")
+    Optional<Promotion> findByShopIdAndCodeIgnoreCaseAndActiveTrue(@Param("shopId") Long shopId, @Param("code") String code);
+
 }

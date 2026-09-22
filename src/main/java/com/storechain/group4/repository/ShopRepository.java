@@ -44,4 +44,6 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     List<Shop> findByManagerId(Long managerId);
+
+    List<Shop> findByStatus(String status);
 }

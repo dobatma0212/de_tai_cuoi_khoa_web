@@ -3,6 +3,8 @@ package com.storechain.group4.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,13 +41,28 @@ public class Product {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    /** Danh sách size, phân tách bởi dấu phẩy, ví dụ: S,M,L,XL */
+    @Column(name = "sizes", length = 100)
+    private String sizes;
+
+    /** Danh sách màu, phân tách bởi dấu phẩy */
+    @Column(name = "color", length = 100)
+    private String color;
+
+    /** Sản phẩm đại diện (hiển thị nổi bật) */
+    @Column(name = "is_representative", nullable = false)
+    @Builder.Default
+    private boolean representative = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     @JsonIgnoreProperties({"parent", "children", "hibernateLazyInitializer", "handler"})
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shop_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     @JsonIgnoreProperties({"manager", "hibernateLazyInitializer", "handler"})
     private Shop shop;
 

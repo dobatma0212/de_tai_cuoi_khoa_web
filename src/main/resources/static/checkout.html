@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zxx">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
@@ -202,12 +202,12 @@
     <div class="offcanvas-menu-wrapper">
         <div class="offcanvas__option">
             <div class="offcanvas__links">
-                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Sign in</a>
-                <a href="#">FAQs</a>
+                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Đăng nhập</a>
+                <a href="/contact.html">Hỗ trợ</a>
             </div>
         </div>
         <div class="offcanvas__nav__option">
-            <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
+            <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
         </div>
         <div id="mobile-menu-wrap"></div>
     </div>
@@ -226,9 +226,11 @@
                     <div class="col-lg-6 col-md-5">
                         <div class="header__top__right">
                             <div class="header__top__links">
-                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Sign in</a>
+                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Đăng nhập</a>
                                 <a href="/profile.html">Tài khoản</a>
+                                <a href="/orders.html">Đơn hàng</a>
                                 <a href="/shopping-cart.html">Giỏ hàng</a>
+                                <a href="/contact.html">Liên hệ</a>
                             </div>
                         </div>
                     </div>
@@ -248,13 +250,14 @@
                             <li><a href="/index.html">Trang chủ</a></li>
                             <li><a href="/shop.html">Cửa hàng</a></li>
                             <li class="active"><a href="/shopping-cart.html">Giỏ hàng</a></li>
+                            <li><a href="/profile.html">Tài khoản</a></li>
                             <li><a href="/contact.html">Liên hệ</a></li>
                         </ul>
                     </nav>
                 </div>
                 <div class="col-lg-3 col-md-3">
                     <div class="header__nav__option">
-                        <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
+                        <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
                     </div>
                 </div>
             </div>
@@ -363,8 +366,6 @@
                             <li style="font-size:18px;color:#e53637;">Tổng cộng <span id="sumTotal">0₫</span></li>
                         </ul>
                         <button type="button" id="btnPlaceOrder" class="btn-store w-100 mt-2">Đặt hàng</button>
-                        <a href="/order-history.html" class="btn btn-outline-store w-100 mt-2"
-                           style="display:block;text-align:center;">Xem lịch sử mua hàng</a>
                     </div>
                 </div>
             </div>
@@ -397,6 +398,7 @@
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/store.js"></script>
     <script src="/js/checkout.js"></script>
 </body>
 

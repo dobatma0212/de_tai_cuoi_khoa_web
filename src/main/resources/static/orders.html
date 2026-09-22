@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="StoreChain — Đơn hàng của tôi">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoreChain | Đơn hàng của tôi</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
+    <link rel="stylesheet" href="/css/nice-select.css" type="text/css">
+    <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+    <link rel="stylesheet" href="/css/auth.css" type="text/css">
+    <style>
+        .order-card {
+            background: #fff;
+            border: 1px solid #ebebeb;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+        .order-status-badge {
+            display: inline-block; border-radius: 10px; padding: 2px 10px;
+            font-size: 11px; font-weight: 700; color: #fff; background: #999;
+        }
+        .order-status-badge.status-NEW { background: #0d6efd; }
+        .order-status-badge.status-CONFIRMED, .order-status-badge.status-PICKED_UP { background: #6610f2; }
+        .order-status-badge.status-SHIPPING { background: #fd7e14; }
+        .order-status-badge.status-DELIVERED { background: #20c997; }
+        .order-status-badge.status-RECEIVED { background: #28a745; }
+        .order-status-badge.status-CANCELLED, .order-status-badge.status-FAILED { background: #dc3545; }
+        .order-status-badge.status-RETURN_REQUESTED, .order-status-badge.status-RETURNED { background: #e83e8c; }
+        .pay-status-badge {
+            display: inline-block; border-radius: 10px; padding: 2px 10px;
+            font-size: 11px; font-weight: 700; color: #fff; background: #6c757d;
+        }
+        .pay-status-badge.pay-PAID { background: #28a745; }
+        .pay-status-badge.pay-PENDING { background: #f0ad4e; }
+        .pay-status-badge.pay-FAILED { background: #dc3545; }
+        .order-item-row { display: flex; gap: 12px; padding: 8px 0; border-top: 1px solid #f5f5f5; }
+        .order-item-row img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; }
+        .btn-store {
+            background: #e53637; color: #fff; border: none; border-radius: 4px;
+            padding: 8px 18px; font-weight: 800; text-transform: uppercase; cursor: pointer;
+        }
+        .btn-store:hover { color: #fff; opacity: .9; }
+        .btn-outline-store {
+            border: 1px solid #e53637; color: #e53637; background: #fff;
+            border-radius: 4px; padding: 8px 14px; font-weight: 700; cursor: pointer;
+        }
+        .btn-link-danger { color: #dc3545; background: none; border: none; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+
+<body>
+    <div id="preloder"><div class="loader"></div></div>
+
+    <div class="offcanvas-menu-overlay"></div>
+    <div class="offcanvas-menu-wrapper">
+        <div class="offcanvas__option">
+            <div class="offcanvas__links">
+                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Đăng nhập</a>
+                <a href="/contact.html">Hỗ trợ</a>
+            </div>
+        </div>
+        <div class="offcanvas__nav__option">
+            <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
+        </div>
+        <div id="mobile-menu-wrap"></div>
+    </div>
+
+    <header class="header">
+        <div class="header__top">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6 col-md-7">
+                        <div class="header__top__left">
+                            <p>Miễn phí giao hàng cho đơn từ 1.000.000₫ — đổi trả trong 30 ngày.</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 col-md-5">
+                        <div class="header__top__right">
+                            <div class="header__top__links">
+                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Đăng nhập</a>
+                                <a href="/profile.html">Tài khoản</a>
+                                <a href="/orders.html">Đơn hàng</a>
+                                <a href="/shopping-cart.html">Giỏ hàng</a>
+                                <a href="/contact.html">Liên hệ</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__logo">
+                        <a href="/index.html"><img src="/img/logo.png" alt="StoreChain"></a>
+                    </div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <nav class="header__menu mobile-menu">
+                        <ul>
+                            <li><a href="/index.html">Trang chủ</a></li>
+                            <li><a href="/shop.html">Cửa hàng</a></li>
+                            <li class="active"><a href="/orders.html">Đơn hàng</a></li>
+                            <li><a href="/shopping-cart.html">Giỏ hàng</a></li>
+                            <li><a href="/checkout.html">Thanh toán</a></li>
+                            <li><a href="/contact.html">Liên hệ</a></li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="header__nav__option">
+                        <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas__open"><i class="fa fa-bars"></i></div>
+        </div>
+    </header>
+
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Đơn hàng của tôi</h4>
+                        <div class="breadcrumb__links">
+                            <a href="/index.html">Trang chủ</a>
+                            <span>Đơn hàng</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="spad" style="padding-top:40px;">
+        <div class="container">
+            <div id="ordersNotLoggedIn" class="text-center py-5" style="display:none;">
+                <p class="mb-3">Bạn cần đăng nhập để xem đơn hàng.</p>
+                <a href="/login.html" class="btn-store" style="display:inline-block;text-decoration:none;">Đăng nhập</a>
+            </div>
+            <div id="ordersWrapper" style="display:none;">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0" style="font-weight:800;">Danh sách đơn hàng</h5>
+                            <a href="/shop.html" class="btn-outline-store" style="text-decoration:none;">← Tiếp tục mua sắm</a>
+                        </div>
+                        <div id="ordersList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <div class="footer__copyright__text">
+                        <p>Copyright &copy; <script>document.write(new Date().getFullYear());</script>
+                        StoreChain — Đồ án tốt nghiệp web</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/jquery.magnific-popup.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/owl.carousel.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/store.js"></script>
+    <script src="/js/orders.js"></script>
+</body>
+
+</html>

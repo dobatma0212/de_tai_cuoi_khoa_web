@@ -240,24 +240,33 @@
 
     function placeOrder() {
         var alertEl = $("checkoutAlert");
-        alertEl.style.display = "none";
+        if (alertEl) alertEl.style.display = "none";
         if (!cartItems.length) {
             alert("Giỏ hàng đang trống.");
             return;
         }
-        if (!$("addressBox").querySelector('input[name="addr"]:checked')) {
+        var addressBox = $("addressBox");
+        if (!addressBox || !addressBox.querySelector('input[name="addr"]:checked')) {
             alert("Vui lòng chọn địa chỉ nhận hàng (hoặc thêm địa chỉ ở Hồ sơ cá nhân).");
             return;
         }
+        if (!selectedTransporterId && transporters.length) {
+            selectedTransporterId = transporters[0].id;
+        }
+        var noteEl = $("orderNote");
         var payload = {
             transporterId: selectedTransporterId,
             paymentMethod: selectedPaymentMethod(),
-            note: $("orderNote").value.trim()
+            note: noteEl ? noteEl.value.trim() : ""
         };
         if (promoPreview && promoPreview.valid) {
             payload.promoCode = promoPreview.promoCode;
         }
         var btn = $("btnPlaceOrder");
+        if (!btn) {
+            alert("Không tìm thấy nút đặt hàng.");
+            return;
+        }
         btn.disabled = true;
         btn.textContent = "Đang xử lý...";
         api("POST", "/orders", payload).then(function (res) {

@@ -6,11 +6,14 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Một sản phẩm trong giỏ hàng của người dùng.
+ * Một dòng sản phẩm trong giỏ hàng của người dùng.
+ * Cùng một sản phẩm + size + màu thì cộng dồn số lượng vào một dòng.
  */
 @Entity
 @Table(name = "cart_items",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "product_id", "size"}))
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "product_id", "size", "color"})
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,21 +34,18 @@ public class CartItem {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    /** Size đã chọn (rỗng nếu sản phẩm không phân size) */
-    @Column(name = "size", length = 10)
+    @Column(name = "size", nullable = false, length = 50)
     @Builder.Default
     private String size = "";
 
-    /** Màu đã chọn (rỗng nếu sản phẩm không phân màu) */
-    @Column(name = "color", length = 50)
+    @Column(name = "color", nullable = false, length = 50)
     @Builder.Default
     private String color = "";
 
     @Column(name = "quantity", nullable = false)
-    @Builder.Default
-    private int quantity = 1;
+    private int quantity;
 
-    @Column(name = "added_at", nullable = false, updatable = false)
+    @Column(name = "added_at", nullable = false)
     private LocalDateTime addedAt;
 
     @PrePersist
@@ -53,5 +53,7 @@ public class CartItem {
         if (this.addedAt == null) {
             this.addedAt = LocalDateTime.now();
         }
+        if (this.size == null) this.size = "";
+        if (this.color == null) this.color = "";
     }
 }
