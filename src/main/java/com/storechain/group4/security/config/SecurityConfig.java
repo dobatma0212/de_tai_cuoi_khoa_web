@@ -83,6 +83,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/test/all").permitAll()
+                        // Cổng thanh toán (VNPay/MoMo) gọi trả về/IPN trực tiếp, không kèm JWT
+                        .requestMatchers("/api/payments/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 3. Phân quyền theo Role
