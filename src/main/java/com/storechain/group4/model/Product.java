@@ -7,7 +7,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
+@Table(name = "products",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = "slug")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -31,6 +34,10 @@ public class Product {
 
     @Column(name = "name", nullable = false, length = 150)
     private String name;
+
+    /** Đường dẫn thân thiện cho SEO, duy nhất trên toàn hệ thống (có thể null) */
+    @Column(name = "slug", length = 250, unique = true)
+    private String slug;
 
     /** Giá bán theo VND */
     @Column(name = "price", nullable = false, precision = 13, scale = 0)
@@ -75,7 +82,9 @@ public class Product {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
-        this.updatedAt = LocalDateTime.now();
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
         if (this.status == null || this.status.isBlank()) {
             this.status = "active";
         }
@@ -84,5 +93,17 @@ public class Product {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public Long getProductId() {
+        return this.id;
+    }
+
+    public void setProductId(Long productId) {
+        this.id = productId;
+    }
+
+    public boolean isActive() {
+        return "active".equalsIgnoreCase(this.status);
     }
 }

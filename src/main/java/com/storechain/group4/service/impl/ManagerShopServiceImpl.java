@@ -533,12 +533,25 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 && request.getValue().compareTo(BigDecimal.valueOf(90)) > 0) {
             throw new IllegalArgumentException("Giảm giá theo % tối đa là 90%.");
         }
+        String code = request.getCode() == null || request.getCode().isBlank()
+                ? null : request.getCode().trim();
+        if (code != null && promotionRepository
+                .existsByShopIdAndCodeIgnoreCaseAndIdNot(shop.getId(), code,
+                        request.getId() != null ? request.getId() : 0L)) {
+            throw new IllegalArgumentException("Mã khuyến mãi đã tồn tại trong chi nhánh.");
+        }
         promo.setName(request.getName().trim());
-        promo.setCode(request.getCode() == null || request.getCode().isBlank()
-                ? null : request.getCode().trim());
+        promo.setCode(code);
         promo.setPromoType(request.getPromoType());
-        promo.setValue(request.getValue());
-        promo.setMinOrderAmount(request.getMinOrderAmount() == null
+        // Ánh xạ sang mô hình chung: PERCENT = giảm % giá đơn, SHIPPING = giảm tiền cố định trên phí vận chuyển
+        if (Promotion.TYPE_PERCENT.equals(request.getPromoType())) {
+            promo.setDiscountType(com.storechain.group4.model.DiscountType.PERCENTAGE);
+        } else {
+            promo.setDiscountType(com.storechain.group4.model.DiscountType.FIXED_AMOUNT);
+        }
+        promo.setPromotionType(com.storechain.group4.model.PromotionType.VOUCHER);
+        promo.setDiscountValue(request.getValue());
+        promo.setMinOrderValue(request.getMinOrderAmount() == null
                 ? BigDecimal.ZERO : request.getMinOrderAmount());
         promo.setStartDate(request.getStartDate() != null ? request.getStartDate() : LocalDateTime.now());
         promo.setEndDate(request.getEndDate());
@@ -874,12 +887,12 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private PromotionDto toPromotionDto(Promotion p) {
         return PromotionDto.builder()
                 .id(p.getId())
-                .shopId(p.getShop().getId())
+                .shopId(p.getShop() != null ? p.getShop().getId() : null)
                 .name(p.getName())
                 .code(p.getCode())
                 .promoType(p.getPromoType())
-                .value(p.getValue())
-                .minOrderAmount(p.getMinOrderAmount())
+                .value(p.getDiscountValue())
+                .minOrderAmount(p.getMinOrderValue())
                 .startDate(p.getStartDate())
                 .endDate(p.getEndDate())
                 .active(p.isActive())

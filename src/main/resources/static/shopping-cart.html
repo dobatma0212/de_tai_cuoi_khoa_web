@@ -259,6 +259,15 @@
                                           maxlength="500" placeholder="Ghi chú cho chi nhánh..."></textarea>
                             </div>
 
+                            <div class="cart__discount mb-3">
+                                <h6 class="font-weight-bold mb-2">Mã Giảm Giá / Voucher</h6>
+                                <form id="cart-coupon-form" onsubmit="applyCartCoupon(event)">
+                                    <input type="text" id="cart-coupon-input" placeholder="Nhập mã ưu đãi..." style="text-transform: uppercase;">
+                                    <button type="submit" id="cart-coupon-btn">Áp dụng</button>
+                                </form>
+                                <div id="cart-coupon-msg" class="mt-2" style="font-size: 13px; font-weight: 600;"></div>
+                            </div>
+
                             <div class="summary-row"><span>Tạm tính</span><span id="sumSubtotal">0₫</span></div>
                             <div class="summary-row"><span>Phí vận chuyển</span><span id="sumShipping">0₫</span></div>
                             <div class="summary-row"><span>Khuyến mãi</span><span id="sumDiscount" style="color:#28a745;">-0₫</span></div>
@@ -302,6 +311,72 @@
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart.js"></script>
+    <script>
+        let appliedCoupon = null;
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // Đọc tạm tính hiện tại từ khối tổng kết do cart.js render
+        function getCurrentSubtotal() {
+            const el = document.getElementById('sumSubtotal');
+            if (!el) return 0;
+            const digits = el.textContent.replace(/[^\d]/g, '');
+            return digits ? parseInt(digits, 10) : 0;
+        }
+
+        function applyCartCoupon(e) {
+            e.preventDefault();
+            const code = $('#cart-coupon-input').val().trim().toUpperCase();
+            const msgEl = $('#cart-coupon-msg');
+            const btnEl = $('#cart-coupon-btn');
+
+            if (!code) {
+                msgEl.text('Vui lòng nhập mã ưu đãi!').css('color', '#dc3545');
+                return;
+            }
+
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                msgEl.html('Vui lòng <a href="/login.html" class="text-danger font-weight-bold">đăng nhập</a> để áp dụng voucher!').css('color', '#dc3545');
+                return;
+            }
+
+            btnEl.prop('disabled', true).text('...');
+            msgEl.text('Đang kiểm tra mã...').css('color', '#666');
+
+            $.ajax({
+                url: '/api/public/promotions/check-voucher',
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    code: code,
+                    orderTotal: getCurrentSubtotal()
+                }),
+                success: function(res) {
+                    btnEl.prop('disabled', false).text('Áp dụng');
+                    if (res.success && res.data && res.data.valid) {
+                        const d = res.data;
+                        appliedCoupon = d;
+                        msgEl.text('✓ ' + d.message).css('color', '#28a745');
+                    } else {
+                        appliedCoupon = null;
+                        msgEl.text('✗ ' + (res.data ? res.data.message : res.message)).css('color', '#dc3545');
+                    }
+                },
+                error: function(xhr) {
+                    btnEl.prop('disabled', false).text('Áp dụng');
+                    appliedCoupon = null;
+                    const err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Mã giảm giá không hợp lệ!';
+                    msgEl.text('✗ ' + err).css('color', '#dc3545');
+                }
+            });
+        }
+    </script>
 </body>
 
 </html>

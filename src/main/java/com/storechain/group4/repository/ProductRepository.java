@@ -43,4 +43,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.shop.id = :shopId AND p.status = 'active' AND " +
             "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Product> suggestByName(@Param("shopId") Long shopId, @Param("keyword") String keyword);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsBySlugAndIdNot(String slug, Long id);
 }

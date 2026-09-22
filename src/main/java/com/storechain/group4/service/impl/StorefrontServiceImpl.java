@@ -333,12 +333,12 @@ public class StorefrontServiceImpl implements StorefrontService {
                 ? transporter.getBaseFee()
                 : BigDecimal.ZERO;
 
-        // Áp khuyến mãi của chi nhánh (nếu nhập mã hợp lệ)
+        // Áp khuyến mãi của chi nhánh (nếu nhập mã hợp lệ); mã của admin (toàn server) được xử lý ở PromotionService
         BigDecimal discount = BigDecimal.ZERO;
         Promotion promo = null;
         if (request.getPromoCode() != null && !request.getPromoCode().isBlank()) {
             promo = promotionRepository
-                    .findByShopIdAndCodeIgnoreCaseAndActiveTrue(shop.getId(), request.getPromoCode().trim())
+                    .findActiveByShopIdAndCodeIgnoreCase(shop.getId(), request.getPromoCode().trim())
                     .orElse(null);
             if (promo == null) {
                 throw new IllegalArgumentException("Mã khuyến mãi \"" + request.getPromoCode()
@@ -348,16 +348,16 @@ public class StorefrontServiceImpl implements StorefrontService {
             if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
                 throw new IllegalArgumentException("Khuyến mãi \"" + promo.getName() + "\" đã hết hạn.");
             }
-            if (promo.getMinOrderAmount() != null && totalAmount.compareTo(promo.getMinOrderAmount()) < 0) {
-                throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderAmount()
+            if (promo.getMinOrderValue() != null && totalAmount.compareTo(promo.getMinOrderValue()) < 0) {
+                throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderValue()
                         + "₫ để áp dụng khuyến mãi \"" + promo.getName() + "\".");
             }
             if (Promotion.TYPE_PERCENT.equals(promo.getPromoType())) {
-                discount = totalAmount.multiply(promo.getValue())
+                discount = totalAmount.multiply(promo.getDiscountValue())
                         .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
                 if (discount.compareTo(totalAmount) > 0) discount = totalAmount;
             } else {
-                discount = promo.getValue().min(shippingFee);
+                discount = promo.getDiscountValue().min(shippingFee);
             }
         }
 

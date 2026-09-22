@@ -30,6 +30,8 @@ public class DataInitializer implements CommandLineRunner {
     private final com.storechain.group4.repository.ShopCategoryRepository shopCategoryRepository;
     private final TransporterRepository transporterRepository;
     private final com.storechain.group4.repository.ShopRepository shopRepository;
+    private final com.storechain.group4.repository.ProductRepository productRepository;
+    private final com.storechain.group4.repository.PromotionRepository promotionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EntityManager entityManager;
     private final org.springframework.transaction.PlatformTransactionManager transactionManager;
@@ -37,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            fixPromotionsTable();
             cleanupObsoleteRoles();
             fixLegacySchema();
             initRoles();
@@ -48,7 +51,81 @@ public class DataInitializer implements CommandLineRunner {
             initDefaultEmployee();
             initDefaultShopCategories();
             initBranchStocks();
+            initDefaultProducts();
+            initDefaultPromotions();
         });
+    }
+
+    private void fixPromotionsTable() {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> cols = entityManager.createNativeQuery(
+                    "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions'"
+            ).getResultList();
+
+            log.info("Columns found in promotions table: {}", cols);
+
+            if (!cols.isEmpty() && !cols.contains("promotion_id")) {
+                log.info("Fixing promotions table schema (missing promotion_id)...");
+                entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS promotion_products").executeUpdate();
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS promotion_usages").executeUpdate();
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS promotions").executeUpdate();
+                entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "CREATE TABLE IF NOT EXISTS promotions (" +
+                        "  promotion_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "  promotion_type VARCHAR(30) NOT NULL," +
+                        "  shop_id BIGINT NULL," +
+                        "  name VARCHAR(200) NOT NULL," +
+                        "  description TEXT," +
+                        "  code VARCHAR(50) UNIQUE," +
+                        "  discount_type VARCHAR(30) NOT NULL," +
+                        "  discount_value DECIMAL(12,2) NOT NULL," +
+                        "  min_order_value DECIMAL(12,2)," +
+                        "  max_discount_amount DECIMAL(12,2)," +
+                        "  usage_limit INT," +
+                        "  usage_limit_per_user INT," +
+                        "  used_count INT NOT NULL DEFAULT 0," +
+                        "  promo_type VARCHAR(10) NULL," +
+                        "  start_date DATETIME NOT NULL," +
+                        "  end_date DATETIME NOT NULL," +
+                        "  status VARCHAR(20) NOT NULL DEFAULT 'active'," +
+                        "  version BIGINT DEFAULT 0," +
+                        "  created_at DATETIME," +
+                        "  updated_at DATETIME" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                ).executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "CREATE TABLE IF NOT EXISTS promotion_usages (" +
+                        "  usage_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "  promotion_id BIGINT NOT NULL," +
+                        "  user_id BIGINT NOT NULL," +
+                        "  discount_amount DECIMAL(12,2) NOT NULL," +
+                        "  order_total DECIMAL(12,2) NOT NULL," +
+                        "  used_at DATETIME," +
+                        "  CONSTRAINT fk_usage_promotion FOREIGN KEY (promotion_id) REFERENCES promotions(promotion_id) ON DELETE CASCADE" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                ).executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "CREATE TABLE IF NOT EXISTS promotion_products (" +
+                        "  promotion_id BIGINT NOT NULL," +
+                        "  product_id BIGINT NOT NULL," +
+                        "  PRIMARY KEY (promotion_id, product_id)," +
+                        "  CONSTRAINT fk_promo_prod_promo FOREIGN KEY (promotion_id) REFERENCES promotions(promotion_id) ON DELETE CASCADE," +
+                        "  CONSTRAINT fk_promo_prod_prod FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                ).executeUpdate();
+
+                log.info("Successfully recreated promotions, promotion_usages, and promotion_products tables!");
+            }
+        } catch (Exception e) {
+            log.error("Notice in fixPromotionsTable: {}", e.getMessage(), e);
+        }
     }
 
     /**
@@ -476,6 +553,110 @@ public class DataInitializer implements CommandLineRunner {
                     entityManager.createNativeQuery(sql).executeUpdate());
         } catch (Exception e) {
             log.info("{}: {}", skipMessage, e.getMessage());
+        }
+    }
+
+    private void initDefaultProducts() {
+        if (productRepository.count() == 0) {
+            com.storechain.group4.model.Shop shop0 = shopRepository.findAll().stream().findFirst().orElse(null);
+            com.storechain.group4.model.ShopCategory cat = shop0 == null ? null
+                    : shopCategoryRepository.findAll().stream().filter(c -> c.getShop() != null && c.getShop().getId().equals(shop0.getId())).findFirst().orElse(null);
+
+            productRepository.save(com.storechain.group4.model.Product.builder()
+                    .name("Áo Thun Nam Cổ Tròn Basic Cotton")
+                    .slug("ao-thun-nam-co-tron-basic-cotton")
+                    .description("Chất liệu 100% cotton thoáng mát, thấm hút mồ hôi, form dáng năng động trẻ trung.")
+                    .price(new BigDecimal("250000.00"))
+                    .imageUrl("/img/product/product-1.jpg")
+                    .category(cat)
+                    .shop(shop0)
+                    .stock(100)
+                    .status("active")
+                    .build());
+
+            productRepository.save(com.storechain.group4.model.Product.builder()
+                    .name("Áo Sơ Mi Nam Tay Dài Oxford")
+                    .slug("ao-so-mi-nam-tay-dai-oxford")
+                    .description("Phong cách lịch lãm, chất vải dày dặn ít nhăn, phù hợp công sở và sự kiện.")
+                    .price(new BigDecimal("420000.00"))
+                    .imageUrl("/img/product/product-2.jpg")
+                    .category(cat)
+                    .shop(shop0)
+                    .stock(50)
+                    .status("active")
+                    .build());
+
+            productRepository.save(com.storechain.group4.model.Product.builder()
+                    .name("Quần Jean Nam Slim Fit Co Giãn")
+                    .slug("quan-jean-nam-slim-fit-co-gian")
+                    .description("Dáng ôm tôn dáng, vải denim cao cấp co giãn 4 chiều mềm mại.")
+                    .price(new BigDecimal("550000.00"))
+                    .imageUrl("/img/product/product-3.jpg")
+                    .category(cat)
+                    .shop(shop0)
+                    .stock(80)
+                    .status("active")
+                    .build());
+
+            log.info("Khởi tạo danh sách sản phẩm mẫu thành công (3 sản phẩm)!");
+        }
+    }
+
+    private void initDefaultPromotions() {
+        if (promotionRepository.count() == 0) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+            // 1. Flash Sale: Giảm 20% tự động
+            com.storechain.group4.model.Promotion flashSale = com.storechain.group4.model.Promotion.builder()
+                    .promotionType(com.storechain.group4.model.PromotionType.FLASH_SALE)
+                    .name("Flash Sale Giảm 20% Mùa Hè")
+                    .description("Chương trình Flash Sale giảm trực tiếp 20% trên giá hiển thị sản phẩm.")
+                    .code(null)
+                    .discountType(com.storechain.group4.model.DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("20.00"))
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusDays(15))
+                    .status("active")
+                    .products(new java.util.HashSet<>(productRepository.findAll()))
+                    .build();
+            promotionRepository.save(flashSale);
+
+            // 2. Voucher: Giảm 15% tối đa 50k
+            com.storechain.group4.model.Promotion voucher1 = com.storechain.group4.model.Promotion.builder()
+                    .promotionType(com.storechain.group4.model.PromotionType.VOUCHER)
+                    .name("Mã Ưu Đãi Chào Bạn Mới 15%")
+                    .description("Giảm 15% cho đơn hàng từ 200.000đ, tối đa 50.000đ.")
+                    .code("WELCOME15")
+                    .discountType(com.storechain.group4.model.DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("15.00"))
+                    .minOrderValue(new BigDecimal("200000.00"))
+                    .maxDiscountAmount(new BigDecimal("50000.00"))
+                    .usageLimit(500)
+                    .usageLimitPerUser(1)
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusDays(30))
+                    .status("active")
+                    .build();
+            promotionRepository.save(voucher1);
+
+            // 3. Voucher: Giảm 50.000đ cố định
+            com.storechain.group4.model.Promotion voucher2 = com.storechain.group4.model.Promotion.builder()
+                    .promotionType(com.storechain.group4.model.PromotionType.VOUCHER)
+                    .name("Giảm Ngay 50K Đơn Từ 300K")
+                    .description("Nhập mã SALE50K giảm trực tiếp 50.000đ cho đơn hàng từ 300.000đ.")
+                    .code("SALE50K")
+                    .discountType(com.storechain.group4.model.DiscountType.FIXED_AMOUNT)
+                    .discountValue(new BigDecimal("50000.00"))
+                    .minOrderValue(new BigDecimal("300000.00"))
+                    .usageLimit(200)
+                    .usageLimitPerUser(2)
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusDays(60))
+                    .status("active")
+                    .build();
+            promotionRepository.save(voucher2);
+
+            log.info("Khởi tạo danh sách khuyến mãi mẫu thành công (1 Flash Sale, 2 Vouchers)!");
         }
     }
 }
