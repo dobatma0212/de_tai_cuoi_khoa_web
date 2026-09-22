@@ -32,6 +32,15 @@ public class Order {
     public static final String TYPE_ONLINE = "onl";
     public static final String TYPE_OFFLINE = "off";
 
+    // Phương thức thanh toán
+    public static final String PAYMENT_COD = "COD";     // Thanh toán khi nhận hàng
+    public static final String PAYMENT_VNPAY = "VNPAY"; // Cổng VNPay
+    public static final String PAYMENT_MOMO = "MOMO";   // Ví MoMo
+
+    // Trạng thái thanh toán
+    public static final String PAY_STATUS_UNPAID = "UNPAID";   // COD: chờ thu tiền khi giao hàng
+    public static final String PAY_STATUS_PENDING = "PENDING"; // Đang chờ cổng thanh toán xác nhận
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "order_id")
@@ -73,6 +82,20 @@ public class Order {
     /** Tên chương trình khuyến mãi áp dụng (nếu có) */
     @Column(name = "promo_name", length = 150)
     private String promoName;
+
+    /** Phương thức thanh toán: COD / VNPAY / MOMO. Cột NOT NULL trong DB — mặc định COD */
+    @Column(name = "payment_method", nullable = false, length = 10)
+    @Builder.Default
+    private String paymentMethod = PAYMENT_COD;
+
+    /** Trạng thái thanh toán: UNPAID / PENDING / PAID / FAILED. Cột NOT NULL trong DB — mặc định UNPAID */
+    @Column(name = "payment_status", nullable = false, length = 10)
+    @Builder.Default
+    private String paymentStatus = PAY_STATUS_UNPAID;
+
+    /** Mã giao dịch thanh toán (dùng chung cho các đơn tách từ một lần đặt) */
+    @Column(name = "payment_ref", length = 64)
+    private String paymentRef;
 
     /** Nhà vận chuyển */
     @ManyToOne(fetch = FetchType.LAZY)
@@ -119,6 +142,12 @@ public class Order {
         this.updatedAt = LocalDateTime.now();
         if (this.status == null || this.status.isBlank()) {
             this.status = STATUS_NEW;
+        }
+        if (this.paymentMethod == null || this.paymentMethod.isBlank()) {
+            this.paymentMethod = PAYMENT_COD;
+        }
+        if (this.paymentStatus == null || this.paymentStatus.isBlank()) {
+            this.paymentStatus = PAY_STATUS_UNPAID;
         }
     }
 

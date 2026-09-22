@@ -1,19 +1,16 @@
 package com.storechain.group4.controller;
 
 import com.storechain.group4.dto.ApiResponse;
-import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.security.services.CustomUserDetails;
 import com.storechain.group4.service.ManagerShopService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -21,8 +18,8 @@ import java.util.Map;
 /**
  * API quản lý chi nhánh dành cho Manager:
  * - Xem thông tin chi nhánh do admin bổ nhiệm (chỉ đọc, chỉ admin được sửa thông tin chi nhánh)
- * - Quản lý sản phẩm theo danh mục (Bộ áo quần / Phụ kiện), đặt sản phẩm đại diện
- * - Tải ảnh sản phẩm từ máy lên
+ * - Xem sản phẩm theo danh mục (chỉ đọc — thêm/sửa/xóa sản phẩm do nhân viên thực hiện)
+ * - Xem tồn kho của từng sản phẩm tại chi nhánh
  */
 @RestController
 @RequestMapping("/api/manager/shop")
@@ -113,73 +110,7 @@ public class ManagerShopController {
         }
     }
 
-    @PostMapping("/products")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> createProduct(
-            @Valid @RequestBody ProductRequestDto request,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
-                    "Thêm sản phẩm mới thành công!",
-                    managerShopService.createProduct(currentUser.getId(), request)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PutMapping("/products/{id}")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> updateProduct(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductRequestDto request,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success(
-                    "Cập nhật sản phẩm thành công!",
-                    managerShopService.updateProduct(currentUser.getId(), id, request)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @DeleteMapping("/products/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteProduct(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            managerShopService.deleteProduct(currentUser.getId(), id);
-            return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công!",
-                    "Đã xóa sản phẩm ID: " + id));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PatchMapping("/products/{id}/representative")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> setRepresentative(
-            @PathVariable Long id,
-            @RequestParam boolean representative,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            String msg = representative
-                    ? "Đã đặt làm sản phẩm đại diện của danh mục!"
-                    : "Đã bỏ chọn sản phẩm đại diện.";
-            return ResponseEntity.ok(ApiResponse.success(msg,
-                    managerShopService.setRepresentative(currentUser.getId(), id, representative)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<Map<String, String>>> uploadImage(
-            @RequestParam("file") MultipartFile file) {
-        try {
-            String url = managerShopService.uploadImage(file);
-            return ResponseEntity.ok(ApiResponse.success("Tải ảnh lên thành công!",
-                    Map.of("url", url)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
+    // Manager chỉ được xem sản phẩm; thêm/sửa/xóa sản phẩm do nhân viên thực hiện
 
     // ==================== Quản lý nhân viên chi nhánh ====================
 

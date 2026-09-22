@@ -89,6 +89,18 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
         return findActiveFlashSales(now);
     }
 
+    // Find available vouchers (toàn server, đang bật và còn hạn) để user chọn khi đặt hàng
+    @Query("SELECT p FROM Promotion p WHERE p.shop IS NULL AND p.promotionType = com.storechain.group4.model.PromotionType.VOUCHER AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")
+    List<Promotion> findAvailableVouchers(@Param("now") LocalDateTime now);
+
+    // Voucher của các chi nhánh đang có hiệu lực (endDate null = không giới hạn) để hiển thị cho khách
+    @Query("SELECT p FROM Promotion p WHERE p.shop IS NOT NULL AND p.promotionType = com.storechain.group4.model.PromotionType.VOUCHER AND p.status = 'active' AND p.startDate <= :now AND (p.endDate IS NULL OR p.endDate >= :now) ORDER BY p.shop.name")
+    List<Promotion> findAvailableShopVouchers(@Param("now") LocalDateTime now);
+
+    // Tìm voucher chi nhánh đang bật theo mã (preview khi khách chọn mã ở giỏ hàng)
+    @Query("SELECT p FROM Promotion p WHERE p.shop IS NOT NULL AND LOWER(p.code) = LOWER(:code) AND p.status = 'active' ORDER BY p.id")
+    List<Promotion> findActiveShopVouchersByCode(@Param("code") String code);
+
     // Find active flash sales for specific product
     @Query("SELECT p FROM Promotion p JOIN p.products prod WHERE prod.id = :productId AND p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")
     List<Promotion> findActiveFlashSalesForProduct(@Param("productId") Long productId, @Param("now") LocalDateTime now);

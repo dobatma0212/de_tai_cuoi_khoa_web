@@ -25,6 +25,8 @@ public class ProductResponseDto {
     private String description;
     private String imageUrl;
     private Integer stock;
+    /** Tồn kho thực tế của sản phẩm này tại chi nhánh (bảng branch_stocks) */
+    private Integer branchStock;
     private String sizes;
     private java.util.List<String> sizesList;
     private String color;

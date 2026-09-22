@@ -19,6 +19,8 @@ public interface PromotionService {
     
     // Public API
     List<PromotionResponseDto> getActiveFlashSales();
+    /** Danh sách voucher (toàn server) đang có hiệu lực để user chọn khi đặt hàng */
+    List<PromotionResponseDto> getAvailableVouchers();
     ApplyVoucherResponseDto checkVoucher(String code, BigDecimal orderTotal, Long userId);
     ApplyVoucherResponseDto applyVoucher(String code, BigDecimal orderTotal, Long userId);
 }

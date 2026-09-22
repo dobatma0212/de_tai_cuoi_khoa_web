@@ -274,8 +274,24 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PromotionResponseDto> getAvailableVouchers() {
+        LocalDateTime now = LocalDateTime.now();
+        // Gộp cả voucher toàn server (admin tạo) và voucher của từng chi nhánh (manager tạo)
+        List<PromotionResponseDto> result = promotionRepository.findAvailableVouchers(now).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        promotionRepository.findAvailableShopVouchers(now).stream()
+                .map(this::toDto)
+                .forEach(result::add);
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ApplyVoucherResponseDto checkVoucher(String code, BigDecimal orderTotal, Long userId) {
+        // Ưu tiên voucher toàn server; không thấy thì tìm trong voucher của các chi nhánh
         Promotion promotion = promotionRepository.findByCodeIgnoreCaseAndShopIsNull(code)
+                .or(() -> promotionRepository.findActiveShopVouchersByCode(code).stream().findFirst())
                 .orElseThrow(() -> new IllegalArgumentException("Mã voucher không tồn tại"));
 
         long userUsageCount = promotionUsageRepository.countByPromotionIdAndUserId(promotion.getId(), userId);
@@ -293,18 +309,27 @@ public class PromotionServiceImpl implements PromotionService {
                     .build();
         }
 
+        boolean isShopShipping = promotion.getShop() != null
+                && Promotion.TYPE_SHIPPING.equals(promotion.getPromoType());
         BigDecimal discountAmount = promotionCalculator.calculateDiscount(promotion, orderTotal);
         BigDecimal finalTotal = orderTotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        String message = isShopShipping
+                ? "Mã giảm phí vận chuyển " + promotion.getDiscountValue().longValue()
+                    + "₫ — áp dụng khi đơn được chi nhánh \"" + promotion.getShop().getName() + "\" xử lý"
+                : promotion.getShop() != null
+                    ? "Mã voucher hợp lệ — áp dụng tại chi nhánh \"" + promotion.getShop().getName() + "\""
+                    : "Mã voucher hợp lệ";
         return ApplyVoucherResponseDto.builder()
                 .valid(true)
                 .promotionId(promotion.getId())
                 .promotionName(promotion.getName())
                 .code(promotion.getCode())
+                .promoType(promotion.getPromoType())
                 .discountType(promotion.getDiscountType() != null ? promotion.getDiscountType().name() : null)
                 .discountValue(promotion.getDiscountValue())
                 .discountAmount(discountAmount)
                 .finalTotal(finalTotal)
-                .message("Mã voucher hợp lệ")
+                .message(message)
                 .build();
     }
 
@@ -427,6 +452,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .description(promotion.getDescription())
                 .code(promotion.getCode())
                 .promotionType(promotion.getPromotionType() != null ? promotion.getPromotionType().name() : null)
+                .promoType(promotion.getPromoType())
                 .discountType(promotion.getDiscountType() != null ? promotion.getDiscountType().name() : null)
                 .discountValue(promotion.getDiscountValue())
                 .maxDiscountAmount(promotion.getMaxDiscountAmount())
@@ -437,6 +463,8 @@ public class PromotionServiceImpl implements PromotionService {
                 .usageLimitPerUser(promotion.getUsageLimitPerUser())
                 .minOrderValue(promotion.getMinOrderValue())
                 .status(promotion.getStatus())
+                .shopId(promotion.getShop() != null ? promotion.getShop().getId() : null)
+                .shopName(promotion.getShop() != null ? promotion.getShop().getName() : null)
                 .expired(expired)
                 .currentlyActive(currentlyActive)
                 .remainingUsage(remainingUsage)

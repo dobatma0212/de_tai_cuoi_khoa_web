@@ -1,7 +1,6 @@
 package com.storechain.group4.service;
 
 import com.storechain.group4.dto.OrderDto;
-import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.PromotionDto;
 import com.storechain.group4.dto.RevenueDto;
@@ -26,20 +25,11 @@ public interface ManagerShopService {
 
     void deleteCategory(Long managerId, Long categoryId);
 
-    // ============ Sản phẩm chi nhánh ============
+    // ============ Sản phẩm chi nhánh (manager chỉ được xem) ============
 
     List<ProductResponseDto> getMyProducts(Long managerId, Long categoryId);
 
-    ProductResponseDto createProduct(Long managerId, ProductRequestDto request);
-
-    ProductResponseDto updateProduct(Long managerId, Long productId, ProductRequestDto request);
-
-    void deleteProduct(Long managerId, Long productId);
-
-    /** Đặt/chỉ định sản phẩm làm đại diện cho danh mục của chi nhánh */
-    ProductResponseDto setRepresentative(Long managerId, Long productId, boolean representative);
-
-    /** Tải ảnh sản phẩm từ máy lên, trả về URL truy cập được */
+    /** Tải ảnh từ máy lên (dùng chung cho nhân viên khi thêm/sửa sản phẩm) */
     String uploadImage(MultipartFile file);
 
     // ============ Quản lý đơn hàng của chi nhánh ============

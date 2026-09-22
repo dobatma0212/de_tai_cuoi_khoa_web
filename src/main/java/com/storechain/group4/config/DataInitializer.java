@@ -123,8 +123,58 @@ public class DataInitializer implements CommandLineRunner {
 
                 log.info("Successfully recreated promotions, promotion_usages, and promotion_products tables!");
             }
+
+            relaxLegacyPromotionColumns(cols);
         } catch (Exception e) {
             log.error("Notice in fixPromotionsTable: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Bảng promotions của các môi trường cũ còn giữ cột legacy NOT NULL
+     * (value, active, min_order_amount) và shop_id / promo_type bắt buộc,
+     * trong khi entity mới không map value/active/min_order_amount và cho
+     * phép shop_id, promo_type null (khuyến mãi toàn server). INSERT sẽ bị
+     * MySQL từ chối ở chế độ STRICT_ALL_TABLES, nên nới lỏng thành nullable.
+     */
+    private void relaxLegacyPromotionColumns(List<Object> cols) {
+        if (cols.isEmpty()) {
+            return;
+        }
+        @SuppressWarnings("unchecked")
+        List<Object> notNullable = entityManager.createNativeQuery(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' " +
+                "AND IS_NULLABLE = 'NO' AND COLUMN_DEFAULT IS NULL " +
+                "AND COLUMN_NAME IN ('shop_id', 'promo_type', 'value', 'active', 'min_order_amount')"
+        ).getResultList();
+
+        for (Object colObj : notNullable) {
+            String col = String.valueOf(colObj);
+            String type = switch (col) {
+                case "shop_id" -> "BIGINT";
+                case "promo_type" -> "VARCHAR(10)";
+                case "value" -> "DECIMAL(13,0)";
+                case "active" -> "BIT(1)";
+                case "min_order_amount" -> "DECIMAL(13,0)";
+                default -> null;
+            };
+            if (type == null) {
+                continue;
+            }
+            log.info("Nới lỏng cột legacy {}.promotions thành nullable...", col);
+            entityManager.createNativeQuery(
+                    "ALTER TABLE promotions MODIFY COLUMN " + col + " " + type + " NULL"
+            ).executeUpdate();
+        }
+
+        // Dòng dữ liệu cũ có thể còn status rỗng, chuẩn hóa để không bị treo ở trạng thái lạ
+        entityManager.createNativeQuery(
+                "UPDATE promotions SET status = 'inactive' WHERE status = '' OR status IS NULL"
+        ).executeUpdate();
+
+        if (!notNullable.isEmpty()) {
+            log.info("Đã nới lỏng {} cột legacy trong bảng promotions", notNullable.size());
         }
     }
 

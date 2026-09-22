@@ -613,59 +613,8 @@
                                             <div class="col-md-9">
                                                 <div class="alert auth-alert" id="productAlert" style="display:none;"></div>
 
-                                        <!-- Form thêm / sửa sản phẩm -->
-                                        <div id="productFormCard" class="address-card" style="margin-bottom:20px;">
-                                            <h6 class="font-weight-bold mb-3" id="productFormTitle">Thêm sản phẩm mới</h6>
-                                            <form id="productForm">
-                                                <input type="hidden" id="productId">
-                                                <input type="hidden" id="productCategory">
-                                                <div class="row">
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Tên sản phẩm (*)</label>
-                                                        <input type="text" id="productName" class="form-control" maxlength="150" required>
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Giá bán - VND (*)</label>
-                                                        <input type="number" id="productPrice" class="form-control" min="0" step="1000" required placeholder="VD: 250000">
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Tồn kho</label>
-                                                        <input type="number" id="productStock" class="form-control" min="0" value="0">
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Các size (cách nhau bởi dấu phẩy)</label>
-                                                        <input type="text" id="productSizes" class="form-control" maxlength="200" placeholder="VD: S,M,L,XL">
-                                                    </div>
-                                                    <div class="col-md-6 form-group">
-                                                        <label class="profile-info-label">Màu sắc <small class="text-muted">(chọn được nhiều màu)</small></label>
-                                                        <input type="hidden" id="productColor">
-                                                        <div id="productColorSwatches" class="color-swatch-list"></div>
-                                                    </div>
-                                                    <div class="col-md-12 form-group">
-                                                        <label class="profile-info-label">Mô tả sản phẩm (*)</label>
-                                                        <textarea id="productDescription" class="form-control" rows="3" maxlength="5000" required></textarea>
-                                                    </div>
-                                                    <div class="col-md-12 form-group">
-                                                        <label class="profile-info-label">Hình ảnh sản phẩm (*)</label>
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <label class="profile-info-label">Tải ảnh từ máy</label>
-                                                                <input type="file" id="productImageFile" class="form-control-file" accept="image/*">
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <label class="profile-info-label">Hoặc dùng URL ảnh</label>
-                                                                <input type="text" id="productImageUrl" class="form-control" maxlength="500" placeholder="https://...">
-                                                            </div>
-                                                        </div>
-                                                        <img id="productImagePreview" class="image-preview-box mt-2" alt="preview" style="display:none;">
-                                                    </div>
-                                                </div>
-                                                <button type="submit" class="btn-store" id="btnSaveProduct">Lưu sản phẩm</button>
-                                                <button type="button" class="btn btn-link btn-link-danger" id="btnCancelProduct" style="display:none;">Hủy chỉnh sửa</button>
-                                            </form>
-                                        </div>
-
-                                                <h6 class="font-weight-bold" id="productListTitle">Danh sách sản phẩm</h6>
+                                        <!-- Manager chỉ được xem sản phẩm, không thêm/sửa/xóa -->
+                                        <h6 class="font-weight-bold" id="productListTitle">Danh sách sản phẩm</h6>
                                                 <div id="productList"></div>
                                             </div>
                                         </div>
@@ -808,7 +757,7 @@
                                         <button type="button" class="emp-subbtn" data-sub="empSubWork">Công &amp; Hoa hồng</button>
                                     </div>
 
-                                    <!-- Sub-tab: Thuộc chi nhánh (thông tin chi nhánh + quản lý sản phẩm) -->
+                                    <!-- Sub-tab: Thuộc chi nhánh (thông tin chi nhánh, chỉ đọc) -->
                                     <div id="empSubProducts" class="shop-subcontent active">
                                         <div class="row">
                                             <div class="col-md-6 form-group">
@@ -832,68 +781,8 @@
                                                 <textarea id="empShopDescription" class="form-control" rows="2" maxlength="2000" readonly></textarea>
                                             </div>
                                         </div>
-                                        <hr>
-                                        <div class="row">
-                                            <div class="col-md-3 mb-3">
-                                                <h6 class="font-weight-bold mb-2" style="font-size:14px;">Danh mục sản phẩm</h6>
-                                                <div class="order-filter-list" id="empCategoryChips"></div>
-                                            </div>
-                                            <div class="col-md-9">
-                                                <div class="alert auth-alert" id="empProductAlert" style="display:none;"></div>
-                                                <div id="empProductFormCard" class="address-card" style="margin-bottom:20px;">
-                                                    <h6 class="font-weight-bold mb-3" id="empProductFormTitle">Thêm sản phẩm mới</h6>
-                                                    <form id="empProductForm">
-                                                        <input type="hidden" id="empProductId">
-                                                        <input type="hidden" id="empProductCategory">
-                                                        <div class="row">
-                                                            <div class="col-md-6 form-group">
-                                                                <label class="profile-info-label">Tên sản phẩm (*)</label>
-                                                                <input type="text" id="empProductName" class="form-control" maxlength="150" required>
-                                                            </div>
-                                                            <div class="col-md-6 form-group">
-                                                                <label class="profile-info-label">Giá bán - VND (*)</label>
-                                                                <input type="number" id="empProductPrice" class="form-control" min="0" step="1000" required placeholder="VD: 250000">
-                                                            </div>
-                                                            <div class="col-md-6 form-group">
-                                                                <label class="profile-info-label">Tồn kho</label>
-                                                                <input type="number" id="empProductStock" class="form-control" min="0" value="0">
-                                                            </div>
-                                                            <div class="col-md-6 form-group">
-                                                                <label class="profile-info-label">Các size (cách nhau bởi dấu phẩy)</label>
-                                                                <input type="text" id="empProductSizes" class="form-control" maxlength="200" placeholder="VD: S,M,L,XL">
-                                                            </div>
-                                                            <div class="col-md-6 form-group">
-                                                                <label class="profile-info-label">Màu sắc <small class="text-muted">(chọn được nhiều màu)</small></label>
-                                                                <input type="hidden" id="empProductColor">
-                                                                <div id="empProductColorSwatches" class="color-swatch-list"></div>
-                                                            </div>
-                                                            <div class="col-md-12 form-group">
-                                                                <label class="profile-info-label">Mô tả sản phẩm (*)</label>
-                                                                <textarea id="empProductDescription" class="form-control" rows="3" maxlength="5000" required></textarea>
-                                                            </div>
-                                                            <div class="col-md-12 form-group">
-                                                                <label class="profile-info-label">Hình ảnh sản phẩm (*)</label>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <label class="profile-info-label">Tải ảnh từ máy</label>
-                                                                        <input type="file" id="empProductImageFile" class="form-control-file" accept="image/*">
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <label class="profile-info-label">Hoặc dùng URL ảnh</label>
-                                                                        <input type="text" id="empProductImageUrl" class="form-control" maxlength="500" placeholder="https://...">
-                                                                    </div>
-                                                                </div>
-                                                                <img id="empProductImagePreview" class="image-preview-box mt-2" alt="preview" style="display:none;">
-                                                            </div>
-                                                        </div>
-                                                        <button type="submit" class="btn-store" id="empBtnSaveProduct">Lưu sản phẩm</button>
-                                                        <button type="button" class="btn btn-link btn-link-danger" id="empBtnCancelProduct" style="display:none;">Hủy chỉnh sửa</button>
-                                                    </form>
-                                                </div>
-                                                <h6 class="font-weight-bold" id="empProductListTitle">Danh sách sản phẩm</h6>
-                                                <div id="empProductList"></div>
-                                            </div>
-                                        </div>
+                                        <p class="text-muted mt-2">Nhân viên chỉ xem thông tin chi nhánh — vui lòng liên hệ quản lý
+                                            chi nhánh để thêm/sửa/xóa sản phẩm.</p>
                                     </div>
 
                                     <!-- Sub-tab: Đơn hàng của chi nhánh -->

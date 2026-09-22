@@ -261,10 +261,9 @@
 
                             <div class="cart__discount mb-3">
                                 <h6 class="font-weight-bold mb-2">Mã Giảm Giá / Voucher</h6>
-                                <form id="cart-coupon-form" onsubmit="applyCartCoupon(event)">
-                                    <input type="text" id="cart-coupon-input" placeholder="Nhập mã ưu đãi..." style="text-transform: uppercase;">
-                                    <button type="submit" id="cart-coupon-btn">Áp dụng</button>
-                                </form>
+                                <select id="cart-coupon-select" class="form-control">
+                                    <option value="">-- Chọn mã giảm giá --</option>
+                                </select>
                                 <div id="cart-coupon-msg" class="mt-2" style="font-size: 13px; font-weight: 600;"></div>
                             </div>
 
@@ -326,14 +325,14 @@
             return digits ? parseInt(digits, 10) : 0;
         }
 
-        function applyCartCoupon(e) {
-            e.preventDefault();
-            const code = $('#cart-coupon-input').val().trim().toUpperCase();
+        function applyCartCoupon(code) {
             const msgEl = $('#cart-coupon-msg');
-            const btnEl = $('#cart-coupon-btn');
 
             if (!code) {
-                msgEl.text('Vui lòng nhập mã ưu đãi!').css('color', '#dc3545');
+                appliedCoupon = null;
+                window.appliedCouponData = null;
+                if (window.updateSummary) window.updateSummary();
+                msgEl.text('').css('color', '');
                 return;
             }
 
@@ -343,7 +342,6 @@
                 return;
             }
 
-            btnEl.prop('disabled', true).text('...');
             msgEl.text('Đang kiểm tra mã...').css('color', '#666');
 
             $.ajax({
@@ -358,24 +356,76 @@
                     orderTotal: getCurrentSubtotal()
                 }),
                 success: function(res) {
-                    btnEl.prop('disabled', false).text('Áp dụng');
                     if (res.success && res.data && res.data.valid) {
                         const d = res.data;
                         appliedCoupon = d;
+                        window.appliedCouponData = d;
+                        if (window.updateSummary) window.updateSummary();
                         msgEl.text('✓ ' + d.message).css('color', '#28a745');
                     } else {
                         appliedCoupon = null;
+                        window.appliedCouponData = null;
+                        if (window.updateSummary) window.updateSummary();
                         msgEl.text('✗ ' + (res.data ? res.data.message : res.message)).css('color', '#dc3545');
                     }
                 },
                 error: function(xhr) {
-                    btnEl.prop('disabled', false).text('Áp dụng');
                     appliedCoupon = null;
+                    window.appliedCouponData = null;
+                    if (window.updateSummary) window.updateSummary();
                     const err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Mã giảm giá không hợp lệ!';
                     msgEl.text('✗ ' + err).css('color', '#dc3545');
                 }
             });
         }
+
+        // Nạp danh sách voucher đang có hiệu lực vào dropdown để user chọn
+        function loadAvailableVouchers() {
+            const token = localStorage.getItem('jwt_token');
+            const select = document.getElementById('cart-coupon-select');
+            if (!select) return;
+            // main.js khởi tạo nice-select cho mọi <select> nhưng trang này
+            // không include CSS của nó -> trả về select gốc để render đúng
+            if ($.fn.niceSelect) $(select).niceSelect('destroy');
+            if (!token) return;
+
+            $.ajax({
+                url: '/api/public/promotions/available-vouchers',
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: function(res) {
+                    const vouchers = (res.success && res.data) ? res.data : [];
+                    if (!vouchers.length) {
+                        select.innerHTML = '<option value="">Chưa có mã giảm giá nào</option>';
+                        return;
+                    }
+                    select.innerHTML = '<option value="">-- Chọn mã giảm giá --</option>' +
+                        vouchers.map(function(v) {
+                            let saving;
+                            if (v.promoType === 'SHIPPING') {
+                                saving = 'Giảm phí vận chuyển ' + formatMoney(v.discountValue);
+                            } else if (v.discountType === 'PERCENTAGE') {
+                                saving = 'Giảm ' + v.discountValue + '%';
+                                if (v.maxDiscountAmount) saving += ' (tối đa ' + formatMoney(v.maxDiscountAmount) + ')';
+                            } else {
+                                saving = 'Giảm ' + formatMoney(v.discountValue);
+                            }
+                            if (v.minOrderValue && v.minOrderValue > 0) {
+                                saving += ' — đơn từ ' + formatMoney(v.minOrderValue);
+                            }
+                            saving += v.shopName ? ' — chi nhánh ' + v.shopName : ' — toàn hệ thống';
+                            const label = v.code + ' | ' + saving + (v.name ? ' (' + v.name + ')' : '');
+                            return '<option value="' + v.code + '">' + label + '</option>';
+                        }).join('');
+                }
+            });
+        }
+
+        $('#cart-coupon-select').on('change', function() {
+            applyCartCoupon(this.value ? this.value.trim().toUpperCase() : '');
+        });
+
+        loadAvailableVouchers();
     </script>
 </body>
 

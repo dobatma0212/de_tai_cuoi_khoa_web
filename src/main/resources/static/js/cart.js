@@ -200,12 +200,29 @@
         var subtotal = cartItems.reduce(function (s, it) { return s + Number(it.subtotal || 0); }, 0);
         var transporter = transporters.find(function (t) { return t.id === selectedTransporterId; });
         var shipping = transporter ? Number(transporter.baseFee || 0) : 0;
+        // Ước tính khuyến mãi từ mã đang chọn (server tính lại chính xác khi đặt hàng)
+        var coupon = window.appliedCouponData || null;
+        var discount = 0;
+        if (coupon && coupon.discountValue) {
+            var value = Number(coupon.discountValue);
+            if (coupon.promoType === "SHIPPING") {
+                // Voucher chi nhánh loại SHIPPING: trừ vào phí vận chuyển
+                discount = Math.min(value, shipping);
+            } else if (coupon.discountType === "PERCENTAGE") {
+                discount = Math.round(subtotal * value / 100);
+                if (coupon.maxDiscountAmount) discount = Math.min(discount, Number(coupon.maxDiscountAmount));
+                discount = Math.min(discount, subtotal);
+            } else {
+                discount = Math.min(value, subtotal);
+            }
+        }
         $("sumSubtotal").textContent = formatVnd(subtotal);
         $("sumShipping").textContent = formatVnd(shipping);
-        // Khuyến mãi chỉ server tính chính xác được, hiển thị tạm "-chờ xử lý" khi có mã
-        $("sumDiscount").textContent = "-0₫";
-        $("sumTotal").textContent = formatVnd(subtotal + shipping);
+        $("sumDiscount").textContent = "-" + formatVnd(discount);
+        $("sumTotal").textContent = formatVnd(subtotal + shipping - discount);
     }
+    // shopping-cart.html gọi lại để cập nhật tổng tiền khi khách chọn/bỏ mã giảm giá
+    window.updateSummary = updateSummary;
 
     document.addEventListener("input", function (e) {
     });
@@ -219,12 +236,22 @@
             alert("Giỏ hàng đang trống.");
             return;
         }
+        // Mã giảm giá đang chọn ở dropdown voucher (server tự validate theo chi nhánh xử lý đơn)
+        var couponSelect = document.getElementById("cart-coupon-select");
+        var promoCode = couponSelect && couponSelect.value ? couponSelect.value.trim().toUpperCase() : null;
         var payload = {
             transporterId: selectedTransporterId,
-            note: $("orderNote").value.trim()
+            note: $("orderNote").value.trim(),
+            promoCode: promoCode
         };
         api("POST", "/orders", payload).then(function (res) {
             var orders = res.data || [];
+            // Đơn đã tạo — clear mã đã dùng để không áp lại cho lần đặt sau
+            if (couponSelect) couponSelect.value = "";
+            window.appliedCouponData = null;
+            if (typeof appliedCoupon !== "undefined") appliedCoupon = null;
+            $("cart-coupon-msg").textContent = "";
+            updateSummary();
             var lines = orders.map(function (o) {
                 return o.orderCode + " — " + formatVnd(o.grandTotal);
             }).join("<br>");

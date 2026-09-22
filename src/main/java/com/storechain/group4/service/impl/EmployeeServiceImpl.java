@@ -296,8 +296,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     /**
      * Nhân viên chỉ được (giống manager):
-     * - CONFIRMED: xác nhận đơn NEW (kèm đơn vị vận chuyển). Đơn được gắn handledBy
-     *   là nhân viên xác nhận -> giao thành công sẽ tính hoa hồng cho nhân viên đó.
+     * - CONFIRMED: xác nhận đơn NEW (dùng đơn vị vận chuyển khách đã chọn khi đặt hàng).
+     *   Đơn được gắn handledBy là nhân viên xác nhận -> giao thành công sẽ tính hoa hồng.
      * - CANCELLED: hủy đơn NEW/CONFIRMED/SHIPPING (bắt buộc lý do), hoàn tồn kho.
      * - RETURNED: đánh dấu trả hàng - hoàn tiền cho đơn đã giao/khách đã nhận.
      */
@@ -317,14 +317,19 @@ public class EmployeeServiceImpl implements EmployeeService {
                 if (!Order.STATUS_NEW.equals(current)) {
                     throw new IllegalArgumentException("Chỉ đơn ở trạng thái mới mới có thể xác nhận.");
                 }
-                if (transporterId == null) {
-                    throw new IllegalArgumentException("Vui lòng chọn đơn vị vận chuyển trước khi xác nhận.");
+                // Đơn vị vận chuyển do khách chọn lúc đặt hàng đã lưu trên đơn — giữ nguyên,
+                // chỉ tự điền khi đơn cũ chưa có (fallback theo transporterId gửi lên)
+                if (order.getTransporter() == null && transporterId != null) {
+                    var transporter = transporterRepository.findById(transporterId)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị vận chuyển."));
+                    order.setTransporter(transporter);
                 }
-                var transporter = transporterRepository.findById(transporterId)
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị vận chuyển."));
-                order.setTransporter(transporter);
+                if (order.getTransporter() == null) {
+                    throw new IllegalArgumentException("Đơn hàng chưa có đơn vị vận chuyển để xác nhận.");
+                }
                 if (order.getShippingFee() == null || order.getShippingFee().compareTo(BigDecimal.ZERO) <= 0) {
-                    order.setShippingFee(transporter.getBaseFee() == null ? BigDecimal.ZERO : transporter.getBaseFee());
+                    order.setShippingFee(order.getTransporter().getBaseFee() == null
+                            ? BigDecimal.ZERO : order.getTransporter().getBaseFee());
                     order.setGrandTotal(order.getTotalAmount()
                             .add(order.getShippingFee())
                             .subtract(order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount()));

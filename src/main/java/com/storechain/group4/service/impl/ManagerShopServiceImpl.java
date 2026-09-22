@@ -1,7 +1,6 @@
 package com.storechain.group4.service.impl;
 
 import com.storechain.group4.dto.OrderDto;
-import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.PromotionDto;
 import com.storechain.group4.dto.RevenueDto;
@@ -207,7 +206,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .build();
     }
 
-    // ============ Sản phẩm chi nhánh ============
+    // ============ Sản phẩm chi nhánh (manager chỉ được xem) ============
 
     @Override
     @Transactional
@@ -220,157 +219,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         return products.stream().map(this::toProductDto).toList();
     }
 
-    @Override
-    @Transactional
-    public ProductResponseDto createProduct(Long managerId, ProductRequestDto request) {
-        Shop shop = findMyShop(managerId);
-        ensureDefaultCategories(shop);
-        validatePrice(request);
-        ShopCategory category = findOwnedCategory(shop, request.getCategoryId());
-        Product product = Product.builder()
-                .shop(shop)
-                .category(category)
-                .name(request.getName().trim())
-                .price(request.getPrice())
-                .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
-                .stock(request.getStock() == null ? 0 : Math.max(0, request.getStock()))
-                .sizes(normalizeSizes(request.getSizes()))
-                .color(request.getColor() == null ? null : request.getColor().trim())
-                .build();
-        // Tồn kho cũ (cột products.stock) giờ là tồn kho của chi nhánh tạo sản phẩm
-        Product saved = productRepository.save(product);
-        syncBranchStock(shop, saved, product.getStock());
-        // Sản phẩm đầu tiên của danh mục tự động làm đại diện
-        if (!productRepository.existsByShopIdAndCategoryIdAndRepresentativeTrue(
-                shop.getId(), category.getId())) {
-            saved.setRepresentative(true);
-            saved = productRepository.save(saved);
-        }
-        return toProductDto(saved);
-    }
-
-    @Override
-    @Transactional
-    public ProductResponseDto updateProduct(Long managerId, Long productId, ProductRequestDto request) {
-        Product product = findOwnedProduct(managerId, productId);
-        validatePrice(request);
-        ShopCategory newCategory = findOwnedCategory(product.getShop(), request.getCategoryId());
-        boolean categoryChanged = !product.getCategory().getId().equals(newCategory.getId());
-        product.setCategory(newCategory);
-        product.setName(request.getName().trim());
-        product.setPrice(request.getPrice());
-        product.setDescription(request.getDescription());
-        product.setImageUrl(request.getImageUrl());
-        if (request.getStock() != null) {
-            product.setStock(Math.max(0, request.getStock()));
-            // Cập nhật tồn kho của chi nhánh quản lý sản phẩm này
-            syncBranchStock(product.getShop(), product, product.getStock());
-        }
-        product.setSizes(normalizeSizes(request.getSizes()));
-        product.setColor(request.getColor() == null ? null : request.getColor().trim());
-        if (categoryChanged) {
-            product.setRepresentative(false);
-            Product saved = productRepository.save(product);
-            if (!productRepository.existsByShopIdAndCategoryIdAndRepresentativeTrue(
-                    saved.getShop().getId(), newCategory.getId())) {
-                saved.setRepresentative(true);
-                saved = productRepository.save(saved);
-            }
-            return toProductDto(saved);
-        }
-        return toProductDto(productRepository.save(product));
-    }
-
-    @Override
-    @Transactional
-    public void deleteProduct(Long managerId, Long productId) {
-        Product product = findOwnedProduct(managerId, productId);
-        boolean wasRepresentative = product.isRepresentative();
-        Long categoryId = product.getCategory().getId();
-        Long shopId = product.getShop().getId();
-
-        // Dọn dữ liệu liên quan để không văng lỗi khóa ngoại:
-        // tồn kho chi nhánh, giỏ hàng, đánh giá (kèm ảnh/video), tham chiếu trong đơn hàng
-        branchStockRepository.deleteAll(branchStockRepository.findByProductId(productId));
-        cartItemRepository.deleteAll(cartItemRepository.findByProductId(productId));
-        reviewRepository.findByProductIdOrderByCreatedAtDesc(productId).forEach(review -> {
-            reviewMediaRepository.deleteAll(reviewMediaRepository.findByReviewId(review.getId()));
-            reviewRepository.delete(review);
-        });
-        orderItemRepository.findByProductId(productId).forEach(oi -> {
-            oi.setProduct(null); // đơn hàng vẫn giữ snapshot tên/ảnh/giá
-            orderItemRepository.save(oi);
-        });
-
-        productRepository.delete(product);
-
-        // Nếu xóa sản phẩm đại diện thì chọn sản phẩm khác thay thế
-        if (wasRepresentative) {
-            List<Product> remaining = productRepository
-                    .findByShopIdAndCategoryIdOrderByCreatedAtDesc(shopId, categoryId);
-            if (!remaining.isEmpty()) {
-                Product next = remaining.get(0);
-                next.setRepresentative(true);
-                productRepository.save(next);
-            }
-        }
-    }
-
-    @Override
-    @Transactional
-    public ProductResponseDto setRepresentative(Long managerId, Long productId, boolean representative) {
-        Product product = findOwnedProduct(managerId, productId);
-        if (representative) {
-            // Bỏ cờ đại diện của các sản phẩm khác trong cùng danh mục
-            productRepository.findByShopIdAndCategoryIdAndRepresentativeTrue(
-                            product.getShop().getId(), product.getCategory().getId())
-                    .forEach(p -> {
-                        if (!p.getId().equals(productId)) {
-                            p.setRepresentative(false);
-                            productRepository.save(p);
-                        }
-                    });
-            product.setRepresentative(true);
-        } else {
-            product.setRepresentative(false);
-        }
-        return toProductDto(productRepository.save(product));
-    }
-
-    private String normalizeSizes(String sizes) {
-        if (sizes == null) return null;
-        String cleaned = sizes.replaceAll("\\s*,\\s*", ",").trim();
-        return cleaned.isEmpty() ? null : cleaned;
-    }
-
-    private void validatePrice(ProductRequestDto request) {
-        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Giá sản phẩm phải là số VND hợp lệ (>= 0).");
-        }
-    }
-
-    /**
-     * Đồng bộ tồn kho của một sản phẩm tại một chi nhánh:
-     * giá trị trong cột products.stock được coi là tồn kho của chi nhánh sở hữu sản phẩm.
-     */
-    private void syncBranchStock(Shop shop, Product product, int stock) {
-        BranchStock bs = branchStockRepository
-                .findByProductIdAndShopId(product.getId(), shop.getId())
-                .orElse(BranchStock.builder().product(product).shop(shop).stock(0).build());
-        bs.setStock(Math.max(0, stock));
-        branchStockRepository.save(bs);
-    }
-
-    private Product findOwnedProduct(Long managerId, Long productId) {
-        Shop shop = findMyShop(managerId);
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
-        if (!product.getShop().getId().equals(shop.getId())) {
-            throw new IllegalArgumentException("Sản phẩm này không thuộc chi nhánh bạn quản lý.");
-        }
-        return product;
-    }
+    // Thêm/sửa/xóa sản phẩm do nhân viên thực hiện (EmployeeServiceImpl), manager chỉ được xem
 
     // ============ Upload ảnh ============
 
@@ -422,7 +271,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
 
     /**
      * Manager chỉ được:
-     * - CONFIRMED: xác nhận đơn NEW (kèm chọn đơn vị vận chuyển), giao hàng tự động sau đó
+     * - CONFIRMED: xác nhận đơn NEW (dùng đơn vị vận chuyển khách đã chọn khi đặt hàng), giao hàng tự động sau đó
      * - CANCELLED: hủy đơn NEW/CONFIRMED/SHIPPING (bắt buộc ghi lý do), hoàn tồn kho về chi nhánh
      * - RETURNED: đánh dấu trả hàng - hoàn tiền cho đơn đã giao/khách đã nhận
      * Trạng thái SHIPPING/DELIVERED/RECEIVED do hệ thống và khách hàng tự cập nhật.
@@ -443,14 +292,19 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 if (!Order.STATUS_NEW.equals(current)) {
                     throw new IllegalArgumentException("Chỉ đơn ở trạng thái mới mới có thể xác nhận.");
                 }
-                if (transporterId == null) {
-                    throw new IllegalArgumentException("Vui lòng chọn đơn vị vận chuyển trước khi xác nhận.");
+                // Đơn vị vận chuyển do khách chọn lúc đặt hàng đã lưu trên đơn — giữ nguyên,
+                // chỉ tự điền khi đơn cũ chưa có (fallback theo transporterId gửi lên)
+                if (order.getTransporter() == null && transporterId != null) {
+                    var transporter = transporterRepository.findById(transporterId)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị vận chuyển."));
+                    order.setTransporter(transporter);
                 }
-                var transporter = transporterRepository.findById(transporterId)
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị vận chuyển."));
-                order.setTransporter(transporter);
+                if (order.getTransporter() == null) {
+                    throw new IllegalArgumentException("Đơn hàng chưa có đơn vị vận chuyển để xác nhận.");
+                }
                 if (order.getShippingFee() == null || order.getShippingFee().compareTo(BigDecimal.ZERO) <= 0) {
-                    order.setShippingFee(transporter.getBaseFee() == null ? BigDecimal.ZERO : transporter.getBaseFee());
+                    order.setShippingFee(order.getTransporter().getBaseFee() == null
+                            ? BigDecimal.ZERO : order.getTransporter().getBaseFee());
                     order.setGrandTotal(order.getTotalAmount()
                             .add(order.getShippingFee())
                             .subtract(order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount()));
@@ -810,6 +664,12 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     }
 
     private ProductResponseDto toProductDto(Product p) {
+        // Tồn kho hiển thị cho manager là tồn kho thực tế tại chi nhánh
+        // (đơn bị hủy/trả hoàn về branch_stocks chứ không cộng lại vào products.stock)
+        Integer branchStock = branchStockRepository
+                .findByProductIdAndShopId(p.getId(), p.getShop().getId())
+                .map(BranchStock::getStock)
+                .orElse(p.getStock());
         return ProductResponseDto.builder()
                 .id(p.getId())
                 .shopId(p.getShop().getId())
@@ -821,6 +681,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .description(p.getDescription())
                 .imageUrl(p.getImageUrl())
                 .stock(p.getStock())
+                .branchStock(branchStock)
                 .sizes(p.getSizes())
                 .sizesList(parseSizes(p.getSizes()))
                 .color(p.getColor())

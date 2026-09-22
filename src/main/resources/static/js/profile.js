@@ -382,12 +382,6 @@
                 else if (sub === "shopSubRevenue") loadRevenue();
             });
         });
-        $("productForm").addEventListener("submit", onSaveProduct);
-        $("btnCancelProduct").addEventListener("click", resetProductForm);
-        $("productImageUrl").addEventListener("input", function () {
-            updateProductImagePreview($("productImageUrl").value.trim());
-        });
-        $("productImageFile").addEventListener("change", onPickProductFile);
         $("btnAddCategory").addEventListener("click", onAddCategory);
         $("newCategoryName").addEventListener("keydown", function (e) {
             if (e.key === "Enter") {
@@ -398,8 +392,6 @@
 
         $("promoForm").addEventListener("submit", onSavePromo);
         $("btnCancelPromo").addEventListener("click", resetPromoForm);
-
-        renderColorSwatches();
     }
 
     function fillShopInfo(shop) {
@@ -471,12 +463,11 @@
 }).catch(function (err) { alert(err.message); });
             return;
         }
-        // Bấm vào dòng: chọn danh mục để xem/thêm sản phẩm
+        // Bấm vào dòng: chọn danh mục để xem sản phẩm
         var item = e.target.closest(".order-filter-item");
         if (!item || !item.getAttribute("data-cat")) return;
         currentCategoryId = parseInt(item.getAttribute("data-cat"), 10);
         renderCategoryChips();
-        resetProductForm();
         loadProducts();
     }
 
@@ -493,56 +484,12 @@
         });
     }
 
-    // ---------- Sản phẩm ----------
-
-    /** Bảng màu chọn nhanh cho sản phẩm (tên -> mã hiển thị) */
-    var COLOR_SWATCHES = [
-        ["Đen", "#222222"], ["Trắng", "#ffffff"], ["Xám", "#9e9e9e"],
-        ["Xanh navy", "#1b2a4a"], ["Đỏ", "#d32f2f"], ["Be", "#d9c8a9"],
-        ["Nâu", "#7a4b2a"], ["Xanh lá", "#2e7d32"], ["Vàng", "#f2c200"], ["Hồng", "#f4a7b9"]
-    ];
-
-    function renderColorSwatches() {
-        var wrap = $("productColorSwatches");
-        if (!wrap) return;
-        wrap.innerHTML = COLOR_SWATCHES.map(function (c) {
-            return '<span class="color-swatch" data-color="' + c[0] + '" title="' + c[0] + '"' +
-                ' style="background:' + c[1] + ';"></span>';
-        }).join("");
-        wrap.onclick = function (e) {
-            var sw = e.target.closest(".color-swatch");
-            if (!sw) return;
-            // Chọn được nhiều màu cùng lúc; bấm lại để bỏ
-            var picked = sw.getAttribute("data-color");
-            var current = parseColorList($("productColor").value);
-            var idx = current.indexOf(picked);
-            if (idx === -1) current.push(picked);
-            else current.splice(idx, 1);
-            $("productColor").value = current.join(", ");
-            updateColorSwatchActive();
-        };
-    }
-
-    /** "Đen, Trắng" -> ["Đen","Trắng"] */
-    function parseColorList(value) {
-        return String(value || "").split(",")
-            .map(function (s) { return s.trim(); })
-            .filter(function (s) { return s.length > 0; });
-    }
-
-    function updateColorSwatchActive() {
-        var wrap = $("productColorSwatches");
-        if (!wrap) return;
-        var current = parseColorList($("productColor").value);
-        wrap.querySelectorAll(".color-swatch").forEach(function (sw) {
-            sw.classList.toggle("active", current.indexOf(sw.getAttribute("data-color")) !== -1);
-        });
-    }
+    // ---------- Sản phẩm (manager chỉ được xem) ----------
 
     function loadProducts() {
         if (currentCategoryId === null) {
             $("productListTitle").textContent = "Danh sách sản phẩm";
-            $("productList").innerHTML = '<p class="text-muted">Hãy thêm và chọn một danh mục để quản lý sản phẩm.</p>';
+            $("productList").innerHTML = '<p class="text-muted">Hãy chọn một danh mục để xem sản phẩm.</p>';
             return;
         }
         mgrApi("GET", "/products?categoryId=" + currentCategoryId).then(function (res) {
@@ -562,143 +509,25 @@
         $("productListTitle").textContent = "Danh sách sản phẩm — " + currentCategoryName() +
             " (" + list.length + ")";
         if (!list.length) {
-            container.innerHTML = '<p class="text-muted">Chưa có sản phẩm nào trong danh mục này. Hãy thêm sản phẩm đầu tiên!</p>';
+            container.innerHTML = '<p class="text-muted">Chưa có sản phẩm nào trong danh mục này.</p>';
             return;
         }
         container.innerHTML = list.map(function (p) {
+            var stock = (p.branchStock !== undefined && p.branchStock !== null) ? p.branchStock : (p.stock || 0);
             return '<div class="product-card-mgr' + (p.representative ? " is-representative" : "") + '">' +
                 '<img src="' + escapeHtml(p.imageUrl || "/img/product/product-1.jpg") + '" alt="' + escapeHtml(p.name) + '">' +
                 "<div style='flex:1;'>" +
                 '<h6 class="font-weight-bold mb-1">' + escapeHtml(p.name) +
                 (p.representative ? ' <span class="badge-representative">Đại diện danh mục</span>' : "") + "</h6>" +
                 '<div style="color:#e53637;font-weight:700;">' + formatVnd(p.price) + "</div>" +
-                '<small class="text-muted">Tồn kho: <b>' + (p.stock || 0) + "</b>" +
-                (p.sizes ? " — Size: " + escapeHtml(p.sizes) : "") +
-                (p.color ? " — Màu: " + escapeHtml(p.color) : "") + "</small>" +
-                '<p class="text-muted mb-2" style="font-size:13px;">' + escapeHtml(p.description || "") + "</p>" +
-                '<button type="button" class="btn-act btn-act-rep' + (p.representative ? " is-on" : "") + '" data-rep="' + p.id + '">' +
-                (p.representative ? '<i class="fa fa-star"></i> Bỏ đại diện' : '<i class="fa fa-star-o"></i> Đặt đại diện') + "</button> " +
-                '<button type="button" class="btn-act btn-act-edit" data-edit="' + p.id + '"><i class="fa fa-pencil"></i> Sửa</button> ' +
-                '<button type="button" class="btn-act btn-act-delete" data-delete="' + p.id + '"><i class="fa fa-trash"></i> Xóa</button>' +
+                '<small class="text-muted">Tồn kho tại chi nhánh: <b style="color:' +
+                (stock > 0 ? "#28a745" : "#e53637") + ';">' + stock + "</b>" +
+                (stock > 0 ? "" : ' <span class="badge badge-danger">Hết hàng</span>') + "</small>" +
+                (p.sizes ? '<small class="text-muted d-block">Size: ' + escapeHtml(p.sizes) + "</small>" : "") +
+                (p.color ? '<small class="text-muted d-block">Màu: ' + escapeHtml(p.color) + "</small>" : "") +
+                '<p class="text-muted mb-0" style="font-size:13px;">' + escapeHtml(p.description || "") + "</p>" +
                 "</div></div>";
         }).join("");
-
-        container.onclick = onProductListClick;
-    }
-
-    function onProductListClick(e) {
-        var btn = e.target.closest("button");
-        if (!btn) return;
-        if (btn.getAttribute("data-rep") !== null) {
-            var repId = btn.getAttribute("data-rep");
-            var makeRep = !btn.classList.contains("is-on");
-            mgrApi("PATCH", "/products/" + repId + "/representative?representative=" + makeRep).then(function () {
-                showAlert($("productAlert"), makeRep ? "Đã đặt làm sản phẩm đại diện!" : "Đã bỏ chọn đại diện.", "success");
-                loadProducts();
-}).catch(function (err) { showAlert($("productAlert"), err.message, "error"); });
-        } else if (btn.getAttribute("data-edit") !== null) {
-            startEditProduct(parseInt(btn.getAttribute("data-edit"), 10));
-        } else if (btn.getAttribute("data-delete") !== null) {
-            var delId = btn.getAttribute("data-delete");
-            if (!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
-            mgrApi("DELETE", "/products/" + delId).then(function () {
-                showAlert($("productAlert"), "Xóa sản phẩm thành công!", "success");
-                loadProducts();
-}).catch(function (err) { showAlert($("productAlert"), err.message, "error"); });
-        }
-    }
-
-    function updateProductImagePreview(url) {
-        var img = $("productImagePreview");
-        if (url) {
-            img.src = url;
-            img.style.display = "block";
-        } else {
-            img.style.display = "none";
-        }
-    }
-
-    function onPickProductFile() {
-        var fileInput = $("productImageFile");
-        if (!fileInput.files || !fileInput.files[0]) return;
-        var fd = new FormData();
-        fd.append("file", fileInput.files[0]);
-        fetch(MANAGER_API + "/upload", {
-            method: "POST",
-            headers: { "Authorization": "Bearer " + getToken() },
-            body: fd
-        }).then(function (res) { return res.json(); }).then(function (data) {
-            if (data.success === false) throw new Error(data.message || "Tải ảnh thất bại.");
-            $("productImageUrl").value = data.data.url;
-            updateProductImagePreview(data.data.url);
-            showAlert($("productAlert"), "Tải ảnh lên thành công!", "success");
-        }).catch(function (err) {
-            showAlert($("productAlert"), err.message, "error");
-        });
-    }
-
-    function resetProductForm() {
-        $("productForm").reset();
-        $("productId").value = "";
-        $("productCategory").value = currentCategoryId === null ? "" : currentCategoryId;
-        $("productStock").value = 0;
-        $("productColor").value = "";
-        updateColorSwatchActive();
-        $("productFormTitle").textContent = "Thêm sản phẩm mới";
-        $("btnSaveProduct").textContent = "Lưu sản phẩm";
-        $("btnCancelProduct").style.display = "none";
-        updateProductImagePreview("");
-    }
-
-    function startEditProduct(id) {
-        mgrApi("GET", "/products?categoryId=" + currentCategoryId).then(function (res) {
-            var p = (res.data || []).find(function (x) { return x.id === id; });
-            if (!p) return;
-            $("productId").value = p.id;
-            $("productName").value = p.name;
-            $("productPrice").value = p.price;
-            $("productStock").value = p.stock || 0;
-            $("productSizes").value = p.sizes || "";
-            $("productColor").value = p.color || "";
-            updateColorSwatchActive();
-            $("productDescription").value = p.description || "";
-            $("productImageUrl").value = p.imageUrl || "";
-            updateProductImagePreview(p.imageUrl || "");
-            $("productFormTitle").textContent = "Cập nhật sản phẩm";
-            $("btnSaveProduct").textContent = "Lưu thay đổi";
-            $("btnCancelProduct").style.display = "";
-            $("productFormCard").scrollIntoView({ behavior: "smooth" });
-        });
-    }
-
-    function onSaveProduct(e) {
-        e.preventDefault();
-        hideAlert($("productAlert"));
-        if (currentCategoryId === null) {
-            showAlert($("productAlert"), "Vui lòng chọn hoặc thêm một danh mục trước.", "error");
-            return;
-        }
-        var payload = {
-            name: $("productName").value.trim(),
-            categoryId: currentCategoryId,
-            price: $("productPrice").value ? Number($("productPrice").value) : null,
-            stock: $("productStock").value ? Number($("productStock").value) : 0,
-            sizes: $("productSizes").value.trim(),
-            color: $("productColor").value.trim(),
-            description: $("productDescription").value.trim(),
-            imageUrl: $("productImageUrl").value.trim()
-        };
-        var id = $("productId").value;
-        var request = id
-            ? mgrApi("PUT", "/products/" + id, payload)
-            : mgrApi("POST", "/products", payload);
-        request.then(function () {
-            showAlert($("productAlert"), id ? "Cập nhật sản phẩm thành công!" : "Thêm sản phẩm thành công!", "success");
-            resetProductForm();
-            loadProducts();
-}).catch(function (err) {
-            showAlert($("productAlert"), err.message, "error");
-        });
     }
 
     // ==================================================================
@@ -791,17 +620,27 @@
             // Nút thao tác của chi nhánh theo trạng thái đơn
             var actions = "";
             if (o.status === "NEW") {
-                actions = '<div class="mt-2 d-flex flex-wrap align-items-center">' +
-                    '<select class="form-control form-control-sm mr-2 mb-1 order-transporter-select" style="max-width:220px;">' +
-                    '<option value="">— Chọn đơn vị vận chuyển —</option>' +
-                    transporters.filter(function (t) { return t.status !== "inactive"; }).map(function (t) {
-                        return '<option value="' + t.id + '">' + escapeHtml(t.name) +
-                            " (" + formatVnd(t.baseFee) + ")</option>";
-                    }).join("") +
-                    "</select>" +
-                    '<button type="button" class="btn btn-sm btn-store mr-2 mb-1" data-confirm-order="' + o.id + '">Xác nhận đơn</button>' +
-                    '<button type="button" class="btn btn-sm btn-link btn-link-danger mb-1" data-cancel-order="' + o.id + '">Hủy đơn</button>' +
-                    "</div>";
+                if (o.transporterId) {
+                    // Khách đã chọn đơn vị vận chuyển lúc đặt hàng — chỉ hiển thị, không chọn lại
+                    actions = '<div class="mt-2 d-flex flex-wrap align-items-center">' +
+                        '<small class="mr-2 mb-1"><span class="badge badge-light" style="border:1px solid #ddd;">' +
+                        'VC khách chọn: ' + escapeHtml(o.transporterName) + " (" + formatVnd(o.shippingFee) + ")</span></small>" +
+                        '<button type="button" class="btn btn-sm btn-store mr-2 mb-1" data-confirm-order="' + o.id + '">Xác nhận đơn</button>' +
+                        '<button type="button" class="btn btn-sm btn-link btn-link-danger mb-1" data-cancel-order="' + o.id + '">Hủy đơn</button>' +
+                        "</div>";
+                } else {
+                    actions = '<div class="mt-2 d-flex flex-wrap align-items-center">' +
+                        '<select class="form-control form-control-sm mr-2 mb-1 order-transporter-select" style="max-width:220px;">' +
+                        '<option value="">— Chọn đơn vị vận chuyển —</option>' +
+                        transporters.filter(function (t) { return t.status !== "inactive"; }).map(function (t) {
+                            return '<option value="' + t.id + '">' + escapeHtml(t.name) +
+                                " (" + formatVnd(t.baseFee) + ")</option>";
+                        }).join("") +
+                        "</select>" +
+                        '<button type="button" class="btn btn-sm btn-store mr-2 mb-1" data-confirm-order="' + o.id + '">Xác nhận đơn</button>' +
+                        '<button type="button" class="btn btn-sm btn-link btn-link-danger mb-1" data-cancel-order="' + o.id + '">Hủy đơn</button>' +
+                        "</div>";
+                }
             } else if (o.status === "CONFIRMED" || o.status === "SHIPPING") {
                 actions = '<div class="mt-2">' +
                     '<small class="text-muted">Đơn đã được xác nhận — giao hàng tự động, khách có thể hủy giữa chừng.</small> ' +
@@ -847,11 +686,14 @@
                 id = btn.getAttribute("data-confirm-order");
                 select = btn.closest(".address-card").querySelector(".order-transporter-select");
                 transporterId = select ? select.value : "";
-                if (!transporterId) {
+                if (select && !transporterId) {
                     alert("Vui lòng chọn đơn vị vận chuyển trước khi xác nhận.");
                     return;
                 }
-                mgrBaseApi("PATCH", "/orders/" + id + "/status?status=CONFIRMED&transporterId=" + transporterId)
+                // Đơn đã có vận chuyển khách chọn thì không gửi transporterId nữa
+                var confirmUrl = "/orders/" + id + "/status?status=CONFIRMED" +
+                    (transporterId ? "&transporterId=" + transporterId : "");
+                mgrBaseApi("PATCH", confirmUrl)
                     .then(function () {
                         showAlert($("orderAlert"), "Đã xác nhận đơn hàng! Đơn sẽ tự động chuyển sang đang giao.", "success");
                         loadOrders();

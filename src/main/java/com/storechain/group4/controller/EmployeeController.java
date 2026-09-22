@@ -2,26 +2,21 @@ package com.storechain.group4.controller;
 
 import com.storechain.group4.dto.ApiResponse;
 import com.storechain.group4.dto.EmployeeStatsDto;
-import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
-import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.security.services.CustomUserDetails;
 import com.storechain.group4.service.EmployeeService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * API dành cho nhân viên chi nhánh (ROLE_EMPLOYEE):
- * - Quản lý sản phẩm của chi nhánh mình được phân công (thêm / sửa / xóa)
+ * - Xem sản phẩm chi nhánh (chỉ đọc) để bán tại quầy
  * - Xem hoa hồng theo đơn hàng đã bán được trong tháng
  * - Chấm công hằng ngày / xem số công trong tháng
  * Nhân viên vẫn giữ quyền cơ bản của user (mua sắm, giỏ hàng, đánh giá...).
@@ -57,18 +52,6 @@ public class EmployeeController {
         }
     }
 
-    @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<ShopCategoryDto>>> getMyCategories(
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success(
-                    "Lấy danh sách danh mục thành công",
-                    employeeService.getMyCategories(currentUser.getId())));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
     // ==================== Sản phẩm của chi nhánh ====================
 
     @GetMapping("/products")
@@ -81,74 +64,6 @@ public class EmployeeController {
                     employeeService.getMyProducts(currentUser.getId(), categoryId)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PostMapping("/products")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> createProduct(
-            @Valid @RequestBody ProductRequestDto request,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
-                    "Thêm sản phẩm mới thành công!",
-                    employeeService.createProduct(currentUser.getId(), request)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PutMapping("/products/{id}")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> updateProduct(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductRequestDto request,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success(
-                    "Cập nhật sản phẩm thành công!",
-                    employeeService.updateProduct(currentUser.getId(), id, request)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @DeleteMapping("/products/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteProduct(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            employeeService.deleteProduct(currentUser.getId(), id);
-            return ResponseEntity.ok(ApiResponse.success("Xóa sản phẩm thành công!",
-                    "Đã xóa sản phẩm ID: " + id));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PatchMapping("/products/{id}/representative")
-    public ResponseEntity<ApiResponse<ProductResponseDto>> setRepresentative(
-            @PathVariable Long id,
-            @RequestParam boolean representative,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            String msg = representative
-                    ? "Đã đặt làm sản phẩm đại diện của danh mục!"
-                    : "Đã bỏ chọn sản phẩm đại diện.";
-            return ResponseEntity.ok(ApiResponse.success(msg,
-                    employeeService.setRepresentative(currentUser.getId(), id, representative)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<Map<String, String>>> uploadImage(
-            @RequestParam("file") MultipartFile file) {
-        try {
-            String url = employeeService.uploadImage(file);
-            return ResponseEntity.ok(ApiResponse.success("Tải ảnh lên thành công!",
-                    Map.of("url", url)));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -186,8 +101,8 @@ public class EmployeeController {
     }
 
     /**
-     * Xác nhận đơn (CONFIRMED kèm transporterId — đơn được gắn cho nhân viên để tính hoa hồng),
-     * hủy đơn (CANCELLED kèm lý do, hoàn tồn kho), trả hàng (RETURNED).
+     * Xác nhận đơn (CONFIRMED — dùng đơn vị vận chuyển khách đã chọn khi đặt; đơn được gắn
+     * cho nhân viên để tính hoa hồng), hủy đơn (CANCELLED kèm lý do, hoàn tồn kho), trả hàng (RETURNED).
      */
     @PatchMapping("/orders/{id}/status")
     public ResponseEntity<ApiResponse<com.storechain.group4.dto.OrderDto>> updateOrderStatus(
