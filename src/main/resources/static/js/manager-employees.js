@@ -69,27 +69,53 @@
             .replace(/"/g, "&quot;");
     }
 
+    var staffFilter = "all"; // all | working | fired
+    var lastStaff = [];
+
     function loadStaff() {
         staffApi("GET", "").then(function (res) {
-            renderStaff(res.data || []);
+            lastStaff = res.data || [];
+            renderStaff(lastStaff);
         }).catch(function (err) {
             showAlert(err.message, "error");
         });
     }
 
     function renderStaff(staff) {
-        $("staffListTitle").textContent = "Danh sách nhân viên (" + staff.length + ")";
+        var workingCount = staff.filter(function (u) { return u.employed; }).length;
+        var firedCount = staff.length - workingCount;
+        var counts = { all: staff.length, working: workingCount, fired: firedCount };
+        var filterWrap = $("staffFilter");
+        if (filterWrap) {
+            filterWrap.querySelectorAll("button[data-filter]").forEach(function (b) {
+                var c = counts[b.getAttribute("data-filter")];
+                var label = b.getAttribute("data-filter") === "all" ? "Tất cả"
+                    : b.getAttribute("data-filter") === "working" ? "Đang làm việc" : "Đã sa thải";
+                b.innerHTML = escapeHtml(label) + ' <span class="filter-count">(' + c + ")</span>";
+            });
+        }
+        var filtered = staff.filter(function (u) {
+            if (staffFilter === "working") return u.employed;
+            if (staffFilter === "fired") return !u.employed;
+            return true;
+        });
+        var title = "Danh sách nhân viên (" + filtered.length + ")";
+        if (staffFilter === "working") title += " đang làm việc";
+        else if (staffFilter === "fired") title += " đã sa thải";
+        $("staffListTitle").textContent = title;
         var wrap = $("staffList");
-        if (!staff.length) {
-            wrap.innerHTML = '<p class="text-muted">Chi nhánh chưa có nhân viên nào. Hãy bổ nhiệm ở form phía trên.</p>';
+        if (!filtered.length) {
+            wrap.innerHTML = '<p class="text-muted">' + (staff.length
+                ? "Không có nhân viên nào trong mục lọc này."
+                : "Chi nhánh chưa có nhân viên nào. Hãy bổ nhiệm ở form phía trên.") + "</p>";
             return;
         }
         // Sắp xếp: nhân viên đang làm việc trước, nhân viên đã sa thải sau
-        staff.sort(function (a, b) { return (b.employed ? 1 : 0) - (a.employed ? 1 : 0); });
+        filtered.sort(function (a, b) { return (b.employed ? 1 : 0) - (a.employed ? 1 : 0); });
         var html = '<p class="text-muted" style="font-size:13px;">'
             + "Nhấp vào một nhân viên để xem số công, đơn hàng đã bán và hoa hồng "
             + "(áp dụng cả nhân viên đã sa thải).</p>";
-        staff.forEach(function (u) {
+        filtered.forEach(function (u) {
             var firedBadge = u.employed
                 ? ""
                 : ' <span class="badge badge-secondary">Đã sa thải</span>';
@@ -258,9 +284,21 @@
         if (!subBtn) return;
         subBtn.addEventListener("click", loadStaff);
 
+        var filterWrap = $("staffFilter");
+        if (filterWrap) {
+            filterWrap.querySelectorAll("button[data-filter]").forEach(function (b) {
+                b.addEventListener("click", function () {
+                    staffFilter = b.getAttribute("data-filter");
+                    filterWrap.querySelectorAll("button[data-filter]").forEach(function (x) {
+                        x.classList.toggle("active", x === b);
+                    });
+                    renderStaff(lastStaff);
+                });
+            });
+        }
+
         $("hireForm").addEventListener("submit", function (e) {
             e.preventDefault();
-            var userId = $("hireUserId").value.trim();
             var body = {
                 username: $("hireUsername").value.trim(),
                 password: $("hirePassword").value,
@@ -268,10 +306,8 @@
                 fullName: $("hireFullName").value.trim(),
                 phone: $("hirePhone").value.trim()
             };
-            if (userId) body.userId = Number(userId);
-            // Bổ nhiệm người dùng hiện có thì không cần username/password
-            if (!userId && (!body.username || !body.password || !body.email || !body.fullName)) {
-                showAlert("Vui lòng nhập đủ thông tin bắt buộc (*) hoặc điền ID người dùng hiện có.", "error");
+            if (!body.username || !body.password || !body.email || !body.fullName) {
+                showAlert("Vui lòng nhập đủ thông tin bắt buộc (*).", "error");
                 return;
             }
             staffApi("POST", "", body).then(function (res) {

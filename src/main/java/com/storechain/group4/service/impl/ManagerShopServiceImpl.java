@@ -562,20 +562,34 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 throw new IllegalArgumentException("Mật khẩu nhân viên tối thiểu 6 ký tự.");
             }
             if (userRepository.existsByUsername(username)) {
-                throw new IllegalArgumentException("Tên đăng nhập \"" + username + "\" đã tồn tại.");
+                // Username đã tồn tại: coi như bổ nhiệm người dùng hiện có
+                employee = userRepository.findByUsername(username)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Không tìm thấy người dùng \"" + username + "\"."));
+                if (employee.getRole() == null
+                        || !RoleType.ROLE_USER.equals(employee.getRole().getName())) {
+                    throw new IllegalArgumentException(
+                            "Người dùng \"" + username + "\" không phải khách hàng nên không thể bổ nhiệm làm nhân viên.");
+                }
+                if (employee.getShop() != null && !shop.getId().equals(employee.getShop().getId())) {
+                    throw new IllegalArgumentException("Người dùng này đã thuộc một chi nhánh khác.");
+                }
+                employee.setRole(employeeRole);
+                employee.setShop(shop);
+            } else {
+                if (userRepository.existsByEmail(email)) {
+                    throw new IllegalArgumentException("Email \"" + email + "\" đã được sử dụng.");
+                }
+                employee = User.builder()
+                        .username(username)
+                        .email(email)
+                        .password(passwordEncoder.encode(password))
+                        .fullName(fullName)
+                        .phone(request.getPhone() == null ? null : request.getPhone().trim())
+                        .role(employeeRole)
+                        .shop(shop)
+                        .build();
             }
-            if (userRepository.existsByEmail(email)) {
-                throw new IllegalArgumentException("Email \"" + email + "\" đã được sử dụng.");
-            }
-            employee = User.builder()
-                    .username(username)
-                    .email(email)
-                    .password(passwordEncoder.encode(password))
-                    .fullName(fullName)
-                    .phone(request.getPhone() == null ? null : request.getPhone().trim())
-                    .role(employeeRole)
-                    .shop(shop)
-                    .build();
         }
         return toEmployeeDto(userRepository.save(employee));
     }

@@ -388,6 +388,41 @@
             border: 1px dashed #ccc;
             background: #fafafa;
         }
+
+        /* Filter danh sách nhân viên */
+        .staff-filter {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .staff-filter-btn {
+            border: 1.5px solid #e3e3e3;
+            background: #fff;
+            color: #555;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 20px;
+            transition: all .15s ease;
+        }
+
+        .staff-filter-btn:hover {
+            border-color: #e53637;
+            color: #e53637;
+        }
+
+        .staff-filter-btn.active {
+            background: #e53637;
+            border-color: #e53637;
+            color: #fff;
+        }
+
+        .staff-filter-btn .filter-count {
+            font-weight: 700;
+            margin-left: 4px;
+        }
     </style>
 </head>
 
@@ -704,14 +739,10 @@
                                         <div id="hireFormCard" class="address-card" style="margin-bottom:20px;">
                                             <h6 class="font-weight-bold mb-3">Bổ nhiệm nhân viên mới</h6>
                                             <p class="text-muted mb-2" style="font-size:13px;">
-                                                Tạo tài khoản nhân viên mới, hoặc nhập <b>ID người dùng hiện có</b> để thăng người dùng thông thường thành nhân viên chi nhánh.
+                                                Tạo tài khoản nhân viên mới cho chi nhánh.
                                             </p>
                                             <form id="hireForm">
                                                 <div class="row">
-                                                    <div class="col-md-4 form-group">
-                                                        <label class="profile-info-label">ID người dùng hiện có (tùy chọn)</label>
-                                                        <input type="number" id="hireUserId" class="form-control" min="1" placeholder="Để trống nếu tạo mới">
-                                                    </div>
                                                     <div class="col-md-4 form-group">
                                                         <label class="profile-info-label">Tên đăng nhập (*)</label>
                                                         <input type="text" id="hireUsername" class="form-control" maxlength="50">
@@ -739,6 +770,11 @@
                                             </form>
                                         </div>
                                         <h6 class="font-weight-bold" id="staffListTitle">Danh sách nhân viên</h6>
+                                        <div class="staff-filter" id="staffFilter">
+                                            <button type="button" class="staff-filter-btn active" data-filter="all">Tất cả</button>
+                                            <button type="button" class="staff-filter-btn" data-filter="working">Đang làm việc</button>
+                                            <button type="button" class="staff-filter-btn" data-filter="fired">Đã sa thải</button>
+                                        </div>
                                         <div id="staffList"></div>
                                     </div>
                                 </div>
