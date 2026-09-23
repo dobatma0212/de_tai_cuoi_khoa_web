@@ -1073,6 +1073,12 @@
                 shopSelect.append(`<option value="${m.id}">${optText}</option>`);
                 assignSelect.append(`<option value="${m.id}">${optText}</option>`);
             });
+
+            // Cập nhật nice-select UI sau khi thêm options động
+            if ($.fn.niceSelect) {
+                shopSelect.niceSelect('update');
+                assignSelect.niceSelect('update');
+            }
         }
 
         // Load stats cards
@@ -1311,6 +1317,11 @@
             $('#shopForm')[0].reset();
             $('#shop-status').val('active');
             $('#shop-manager').val('');
+            // Đồng bộ nice-select UI sau khi thay đổi giá trị select
+            if ($.fn.niceSelect) {
+                $('#shop-status').niceSelect('update');
+                $('#shop-manager').niceSelect('update');
+            }
             $('#shopModalTitle').html('<i class="fa fa-building mr-2"></i> Thêm Chi nhánh mới');
             $('#btn-submit-shop').text('Thêm chi nhánh');
             $('#shopModal').modal('show');
@@ -1329,6 +1340,11 @@
                     $('#shop-description').val(shop.description || '');
                     $('#shop-status').val(shop.status || 'active');
                     $('#shop-manager').val(shop.managerId ? String(shop.managerId) : '');
+                    // Đồng bộ nice-select UI sau khi thay đổi giá trị select
+                    if ($.fn.niceSelect) {
+                        $('#shop-status').niceSelect('update');
+                        $('#shop-manager').niceSelect('update');
+                    }
 
                     $('#shopModalTitle').html('<i class="fa fa-pencil mr-2"></i> Chỉnh sửa Chi nhánh #' + shop.id);
                     $('#btn-submit-shop').text('Cập nhật chi nhánh');
@@ -1349,7 +1365,7 @@
             const phone = $('#shop-phone').val().trim();
             const address = $('#shop-address').val().trim();
             const description = $('#shop-description').val().trim();
-            const status = $('#shop-status').val();
+            const status = $('#shop-status').val() || 'active';
             const managerVal = $('#shop-manager').val();
             const managerId = managerVal ? parseInt(managerVal, 10) : null;
 
@@ -1378,8 +1394,16 @@
                 headers: getAuthHeaders(),
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    showToast('Phiên đăng nhập hết hạn hoặc không có quyền ADMIN. Vui lòng đăng nhập lại.', 'danger');
+                    btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
+                    return null;
+                }
+                return res.json();
+            })
             .then(data => {
+                if (!data) return;
                 btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
                 if (data.success) {
                     showToast(data.message || (isEdit ? 'Cập nhật chi nhánh thành công!' : 'Tạo chi nhánh mới thành công!'), 'success');
@@ -1401,6 +1425,10 @@
             $('#assign-shop-id').val(shopId);
             $('#assign-shop-name').text(shopName);
             $('#assign-manager-select').val(currentManagerId ? String(currentManagerId) : '0');
+            // Đồng bộ nice-select UI
+            if ($.fn.niceSelect) {
+                $('#assign-manager-select').niceSelect('update');
+            }
             $('#assignManagerModal').modal('show');
         }
 
