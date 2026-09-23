@@ -55,47 +55,7 @@ public class ManagerShopController {
         }
     }
 
-    @PostMapping("/categories")
-    public ResponseEntity<ApiResponse<ShopCategoryDto>> addCategory(
-            @RequestBody Map<String, String> body,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
-                    "Thêm danh mục mới thành công!",
-                    managerShopService.addCategory(currentUser.getId(),
-                            body.getOrDefault("name", ""))));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @PutMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<ShopCategoryDto>> renameCategory(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> body,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success(
-                    "Đổi tên danh mục thành công!",
-                    managerShopService.renameCategory(currentUser.getId(), id,
-                            body.getOrDefault("name", ""))));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
-    @DeleteMapping("/categories/{id}")
-    public ResponseEntity<ApiResponse<String>> deleteCategory(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails currentUser) {
-        try {
-            managerShopService.deleteCategory(currentUser.getId(), id);
-            return ResponseEntity.ok(ApiResponse.success("Xóa danh mục thành công!",
-                    "Đã xóa danh mục ID: " + id));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        }
-    }
+    // Manager chỉ được xem danh mục; thêm/sửa/xóa danh mục do admin và nhân viên thực hiện
 
     @GetMapping("/products")
     public ResponseEntity<ApiResponse<List<ProductResponseDto>>> getMyProducts(

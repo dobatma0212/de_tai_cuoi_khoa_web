@@ -86,7 +86,6 @@ public class ManagerShopServiceImpl implements ManagerShopService {
 
     private static final String DEFAULT_CATEGORY_CLOTHING = "Bộ áo quần";
     private static final String DEFAULT_CATEGORY_ACCESSORY = "Phụ kiện";
-    private static final int MAX_CATEGORIES_PER_SHOP = 20;
 
     // ============ Chi nhánh của manager ============
 
@@ -118,67 +117,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         return toCategoryDtos(shop.getId());
     }
 
-    @Override
-    @Transactional
-    public ShopCategoryDto addCategory(Long managerId, String name) {
-        Shop shop = findMyShop(managerId);
-        String trimmed = validateCategoryName(name);
-        if (shopCategoryRepository.countByShopId(shop.getId()) >= MAX_CATEGORIES_PER_SHOP) {
-            throw new IllegalArgumentException("Mỗi chi nhánh chỉ được tạo tối đa " + MAX_CATEGORIES_PER_SHOP + " danh mục.");
-        }
-        if (shopCategoryRepository.existsByShopIdAndNameIgnoreCase(shop.getId(), trimmed)) {
-            throw new IllegalArgumentException("Danh mục \"" + trimmed + "\" đã tồn tại trong chi nhánh của bạn.");
-        }
-        ShopCategory saved = shopCategoryRepository.save(ShopCategory.builder()
-                .shop(shop)
-                .name(trimmed)
-                .sortOrder((int) shopCategoryRepository.countByShopId(shop.getId()))
-                .build());
-        return toCategoryDto(saved);
-    }
-
-    @Override
-    @Transactional
-    public ShopCategoryDto renameCategory(Long managerId, Long categoryId, String name) {
-        Shop shop = findMyShop(managerId);
-        ShopCategory category = findOwnedCategory(shop, categoryId);
-        String trimmed = validateCategoryName(name);
-        if (shopCategoryRepository.existsByShopIdAndNameIgnoreCaseAndIdNot(shop.getId(), trimmed, categoryId)) {
-            throw new IllegalArgumentException("Danh mục \"" + trimmed + "\" đã tồn tại trong chi nhánh của bạn.");
-        }
-        category.setName(trimmed);
-        return toCategoryDto(shopCategoryRepository.save(category));
-    }
-
-    @Override
-    @Transactional
-    public void deleteCategory(Long managerId, Long categoryId) {
-        Shop shop = findMyShop(managerId);
-        ShopCategory category = findOwnedCategory(shop, categoryId);
-        long productCount = productRepository.countByShopIdAndCategoryId(shop.getId(), categoryId);
-        if (productCount > 0) {
-            throw new IllegalArgumentException(
-                    "Không thể xóa danh mục \"" + category.getName() + "\" vì còn " + productCount
-                            + " sản phẩm. Hãy xóa/chuyển các sản phẩm trước.");
-        }
-        shopCategoryRepository.delete(category);
-    }
-
-    private String validateCategoryName(String name) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Tên danh mục không được để trống.");
-        }
-        String trimmed = name.trim();
-        if (trimmed.length() > 100) {
-            throw new IllegalArgumentException("Tên danh mục tối đa 100 ký tự.");
-        }
-        return trimmed;
-    }
-
-    private ShopCategory findOwnedCategory(Shop shop, Long categoryId) {
-        return shopCategoryRepository.findByIdAndShopId(categoryId, shop.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục trong chi nhánh của bạn."));
-    }
+    // Manager chỉ được xem danh mục; thêm/sửa/xóa do admin và nhân viên thực hiện
 
     /** Chi nhánh mới chưa có danh mục thì tạo sẵn 2 danh mục mặc định */
     private void ensureDefaultCategories(Shop shop) {

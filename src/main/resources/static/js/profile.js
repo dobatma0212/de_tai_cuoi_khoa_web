@@ -382,14 +382,6 @@
                 else if (sub === "shopSubRevenue") loadRevenue();
             });
         });
-        $("btnAddCategory").addEventListener("click", onAddCategory);
-        $("newCategoryName").addEventListener("keydown", function (e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                onAddCategory();
-            }
-        });
-
         $("promoForm").addEventListener("submit", onSavePromo);
         $("btnCancelPromo").addEventListener("click", resetPromoForm);
     }
@@ -429,59 +421,19 @@
             return '<div class="order-filter-item' + active + '" data-cat="' + c.id + '">' +
                 "<span>" + escapeHtml(c.name) +
                 ' <small class="text-muted">(' + c.totalProducts + ")</small></span>" +
-                "<span>" +
-                '<i class="fa fa-pencil chip-action" data-rename="' + c.id + '" title="Đổi tên"></i> ' +
-                '<i class="fa fa-times chip-action" data-delcat="' + c.id + '" title="Xóa danh mục"></i>' +
-                "</span></div>";
+                "</div>";
         }).join("");
 
         container.onclick = onCategoryChipClick;
     }
 
     function onCategoryChipClick(e) {
-        // Ưu tiên nút sửa / xóa trên dòng
-        var icon = e.target.closest(".chip-action");
-        if (icon && icon.getAttribute("data-rename") !== null) {
-            var renameId = icon.getAttribute("data-rename");
-            var cat = categories.find(function (c) { return c.id === parseInt(renameId, 10); });
-            var newName = prompt("Tên mới cho danh mục:", cat ? cat.name : "");
-            if (newName === null) return;
-            if (!newName.trim()) { alert("Tên danh mục không được để trống."); return; }
-            mgrApi("PUT", "/categories/" + renameId, { name: newName.trim() }).then(function () {
-                showAlert($("productAlert"), "Đổi tên danh mục thành công!", "success");
-                loadCategories();
-}).catch(function (err) { alert(err.message); });
-            return;
-        }
-        if (icon && icon.getAttribute("data-delcat") !== null) {
-            var delId = icon.getAttribute("data-delcat");
-            if (!confirm("Xóa danh mục này? (Chỉ xóa được khi danh mục không còn sản phẩm)")) return;
-            mgrApi("DELETE", "/categories/" + delId).then(function () {
-                showAlert($("productAlert"), "Xóa danh mục thành công!", "success");
-                if (currentCategoryId === parseInt(delId, 10)) currentCategoryId = null;
-                loadCategories();
-}).catch(function (err) { alert(err.message); });
-            return;
-        }
-        // Bấm vào dòng: chọn danh mục để xem sản phẩm
+        // Bấm vào dòng: chọn danh mục để xem sản phẩm (manager chỉ xem)
         var item = e.target.closest(".order-filter-item");
         if (!item || !item.getAttribute("data-cat")) return;
         currentCategoryId = parseInt(item.getAttribute("data-cat"), 10);
         renderCategoryChips();
         loadProducts();
-    }
-
-    function onAddCategory() {
-        var input = $("newCategoryName");
-        var name = input.value.trim();
-        if (!name) { alert("Vui lòng nhập tên danh mục."); return; }
-        mgrApi("POST", "/categories", { name: name }).then(function () {
-            input.value = "";
-            showAlert($("productAlert"), "Thêm danh mục thành công!", "success");
-            loadCategories();
-}).catch(function (err) {
-            alert(err.message);
-        });
     }
 
     // ---------- Sản phẩm (manager chỉ được xem) ----------

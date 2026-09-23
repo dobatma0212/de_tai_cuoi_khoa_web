@@ -19,11 +19,7 @@ public interface ManagerShopService {
 
     List<ShopCategoryDto> getMyCategories(Long managerId);
 
-    ShopCategoryDto addCategory(Long managerId, String name);
-
-    ShopCategoryDto renameCategory(Long managerId, Long categoryId, String name);
-
-    void deleteCategory(Long managerId, Long categoryId);
+    // Manager chỉ được xem danh mục; thêm/sửa/xóa do admin và nhân viên thực hiện
 
     // ============ Sản phẩm chi nhánh (manager chỉ được xem) ============
 
