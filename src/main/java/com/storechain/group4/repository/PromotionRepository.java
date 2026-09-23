@@ -19,6 +19,20 @@ import java.util.Optional;
 @Repository
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
+    // ===== Khuyến mãi theo chi nhánh (manager) =====
+
+    List<Promotion> findByShopIdOrderByCreatedAtDesc(Long shopId);
+
+    Optional<Promotion> findByIdAndShopId(Long id, Long shopId);
+
+    /** Tìm khuyến mãi đang bật theo mã trong phạm vi một chi nhánh */
+    @Query("SELECT p FROM Promotion p WHERE p.shop.id = :shopId AND LOWER(p.code) = LOWER(:code) AND p.status = 'active'")
+    Optional<Promotion> findActiveByShopIdAndCodeIgnoreCase(@Param("shopId") Long shopId, @Param("code") String code);
+
+    boolean existsByShopIdAndCodeIgnoreCaseAndIdNot(Long shopId, String code, Long id);
+
+    // ===== Khuyến mãi toàn server (admin) =====
+
     // Search with pagination - JPQL query filtering by keyword (matches name or code), status, and promotionType
     @Query("SELECT p FROM Promotion p WHERE " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (p.code IS NOT NULL AND LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
@@ -31,10 +45,16 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
             Pageable pageable
     );
 
-    // Find by code (case insensitive)
+    // Find by code (case insensitive), chỉ trong các khuyến mãi toàn server (shop IS NULL)
+    Optional<Promotion> findByCodeIgnoreCaseAndShopIsNull(String code);
+
+    // Check code existence (phạm vi toàn server)
+    boolean existsByCodeIgnoreCaseAndShopIsNull(String code);
+
+    boolean existsByCodeIgnoreCaseAndShopIsNullAndIdNot(String code, Long id);
+
     Optional<Promotion> findByCodeIgnoreCase(String code);
 
-    // Check code existence
     boolean existsByCodeIgnoreCase(String code);
 
     boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
@@ -68,6 +88,18 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     default List<Promotion> findActiveFlashSales(PromotionType promotionType, String status, LocalDateTime now) {
         return findActiveFlashSales(now);
     }
+
+    // Find available vouchers (toàn server, đang bật và còn hạn) để user chọn khi đặt hàng
+    @Query("SELECT p FROM Promotion p WHERE p.shop IS NULL AND p.promotionType = com.storechain.group4.model.PromotionType.VOUCHER AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")
+    List<Promotion> findAvailableVouchers(@Param("now") LocalDateTime now);
+
+    // Voucher của các chi nhánh đang có hiệu lực (endDate null = không giới hạn) để hiển thị cho khách
+    @Query("SELECT p FROM Promotion p WHERE p.shop IS NOT NULL AND p.promotionType = com.storechain.group4.model.PromotionType.VOUCHER AND p.status = 'active' AND p.startDate <= :now AND (p.endDate IS NULL OR p.endDate >= :now) ORDER BY p.shop.name")
+    List<Promotion> findAvailableShopVouchers(@Param("now") LocalDateTime now);
+
+    // Tìm voucher chi nhánh đang bật theo mã (preview khi khách chọn mã ở giỏ hàng)
+    @Query("SELECT p FROM Promotion p WHERE p.shop IS NOT NULL AND LOWER(p.code) = LOWER(:code) AND p.status = 'active' ORDER BY p.id")
+    List<Promotion> findActiveShopVouchersByCode(@Param("code") String code);
 
     // Find active flash sales for specific product
     @Query("SELECT p FROM Promotion p JOIN p.products prod WHERE prod.id = :productId AND p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")

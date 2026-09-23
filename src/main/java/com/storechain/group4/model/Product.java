@@ -1,6 +1,5 @@
 package com.storechain.group4.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,34 +23,49 @@ public class Product {
     @Column(name = "product_id")
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 200)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "shop_id", nullable = false)
+    private Shop shop;
+
+    /** Danh mục sản phẩm của chi nhánh (do manager quản lý) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private ShopCategory category;
+
+    @Column(name = "name", nullable = false, length = 150)
     private String name;
 
+    /** Đường dẫn thân thiện cho SEO, duy nhất trên toàn hệ thống (có thể null) */
     @Column(name = "slug", length = 250, unique = true)
     private String slug;
+
+    /** Giá bán theo VND */
+    @Column(name = "price", nullable = false, precision = 13, scale = 0)
+    private BigDecimal price;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "price", nullable = false, precision = 12, scale = 2)
-    private BigDecimal price;
-
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    @JsonIgnoreProperties({"parent", "children", "hibernateLazyInitializer", "handler"})
-    private Category category;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_id")
-    @JsonIgnoreProperties({"manager", "hibernateLazyInitializer", "handler"})
-    private Shop shop;
-
+    /** Số lượng tồn kho */
     @Column(name = "stock", nullable = false)
     @Builder.Default
-    private Integer stock = 0;
+    private int stock = 0;
+
+    /** Các size còn hỗ trợ, phân tách bằng dấu phẩy (VD: S,M,L,XL) */
+    @Column(name = "sizes", length = 200)
+    private String sizes;
+
+    /** Các màu của sản phẩm, phân tách bằng dấu phẩy (VD: Đen, Trắng) */
+    @Column(name = "color", length = 250)
+    private String color;
+
+    /** Sản phẩm đại diện cho danh mục (hiển thị ở trang chủ chi nhánh) */
+    @Column(name = "is_representative", nullable = false)
+    @Builder.Default
+    private boolean representative = false;
 
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
@@ -70,9 +84,6 @@ public class Product {
         }
         if (this.updatedAt == null) {
             this.updatedAt = LocalDateTime.now();
-        }
-        if (this.stock == null) {
-            this.stock = 0;
         }
         if (this.status == null || this.status.isBlank()) {
             this.status = "active";

@@ -27,6 +27,7 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
+    private final com.storechain.group4.repository.ShopCategoryRepository shopCategoryRepository;
     private final TransporterRepository transporterRepository;
     private final com.storechain.group4.repository.ShopRepository shopRepository;
     private final com.storechain.group4.repository.ProductRepository productRepository;
@@ -40,12 +41,16 @@ public class DataInitializer implements CommandLineRunner {
         new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             fixPromotionsTable();
             cleanupObsoleteRoles();
+            fixLegacySchema();
             initRoles();
             initDefaultAdmin();
             initDefaultManager();
             initDefaultCategories();
             initDefaultTransporters();
             initDefaultShops();
+            initDefaultEmployee();
+            initDefaultShopCategories();
+            initBranchStocks();
             initDefaultProducts();
             initDefaultPromotions();
         });
@@ -73,6 +78,7 @@ public class DataInitializer implements CommandLineRunner {
                         "CREATE TABLE IF NOT EXISTS promotions (" +
                         "  promotion_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
                         "  promotion_type VARCHAR(30) NOT NULL," +
+                        "  shop_id BIGINT NULL," +
                         "  name VARCHAR(200) NOT NULL," +
                         "  description TEXT," +
                         "  code VARCHAR(50) UNIQUE," +
@@ -83,6 +89,7 @@ public class DataInitializer implements CommandLineRunner {
                         "  usage_limit INT," +
                         "  usage_limit_per_user INT," +
                         "  used_count INT NOT NULL DEFAULT 0," +
+                        "  promo_type VARCHAR(10) NULL," +
                         "  start_date DATETIME NOT NULL," +
                         "  end_date DATETIME NOT NULL," +
                         "  status VARCHAR(20) NOT NULL DEFAULT 'active'," +
@@ -116,9 +123,73 @@ public class DataInitializer implements CommandLineRunner {
 
                 log.info("Successfully recreated promotions, promotion_usages, and promotion_products tables!");
             }
+
+            relaxLegacyPromotionColumns(cols);
         } catch (Exception e) {
             log.error("Notice in fixPromotionsTable: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Bảng promotions của các môi trường cũ còn giữ cột legacy NOT NULL
+     * (value, active, min_order_amount) và shop_id / promo_type bắt buộc,
+     * trong khi entity mới không map value/active/min_order_amount và cho
+     * phép shop_id, promo_type null (khuyến mãi toàn server). INSERT sẽ bị
+     * MySQL từ chối ở chế độ STRICT_ALL_TABLES, nên nới lỏng thành nullable.
+     */
+    private void relaxLegacyPromotionColumns(List<Object> cols) {
+        if (cols.isEmpty()) {
+            return;
+        }
+        @SuppressWarnings("unchecked")
+        List<Object> notNullable = entityManager.createNativeQuery(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' " +
+                "AND IS_NULLABLE = 'NO' AND COLUMN_DEFAULT IS NULL " +
+                "AND COLUMN_NAME IN ('shop_id', 'promo_type', 'value', 'active', 'min_order_amount')"
+        ).getResultList();
+
+        for (Object colObj : notNullable) {
+            String col = String.valueOf(colObj);
+            String type = switch (col) {
+                case "shop_id" -> "BIGINT";
+                case "promo_type" -> "VARCHAR(10)";
+                case "value" -> "DECIMAL(13,0)";
+                case "active" -> "BIT(1)";
+                case "min_order_amount" -> "DECIMAL(13,0)";
+                default -> null;
+            };
+            if (type == null) {
+                continue;
+            }
+            log.info("Nới lỏng cột legacy {}.promotions thành nullable...", col);
+            entityManager.createNativeQuery(
+                    "ALTER TABLE promotions MODIFY COLUMN " + col + " " + type + " NULL"
+            ).executeUpdate();
+        }
+
+        // Dòng dữ liệu cũ có thể còn status rỗng, chuẩn hóa để không bị treo ở trạng thái lạ
+        entityManager.createNativeQuery(
+                "UPDATE promotions SET status = 'inactive' WHERE status = '' OR status IS NULL"
+        ).executeUpdate();
+
+        if (!notNullable.isEmpty()) {
+            log.info("Đã nới lỏng {} cột legacy trong bảng promotions", notNullable.size());
+        }
+    }
+
+    /**
+     * Migration mô hình mới: sản phẩm là danh mục chung toàn hãng,
+     * tồn kho được giữ theo từng chi nhánh trong bảng branch_stocks.
+     * Với dữ liệu cũ, mỗi sản phẩm được gán tồn kho (cột products.stock)
+     * về chi nhánh đang sở hữu sản phẩm đó.
+     */
+    private void initBranchStocks() {
+        runStandaloneMigration(
+                "INSERT INTO branch_stocks (product_id, shop_id, stock, updated_at) " +
+                "SELECT p.product_id, p.shop_id, p.stock, NOW() FROM products p " +
+                "WHERE NOT EXISTS (SELECT 1 FROM branch_stocks b WHERE b.product_id = p.product_id AND b.shop_id = p.shop_id)",
+                "Bỏ qua migration tồn kho chi nhánh (branch_stocks)");
     }
 
     /**
@@ -183,6 +254,72 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    /**
+     * Sửa schema legacy còn sót từ mô hình cũ (ddl-auto=update chỉ thêm cột mới,
+     * không tự xóa/sửa cột cũ nên làm hỏng INSERT):
+     * 1. shops.name (cột cũ, NOT NULL) chặn INSERT vì entity giờ map shop_name -> cho phép NULL.
+     * 2. products.category_id còn khóa ngoại trỏ về bảng categories (danh mục toàn hãng cũ)
+     *    trong khi entity dùng shop_categories -> xóa FK legacy.
+     */
+    private void fixLegacySchema() {
+        runStandaloneMigration("ALTER TABLE shops MODIFY `name` VARCHAR(150) NULL",
+                "Bỏ qua sửa cột legacy shops.name");
+
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> legacyFks = entityManager.createNativeQuery(
+                    "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' " +
+                    "AND COLUMN_NAME = 'category_id' AND REFERENCED_TABLE_NAME = 'categories'")
+                    .getResultList();
+            for (Object fkName : legacyFks) {
+                runStandaloneMigration("ALTER TABLE products DROP FOREIGN KEY `" + fkName + "`",
+                        "Bỏ qua xóa khóa ngoại legacy products -> categories");
+                log.info("Đã xóa khóa ngoại legacy products.category_id -> categories ({})", fkName);
+            }
+
+            // Đảm bảo có FK đúng sang shop_categories (bảng danh mục chi nhánh hiện tại)
+            Object fkCount = entityManager.createNativeQuery(
+                    "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' " +
+                    "AND COLUMN_NAME = 'category_id' AND REFERENCED_TABLE_NAME = 'shop_categories'")
+                    .getSingleResult();
+            if (((Number) fkCount).intValue() == 0) {
+                runStandaloneMigration("ALTER TABLE products ADD CONSTRAINT FK_products_shop_category " +
+                        "FOREIGN KEY (category_id) REFERENCES shop_categories(category_id)",
+                        "Bỏ qua thêm FK products -> shop_categories");
+                log.info("Đã thêm khóa ngoại products.category_id -> shop_categories");
+            }
+            // cart_items: unique cũ (user_id, product_id, size) chặn lưu 2 màu khác nhau
+            // cùng size -> đổi thành (user_id, product_id, size, color)
+            try {
+                @SuppressWarnings("unchecked")
+                List<Object> oldIdx = entityManager.createNativeQuery(
+                        "SELECT INDEX_NAME FROM information_schema.STATISTICS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart_items' AND NON_UNIQUE = 0 " +
+                        "AND INDEX_NAME <> 'PRIMARY' " +
+                        "GROUP BY INDEX_NAME " +
+                        "HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = 'user_id,product_id,size'")
+                        .getResultList();
+                if (!oldIdx.isEmpty()) {
+                    runStandaloneMigration(
+                            "ALTER TABLE cart_items ADD CONSTRAINT UK_cart_user_product_size_color " +
+                            "UNIQUE (user_id, product_id, size, color)",
+                            "Bỏ qua thêm unique cart_items (user, product, size, color)");
+                    for (Object idxName : oldIdx) {
+                        runStandaloneMigration("ALTER TABLE cart_items DROP INDEX `" + idxName + "`",
+                                "Bỏ qua xóa unique cart_items cũ");
+                    }
+                    log.info("Đã đổi unique cart_items sang (user_id, product_id, size, color)");
+                }
+            } catch (Exception e) {
+                log.info("Bỏ qua kiểm tra unique cart_items: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.info("Bỏ qua kiểm tra khóa ngoại legacy của products: {}", e.getMessage());
+        }
+    }
+
     private void initRoles() {
         Arrays.stream(RoleType.values()).forEach(roleType -> {
             if (roleRepository.findByName(roleType).isEmpty()) {
@@ -190,6 +327,7 @@ public class DataInitializer implements CommandLineRunner {
                     case ROLE_USER -> "Người dùng / Khách hàng mua sắm";
                     case ROLE_GUEST -> "Khách vãng lai";
                     case ROLE_MANAGER -> "Quản lý cửa hàng";
+                    case ROLE_EMPLOYEE -> "Nhân viên chi nhánh";
                     case ROLE_ADMIN -> "Quản trị viên hệ thống";
                 };
                 roleRepository.save(new Role(roleType, description));
@@ -235,6 +373,32 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(manager);
             log.info("Tạo tài khoản Manager mặc định: username = manager, password = manager123, email = manager@storechain.com");
+        }
+    }
+
+    /** Nhân viên mẫu, gán vào chi nhánh đầu tiên (Quận 1) */
+    private void initDefaultEmployee() {
+        if (!userRepository.existsByUsername("employee")) {
+            Role employeeRole = roleRepository.findByName(RoleType.ROLE_EMPLOYEE)
+                    .orElseThrow(() -> new RuntimeException("Role EMPLOYEE không tồn tại"));
+
+            var shops = shopRepository.findAll();
+            var shop = shops.isEmpty() ? null : shops.get(0);
+
+            User employee = User.builder()
+                    .username("employee")
+                    .email("employee@storechain.com")
+                    .password(passwordEncoder.encode("employee123"))
+                    .fullName("Nhân viên chi nhánh")
+                    .phone("0901234567")
+                    .status("active")
+                    .role(employeeRole)
+                    .shop(shop)
+                    .build();
+
+            userRepository.save(employee);
+            log.info("Tạo tài khoản Employee mặc định: username = employee, password = employee123, chi nhánh = {}",
+                    shop != null ? shop.getName() : "(chưa gán)");
         }
     }
 
@@ -386,10 +550,67 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    /**
+     * Mỗi chi nhánh có sẵn 2 danh mục mặc định (Bộ áo quần, Phụ kiện);
+     * các sản phẩm cũ chưa gắn danh mục sẽ được ghép theo cột category_group cũ.
+     */
+    private void initDefaultShopCategories() {
+        var shops = shopRepository.findAll();
+        boolean changed = false;
+        for (var shop : shops) {
+            var catRepo = shopCategoryRepository;
+            if (catRepo.countByShopId(shop.getId()) == 0) {
+                catRepo.save(com.storechain.group4.model.ShopCategory.builder()
+                        .shop(shop).name("Bộ áo quần").sortOrder(0).build());
+                catRepo.save(com.storechain.group4.model.ShopCategory.builder()
+                        .shop(shop).name("Phụ kiện").sortOrder(1).build());
+                changed = true;
+            }
+        }
+        if (changed) {
+            log.info("Đã tạo danh mục mặc định (Bộ áo quần, Phụ kiện) cho các chi nhánh.");
+        }
+        // Ghép sản phẩm cũ (category_id NULL hoặc 0) vào danh mục theo category_group cũ.
+        // Mỗi lệnh chạy trong transaction riêng: nếu cột category_group đã bị xóa khỏi DB
+        // thì chỉ bỏ qua lệnh đó mà không làm hỏng transaction chính của ứng dụng.
+        runStandaloneMigration(
+                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Bộ áo quần' " +
+                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                "AND p.category_group IN ('CLOTHING', 'Bộ áo quần')",
+                "Bỏ qua ghép sản phẩm theo category_group (CLOTHING)");
+        runStandaloneMigration(
+                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Phụ kiện' " +
+                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                "AND p.category_group IN ('ACCESSORY', 'Phụ kiện')",
+                "Bỏ qua ghép sản phẩm theo category_group (ACCESSORY)");
+        // Sản phẩm còn lại: gán vào danh mục đầu tiên của chi nhánh
+        runStandaloneMigration(
+                "UPDATE products p JOIN (" +
+                "SELECT sc.shop_id, MIN(sc.category_id) AS cid FROM shop_categories sc GROUP BY sc.shop_id" +
+                ") t ON t.shop_id = p.shop_id " +
+                "SET p.category_id = t.cid WHERE p.category_id IS NULL OR p.category_id = 0",
+                "Bỏ qua gán danh mục cho sản phẩm chưa phân loại");
+    }
+
+    /** Chạy 1 câu SQL migration trong transaction độc lập (REQUIRES_NEW), lỗi thì chỉ ghi log rồi bỏ qua */
+    private void runStandaloneMigration(String sql, String skipMessage) {
+        try {
+            var template = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+            // REQUIRES_NEW: tách khỏi transaction lớn của DataInitializer để lỗi không lây lan
+            template.setPropagationBehavior(
+                    org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            template.executeWithoutResult(status ->
+                    entityManager.createNativeQuery(sql).executeUpdate());
+        } catch (Exception e) {
+            log.info("{}: {}", skipMessage, e.getMessage());
+        }
+    }
+
     private void initDefaultProducts() {
         if (productRepository.count() == 0) {
-            com.storechain.group4.model.Category cat = categoryRepository.findAll().stream().findFirst().orElse(null);
-            com.storechain.group4.model.Shop shop = shopRepository.findAll().stream().findFirst().orElse(null);
+            com.storechain.group4.model.Shop shop0 = shopRepository.findAll().stream().findFirst().orElse(null);
+            com.storechain.group4.model.ShopCategory cat = shop0 == null ? null
+                    : shopCategoryRepository.findAll().stream().filter(c -> c.getShop() != null && c.getShop().getId().equals(shop0.getId())).findFirst().orElse(null);
 
             productRepository.save(com.storechain.group4.model.Product.builder()
                     .name("Áo Thun Nam Cổ Tròn Basic Cotton")
@@ -398,7 +619,7 @@ public class DataInitializer implements CommandLineRunner {
                     .price(new BigDecimal("250000.00"))
                     .imageUrl("/img/product/product-1.jpg")
                     .category(cat)
-                    .shop(shop)
+                    .shop(shop0)
                     .stock(100)
                     .status("active")
                     .build());
@@ -410,7 +631,7 @@ public class DataInitializer implements CommandLineRunner {
                     .price(new BigDecimal("420000.00"))
                     .imageUrl("/img/product/product-2.jpg")
                     .category(cat)
-                    .shop(shop)
+                    .shop(shop0)
                     .stock(50)
                     .status("active")
                     .build());
@@ -422,7 +643,7 @@ public class DataInitializer implements CommandLineRunner {
                     .price(new BigDecimal("550000.00"))
                     .imageUrl("/img/product/product-3.jpg")
                     .category(cat)
-                    .shop(shop)
+                    .shop(shop0)
                     .stock(80)
                     .status("active")
                     .build());

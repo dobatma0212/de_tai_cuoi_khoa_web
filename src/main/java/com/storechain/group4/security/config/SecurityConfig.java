@@ -88,7 +88,11 @@ public class SecurityConfig {
                         // 3. Phân quyền theo Role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                        // Nhân viên chi nhánh: quản lý sản phẩm, hoa hồng, tính công
+                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
+                        // Manager kế thừa toàn bộ quyền của User; Employee cũng có quyền User cơ bản
+                        .requestMatchers("/api/user/**")
+                            .hasAnyRole("USER", "MANAGER", "EMPLOYEE", "ADMIN")
 
                         // 4. API hồ sơ cá nhân / địa chỉ nhận hàng: mọi người dùng đã đăng nhập
                         .requestMatchers("/api/profile/**").authenticated()
