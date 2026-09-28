@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -16,25 +17,52 @@ import java.time.LocalDateTime;
 public class ProductResponseDto {
 
     private Long id;
+    private String name;
+    private String baseSku;
     private Long shopId;
     private String shopName;
     private Long categoryId;
     private String categoryName;
-    private String name;
+    private String brand;
+    private String collectionName;
+    private String slug;
+    private String metaTitle;
+    private String metaDescription;
     private BigDecimal price;
     private String description;
     private String imageUrl;
+    private List<String> galleryImages;
+    private String sizeChart;
+
+    /** Tổng tồn kho aggregate từ bảng kho của tất cả chi nhánh */
     private Integer stock;
-    /** Tồn kho thực tế của sản phẩm này tại chi nhánh (bảng branch_stocks) */
     private Integer branchStock;
+
     private String sizes;
-    private java.util.List<String> sizesList;
+    private List<String> sizesList;
     private String color;
+
+    /** Danh sách các biến thể con SKU tự sinh (kèm ảnh riêng) */
+    private List<ProductVariantDto> variants;
+
+    /** Bảng phân bổ tồn kho chi nhánh theo từng size */
+    private List<BranchAllocationDto> branchAllocations;
+
     private Double avgRating;
     private Long reviewCount;
+
+    /** Nhãn website */
+    private boolean isNew;
+    private boolean isBestSeller;
+    private boolean isFeatured;
     private boolean representative;
+
+    /** Trạng thái: draft (Bản nháp), active (Đang mở bán), inactive (Ngừng kinh doanh) */
     private String status;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime updatedAt;
 }
