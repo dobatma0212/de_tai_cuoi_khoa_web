@@ -37,6 +37,10 @@ public class BranchStock {
     @Builder.Default
     private int stock = 0;
 
+    /** Phân bổ tồn kho theo từng size (JSON hoặc format "S:10,M:15,L:12,XL:8") */
+    @Column(name = "size_stocks", length = 500)
+    private String sizeStocks;
+
     @Column(name = "updated_at")
     private java.time.LocalDateTime updatedAt;
 
