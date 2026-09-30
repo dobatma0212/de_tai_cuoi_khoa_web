@@ -34,7 +34,11 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     // ===== Khuyến mãi toàn server (admin) =====
 
     // Search with pagination - JPQL query filtering by keyword (matches name or code), status, and promotionType
-    @Query("SELECT p FROM Promotion p WHERE " +
+    @Query(value = "SELECT p FROM Promotion p WHERE " +
+           "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (p.code IS NOT NULL AND LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
+           "AND (:status IS NULL OR :status = '' OR LOWER(p.status) = LOWER(:status)) " +
+           "AND (:promotionType IS NULL OR p.promotionType = :promotionType)",
+           countQuery = "SELECT COUNT(p) FROM Promotion p WHERE " +
            "(:keyword IS NULL OR :keyword = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR (p.code IS NOT NULL AND LOWER(p.code) LIKE LOWER(CONCAT('%', :keyword, '%')))) " +
            "AND (:status IS NULL OR :status = '' OR LOWER(p.status) = LOWER(:status)) " +
            "AND (:promotionType IS NULL OR p.promotionType = :promotionType)")
@@ -44,6 +48,12 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
             @Param("promotionType") PromotionType promotionType,
             Pageable pageable
     );
+
+    Page<Promotion> findByStatus(String status, Pageable pageable);
+
+    Page<Promotion> findByPromotionType(PromotionType promotionType, Pageable pageable);
+
+    Page<Promotion> findByPromotionTypeAndStatus(PromotionType promotionType, String status, Pageable pageable);
 
     // Find by code (case insensitive), chỉ trong các khuyến mãi toàn server (shop IS NULL)
     Optional<Promotion> findByCodeIgnoreCaseAndShopIsNull(String code);

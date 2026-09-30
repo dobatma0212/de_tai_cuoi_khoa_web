@@ -59,7 +59,34 @@ public class PromotionServiceImpl implements PromotionService {
             }
         }
 
-        return promotionRepository.searchPromotions(keyword, status, typeEnum, pageable)
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasStatus = status != null && !status.trim().isEmpty();
+        boolean hasType = typeEnum != null;
+
+        // Nếu không có bộ lọc nào (trường hợp load mặc định của trang), dùng findAll để tránh lỗi null param của JPQL
+        if (!hasKeyword && !hasStatus && !hasType) {
+            return promotionRepository.findAll(pageable).map(this::toDto);
+        }
+
+        // Nếu chỉ lọc theo loại chương trình
+        if (!hasKeyword && !hasStatus && hasType) {
+            return promotionRepository.findByPromotionType(typeEnum, pageable).map(this::toDto);
+        }
+
+        // Nếu chỉ lọc theo trạng thái
+        if (!hasKeyword && hasStatus && !hasType) {
+            return promotionRepository.findByStatus(status.trim(), pageable).map(this::toDto);
+        }
+
+        // Nếu lọc theo cả loại và trạng thái (không có từ khóa)
+        if (!hasKeyword && hasStatus && hasType) {
+            return promotionRepository.findByPromotionTypeAndStatus(typeEnum, status.trim(), pageable).map(this::toDto);
+        }
+
+        // Trường hợp có từ khóa hoặc kết hợp phức tạp
+        String searchKeyword = hasKeyword ? keyword.trim() : null;
+        String searchStatus = hasStatus ? status.trim() : null;
+        return promotionRepository.searchPromotions(searchKeyword, searchStatus, typeEnum, pageable)
                 .map(this::toDto);
     }
 
@@ -432,18 +459,42 @@ public class PromotionServiceImpl implements PromotionService {
 
         List<Long> productIds = new java.util.ArrayList<>();
         List<ProductOptionDto> productDtos = new java.util.ArrayList<>();
-        if (promotion.getProducts() != null) {
-            for (Product p : promotion.getProducts()) {
-                productIds.add(p.getId());
-                productDtos.add(ProductOptionDto.builder()
-                        .id(p.getId())
-                        .name(p.getName())
-                        .price(p.getPrice())
-                        .imageUrl(p.getImageUrl())
-                        .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
-                        .stock(p.getStock())
-                        .build());
+        try {
+            if (promotion.getProducts() != null) {
+                for (Product p : promotion.getProducts()) {
+                    if (p != null) {
+                        productIds.add(p.getId());
+                        String catName = null;
+                        try {
+                            if (p.getCategory() != null) {
+                                catName = p.getCategory().getName();
+                            }
+                        } catch (Exception ignored) {}
+
+                        productDtos.add(ProductOptionDto.builder()
+                                .id(p.getId())
+                                .name(p.getName())
+                                .price(p.getPrice())
+                                .imageUrl(p.getImageUrl())
+                                .categoryName(catName)
+                                .stock(p.getStock())
+                                .build());
+                    }
+                }
             }
+        } catch (Exception e) {
+            log.warn("Không thể load products cho promotion id={}: {}", promotion.getId(), e.getMessage());
+        }
+
+        Long shopId = null;
+        String shopName = null;
+        try {
+            if (promotion.getShop() != null) {
+                shopId = promotion.getShop().getId();
+                shopName = promotion.getShop().getName();
+            }
+        } catch (Exception e) {
+            log.warn("Không thể load shop cho promotion id={}: {}", promotion.getId(), e.getMessage());
         }
 
         return PromotionResponseDto.builder()
@@ -463,8 +514,8 @@ public class PromotionServiceImpl implements PromotionService {
                 .usageLimitPerUser(promotion.getUsageLimitPerUser())
                 .minOrderValue(promotion.getMinOrderValue())
                 .status(promotion.getStatus())
-                .shopId(promotion.getShop() != null ? promotion.getShop().getId() : null)
-                .shopName(promotion.getShop() != null ? promotion.getShop().getName() : null)
+                .shopId(shopId)
+                .shopName(shopName)
                 .expired(expired)
                 .currentlyActive(currentlyActive)
                 .remainingUsage(remainingUsage)
