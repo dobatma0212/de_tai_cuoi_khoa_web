@@ -96,4 +96,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT COUNT(DISTINCT p.category.id) FROM Product p")
     long countDistinctCategories();
+
+    @Query("SELECT COALESCE(SUM(p.stock), 0) FROM Product p WHERE p.shop.id = :shopId")
+    int sumStockByShopId(@Param("shopId") Long shopId);
+
+    long countByShopId(Long shopId);
 }

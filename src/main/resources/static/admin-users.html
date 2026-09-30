@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
+    <link rel="stylesheet" href="/css/admin.css" type="text/css">
 
     <style>
         /* Custom styles integrated seamlessly with Male-Fashion */
@@ -219,6 +220,7 @@
 
         .role-admin { background: #ffeaea; color: #e53637; border: 1px solid #fbc4c4; }
         .role-manager { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+        .role-employee { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
         .role-user { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .role-guest { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
 
@@ -297,7 +299,7 @@
             text-transform: uppercase;
             padding: 12px 24px;
             color: #ffffff;
-            background: #e53637;
+            background: #111111;
             letter-spacing: 1px;
             border: none;
             border-radius: 4px;
@@ -306,7 +308,7 @@
         }
 
         .btn-male-fashion:hover {
-            background: #111111;
+            background: #e53637;
             color: #ffffff;
         }
 
@@ -463,19 +465,21 @@
     <!-- Offcanvas Menu End -->
 
     <!-- Header Section Begin -->
-    <header class="header">
+    <header class="header admin-header">
         <div class="header__top">
             <div class="container">
                 <div class="row align-items-center">
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-5 col-md-5 col-5">
                         <div class="header__top__left">
-                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin)</p>
+                            <p><i class="fa fa-sliders"></i> Bảng điều khiển Quản trị</p>
                         </div>
                     </div>
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-7 col-md-7 col-7">
                         <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <a href="/index.html" class="topbar-shop-link" title="Xem trang bán hàng">
+                                <i class="fa fa-external-link"></i> Xem Cửa hàng
+                            </a>
                             <div class="header__top__links" id="auth-user-info">
-                                <!-- User Auth Status injected here -->
                                 <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
                                 <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
                             </div>
@@ -486,41 +490,23 @@
         </div>
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__logo">
-                        <a href="/index.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                <div class="col-lg-2 col-md-3">
+                    <div class="header__logo admin-header-logo-wrap">
+                        <a href="/admin-users.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                        <span class="admin-portal-tag">PORTAL</span>
                     </div>
                 </div>
-                <div class="col-lg-6 col-md-6">
+                <div class="col-lg-10 col-md-9">
                     <nav class="header__menu mobile-menu">
-                        <ul>
-                            <li><a href="/index.html">Trang chủ</a></li>
-                            <li><a href="/shop.html">Cửa hàng</a></li>
-                            <li><a href="#">Trang khác</a>
-                                <ul class="dropdown">
-                                    <li><a href="/about.html">Về chúng tôi</a></li>
-                                    <li><a href="/shop-details.html">Chi tiết sản phẩm</a></li>
-                                    <li><a href="/shopping-cart.html">Giỏ hàng</a></li>
-                                    <li><a href="/checkout.html">Thanh toán</a></li>
-                                    <li><a href="/blog-details.html">Tin tức</a></li>
-                                </ul>
-                            </li>
-                            <li class="active"><a href="/admin-users.html">Quản lý Users</a></li>
-                            <li><a href="/admin-products.html">Quản lý Sản phẩm</a></li>
-                            <li><a href="/admin-categories.html">Quản lý Danh mục</a></li>
-                            <li><a href="/admin-shops.html">Quản lý Chi nhánh</a></li>
-                            <li><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
-                            <li><a href="/admin-promotions.html">Quản lý Khuyến mãi</a></li>
-                            <li><a href="/contact.html">Liên hệ</a></li>
+                        <ul class="admin-nav-list">
+                            <li class="active"><a href="/admin-users.html"><i class="fa fa-users"></i> Người dùng</a></li>
+                            <li><a href="/admin-products.html"><i class="fa fa-cube"></i> Sản phẩm</a></li>
+                            <li><a href="/admin-categories.html"><i class="fa fa-tags"></i> Danh mục</a></li>
+                            <li><a href="/admin-shops.html"><i class="fa fa-building"></i> Chi nhánh</a></li>
+                            <li><a href="/admin-transporters.html"><i class="fa fa-truck"></i> Vận chuyển</a></li>
+                            <li><a href="/admin-promotions.html"><i class="fa fa-percent"></i> Khuyến mãi</a></li>
                         </ul>
                     </nav>
-                </div>
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__nav__option text-right">
-                        <span class="badge badge-danger p-2" id="role-indicator" style="font-size: 12px; letter-spacing: 0.5px;">
-                            <i class="fa fa-lock"></i> KHÁCH
-                        </span>
-                    </div>
                 </div>
             </div>
             <div class="canvas__open"><i class="fa fa-bars"></i></div>
@@ -536,8 +522,7 @@
                     <div class="breadcrumb__text">
                         <h4>Quản lý Người dùng</h4>
                         <div class="breadcrumb__links">
-                            <a href="/index.html">Trang chủ</a>
-                            <a href="#">Quản trị viên</a>
+                            <a href="/admin-users.html">Hệ thống</a>
                             <span>Danh sách tài khoản</span>
                         </div>
                     </div>
@@ -590,7 +575,7 @@
                     <div class="admin-stat-card stat-info">
                         <div>
                             <div class="stat-number" id="stat-admins">0</div>
-                            <div class="stat-label">Admin & Quản lý</div>
+                            <div class="stat-label">Nhân sự Quản lý</div>
                         </div>
                         <div class="stat-icon">
                             <i class="fa fa-shield"></i>
@@ -617,6 +602,7 @@
                             <option value="">-- Tất cả vai trò --</option>
                             <option value="ROLE_ADMIN">Quản trị viên (ADMIN)</option>
                             <option value="ROLE_MANAGER">Quản lý (MANAGER)</option>
+                            <option value="ROLE_EMPLOYEE">Nhân viên (EMPLOYEE)</option>
                             <option value="ROLE_USER">Khách hàng (USER)</option>
                         </select>
                     </div>
@@ -819,9 +805,10 @@
                             <div class="col-md-6 form-group">
                                 <label>Vai trò hệ thống <span class="text-danger">*</span></label>
                                 <select class="form-control" id="create-role" required>
-                                    <option value="ROLE_USER">Khách hàng (ROLE_USER)</option>
-                                    <option value="ROLE_MANAGER">Quản lý (ROLE_MANAGER)</option>
-                                    <option value="ROLE_ADMIN" id="option-create-admin">Quản trị viên (ROLE_ADMIN)</option>
+                                    <option value="ROLE_USER">Khách hàng (USER)</option>
+                                    <option value="ROLE_EMPLOYEE">Nhân viên (EMPLOYEE)</option>
+                                    <option value="ROLE_MANAGER">Quản lý (MANAGER)</option>
+                                    <option value="ROLE_ADMIN" id="option-create-admin">Quản trị viên (ADMIN)</option>
                                 </select>
                             </div>
                             <div class="col-md-6 form-group">
@@ -889,9 +876,10 @@
                             <div class="col-md-6 form-group">
                                 <label>Vai trò <span class="text-danger">*</span></label>
                                 <select class="form-control" id="edit-role" required>
-                                    <option value="ROLE_USER">Khách hàng (ROLE_USER)</option>
-                                    <option value="ROLE_MANAGER">Quản lý (ROLE_MANAGER)</option>
-                                    <option value="ROLE_ADMIN" id="option-edit-admin">Quản trị viên (ROLE_ADMIN)</option>
+                                    <option value="ROLE_USER">Khách hàng (USER)</option>
+                                    <option value="ROLE_EMPLOYEE">Nhân viên (EMPLOYEE)</option>
+                                    <option value="ROLE_MANAGER">Quản lý (MANAGER)</option>
+                                    <option value="ROLE_ADMIN" id="option-edit-admin">Quản trị viên (ADMIN)</option>
                                 </select>
                             </div>
                             <div class="col-md-6 form-group">
@@ -1136,14 +1124,19 @@
                 const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
                 const isCurrentAdmin = roleName.includes('ADMIN');
 
-                roleIndicator.removeClass('badge-danger badge-primary badge-dark')
-                    .addClass(isCurrentAdmin ? 'badge-danger' : 'badge-dark')
-                    .html(`<i class="fa fa-shield"></i> ${isCurrentAdmin ? 'ADMIN' : roleName.replace('ROLE_', '')}`);
+                if (roleIndicator.length) {
+                    roleIndicator.removeClass('badge-danger badge-primary badge-dark')
+                        .addClass(isCurrentAdmin ? 'badge-danger' : 'badge-dark')
+                        .html(`<i class="fa fa-shield"></i> ${isCurrentAdmin ? 'ADMIN' : roleName.replace('ROLE_', '')}`);
+                }
+
+                const displayName = escapeHtml(currentUser.fullName || currentUser.username);
+                const isNameHasAdmin = displayName.toLowerCase().includes('quản trị') || displayName.toLowerCase().includes('admin');
+                const badgeHtml = isNameHasAdmin ? '' : `<span class="current-user-badge">${isCurrentAdmin ? 'Quản trị' : roleName.replace('ROLE_', '')}</span>`;
 
                 const authHtml = `
                     <span class="text-white mr-3 font-weight-bold">
-                        <i class="fa fa-user-circle mr-1 text-danger"></i> ${escapeHtml(currentUser.fullName || currentUser.username)} 
-                        <span class="current-user-badge">${isCurrentAdmin ? 'Admin' : roleName.replace('ROLE_', '')}</span>
+                        <i class="fa fa-user-circle mr-1 text-danger"></i> ${displayName} ${badgeHtml}
                     </span>
                     <button class="btn btn-sm btn-outline-light" onclick="logout()"><i class="fa fa-sign-out"></i> Đăng xuất</button>
                 `;
@@ -1159,15 +1152,17 @@
                     $('#option-edit-admin').show();
                 }
             } else {
-                roleIndicator.removeClass('badge-danger badge-primary')
-                    .addClass('badge-dark')
-                    .html('<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP');
+                if (roleIndicator.length) {
+                    roleIndicator.removeClass('badge-danger badge-primary')
+                        .addClass('badge-dark')
+                        .html('<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP');
+                }
 
                 authContainer.html(`
                     <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
                     <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()"><i class="fa fa-sign-in"></i> Đăng nhập</button>
                 `);
-                mobileAuthContainer.html(`<a href="#" onclick="openLoginModal()">Đăng nhập Admin</a>`);
+                mobileAuthContainer.html(`<a href="#" onclick="openLoginModal()">Đăng nhập</a>`);
             }
         }
 
@@ -1605,7 +1600,13 @@
                         $('#edit-fullname').val(u.fullName || '');
                         $('#edit-email').val(u.email || '');
                         $('#edit-phone').val(u.phone || '');
-                        $('#edit-role').val(u.roleName || (u.role ? u.role.name : 'ROLE_USER'));
+                        let roleVal = 'ROLE_USER';
+                        if (u.role) {
+                            roleVal = (typeof u.role === 'object' && u.role.name) ? u.role.name : u.role;
+                        } else if (u.roleName) {
+                            roleVal = u.roleName.startsWith('ROLE_') ? u.roleName : 'ROLE_' + u.roleName;
+                        }
+                        $('#edit-role').val(roleVal);
                         $('#edit-status').val(u.status || 'active');
                         $('#edit-avatar').val(u.avatarUrl || '');
                         $('#edit-password').val('');
@@ -1822,8 +1823,9 @@
             const r = role.toUpperCase();
             if (r.includes('ADMIN')) return `<span class="badge-role role-admin"><i class="fa fa-shield"></i> ADMIN</span>`;
             if (r.includes('MANAGER')) return `<span class="badge-role role-manager"><i class="fa fa-briefcase"></i> MANAGER</span>`;
+            if (r.includes('EMPLOYEE')) return `<span class="badge-role role-employee"><i class="fa fa-id-badge"></i> EMPLOYEE</span>`;
             if (r.includes('USER')) return `<span class="badge-role role-user"><i class="fa fa-user"></i> USER</span>`;
-            return `<span class="badge-role role-user"><i class="fa fa-user"></i> ${escapeHtml(role)}</span>`;
+            return `<span class="badge-role role-user"><i class="fa fa-user"></i> ${escapeHtml(role.replace('ROLE_', ''))}</span>`;
         }
 
         function getStatusBadge(status) {

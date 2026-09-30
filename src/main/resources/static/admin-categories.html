@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
+    <link rel="stylesheet" href="/css/admin.css" type="text/css">
 
     <style>
         /* Card thống kê */
@@ -530,17 +531,20 @@
     <!-- Offcanvas Menu End -->
 
     <!-- Header Section Begin -->
-    <header class="header">
+    <header class="header admin-header">
         <div class="header__top">
             <div class="container">
                 <div class="row align-items-center">
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-5 col-md-5 col-5">
                         <div class="header__top__left">
-                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin)</p>
+                            <p><i class="fa fa-sliders"></i> Bảng điều khiển Quản trị</p>
                         </div>
                     </div>
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-7 col-md-7 col-7">
                         <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <a href="/index.html" class="topbar-shop-link" title="Xem trang bán hàng">
+                                <i class="fa fa-external-link"></i> Xem Cửa hàng
+                            </a>
                             <div class="header__top__links" id="auth-user-info">
                                 <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
                                 <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
@@ -552,32 +556,23 @@
         </div>
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__logo">
-                        <a href="/index.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                <div class="col-lg-2 col-md-3">
+                    <div class="header__logo admin-header-logo-wrap">
+                        <a href="/admin-categories.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                        <span class="admin-portal-tag">PORTAL</span>
                     </div>
                 </div>
-                <div class="col-lg-6 col-md-6">
+                <div class="col-lg-10 col-md-9">
                     <nav class="header__menu mobile-menu">
-                        <ul>
-                            <li><a href="/index.html">Trang chủ</a></li>
-                            <li><a href="/shop.html">Cửa hàng</a></li>
-                            <li><a href="/admin-users.html">Quản lý Users</a></li>
-                            <li><a href="/admin-products.html">Quản lý Sản phẩm</a></li>
-                            <li class="active"><a href="/admin-categories.html">Quản lý Danh mục</a></li>
-                            <li><a href="/admin-shops.html">Quản lý Chi nhánh</a></li>
-                            <li><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
-                            <li><a href="/admin-promotions.html">Quản lý Khuyến mãi</a></li>
-                            <li><a href="/contact.html">Liên hệ</a></li>
+                        <ul class="admin-nav-list">
+                            <li><a href="/admin-users.html"><i class="fa fa-users"></i> Người dùng</a></li>
+                            <li><a href="/admin-products.html"><i class="fa fa-cube"></i> Sản phẩm</a></li>
+                            <li class="active"><a href="/admin-categories.html"><i class="fa fa-tags"></i> Danh mục</a></li>
+                            <li><a href="/admin-shops.html"><i class="fa fa-building"></i> Chi nhánh</a></li>
+                            <li><a href="/admin-transporters.html"><i class="fa fa-truck"></i> Vận chuyển</a></li>
+                            <li><a href="/admin-promotions.html"><i class="fa fa-percent"></i> Khuyến mãi</a></li>
                         </ul>
                     </nav>
-                </div>
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__nav__option text-right">
-                        <span class="badge badge-danger p-2" id="role-indicator" style="font-size: 12px; letter-spacing: 0.5px;">
-                            <i class="fa fa-lock"></i> KHÁCH
-                        </span>
-                    </div>
                 </div>
             </div>
             <div class="canvas__open"><i class="fa fa-bars"></i></div>
@@ -593,8 +588,7 @@
                     <div class="breadcrumb__text">
                         <h4>Quản lý Danh mục (Category)</h4>
                         <div class="breadcrumb__links">
-                            <a href="/index.html">Trang chủ</a>
-                            <a href="#">Quản trị viên</a>
+                            <a href="/admin-categories.html">Hệ thống</a>
                             <span>Danh sách Danh mục sản phẩm</span>
                         </div>
                     </div>
@@ -985,14 +979,16 @@
                 const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
                 const isAdmin = roleName.includes('ADMIN');
 
-                roleIndicator.removeClass('badge-danger badge-primary badge-dark')
-                    .addClass(isAdmin ? 'badge-danger' : 'badge-dark')
-                    .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : roleName.replace('ROLE_', '')}`);
+                if (roleIndicator.length) {
+                    roleIndicator.removeClass('badge-danger badge-primary badge-dark')
+                        .addClass(isAdmin ? 'badge-danger' : 'badge-dark')
+                        .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : roleName.replace('ROLE_', '')}`);
+                }
 
                 const authHtml = `
                     <span class="text-white mr-3">
                         <i class="fa fa-user-circle text-danger mr-1"></i>
-                        Xin chào, <strong>${currentUser.fullName || currentUser.username}</strong>
+                        <strong>${currentUser.fullName || currentUser.username}</strong>
                     </span>
                     <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
                         <i class="fa fa-sign-out mr-1"></i> Đăng xuất
@@ -1000,8 +996,10 @@
                 `;
                 authContainer.html(authHtml);
             } else {
-                roleIndicator.removeClass('badge-danger badge-primary').addClass('badge-dark')
-                    .html(`<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP`);
+                if (roleIndicator.length) {
+                    roleIndicator.removeClass('badge-danger badge-primary').addClass('badge-dark')
+                        .html(`<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP`);
+                }
                 authContainer.html(`
                     <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
                     <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()">Đăng nhập</button>
