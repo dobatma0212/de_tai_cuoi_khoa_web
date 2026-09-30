@@ -220,6 +220,7 @@
 
         .role-admin { background: #ffeaea; color: #e53637; border: 1px solid #fbc4c4; }
         .role-manager { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+        .role-employee { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
         .role-user { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .role-guest { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
 
@@ -601,6 +602,7 @@
                             <option value="">-- Tất cả vai trò --</option>
                             <option value="ROLE_ADMIN">Quản trị viên (ADMIN)</option>
                             <option value="ROLE_MANAGER">Quản lý (MANAGER)</option>
+                            <option value="ROLE_EMPLOYEE">Nhân viên (EMPLOYEE)</option>
                             <option value="ROLE_USER">Khách hàng (USER)</option>
                         </select>
                     </div>
@@ -803,9 +805,10 @@
                             <div class="col-md-6 form-group">
                                 <label>Vai trò hệ thống <span class="text-danger">*</span></label>
                                 <select class="form-control" id="create-role" required>
-                                    <option value="ROLE_USER">Khách hàng (ROLE_USER)</option>
-                                    <option value="ROLE_MANAGER">Quản lý (ROLE_MANAGER)</option>
-                                    <option value="ROLE_ADMIN" id="option-create-admin">Quản trị viên (ROLE_ADMIN)</option>
+                                    <option value="ROLE_USER">Khách hàng (USER)</option>
+                                    <option value="ROLE_EMPLOYEE">Nhân viên (EMPLOYEE)</option>
+                                    <option value="ROLE_MANAGER">Quản lý (MANAGER)</option>
+                                    <option value="ROLE_ADMIN" id="option-create-admin">Quản trị viên (ADMIN)</option>
                                 </select>
                             </div>
                             <div class="col-md-6 form-group">
@@ -873,9 +876,10 @@
                             <div class="col-md-6 form-group">
                                 <label>Vai trò <span class="text-danger">*</span></label>
                                 <select class="form-control" id="edit-role" required>
-                                    <option value="ROLE_USER">Khách hàng (ROLE_USER)</option>
-                                    <option value="ROLE_MANAGER">Quản lý (ROLE_MANAGER)</option>
-                                    <option value="ROLE_ADMIN" id="option-edit-admin">Quản trị viên (ROLE_ADMIN)</option>
+                                    <option value="ROLE_USER">Khách hàng (USER)</option>
+                                    <option value="ROLE_EMPLOYEE">Nhân viên (EMPLOYEE)</option>
+                                    <option value="ROLE_MANAGER">Quản lý (MANAGER)</option>
+                                    <option value="ROLE_ADMIN" id="option-edit-admin">Quản trị viên (ADMIN)</option>
                                 </select>
                             </div>
                             <div class="col-md-6 form-group">
@@ -1596,7 +1600,13 @@
                         $('#edit-fullname').val(u.fullName || '');
                         $('#edit-email').val(u.email || '');
                         $('#edit-phone').val(u.phone || '');
-                        $('#edit-role').val(u.roleName || (u.role ? u.role.name : 'ROLE_USER'));
+                        let roleVal = 'ROLE_USER';
+                        if (u.role) {
+                            roleVal = (typeof u.role === 'object' && u.role.name) ? u.role.name : u.role;
+                        } else if (u.roleName) {
+                            roleVal = u.roleName.startsWith('ROLE_') ? u.roleName : 'ROLE_' + u.roleName;
+                        }
+                        $('#edit-role').val(roleVal);
                         $('#edit-status').val(u.status || 'active');
                         $('#edit-avatar').val(u.avatarUrl || '');
                         $('#edit-password').val('');
@@ -1813,8 +1823,9 @@
             const r = role.toUpperCase();
             if (r.includes('ADMIN')) return `<span class="badge-role role-admin"><i class="fa fa-shield"></i> ADMIN</span>`;
             if (r.includes('MANAGER')) return `<span class="badge-role role-manager"><i class="fa fa-briefcase"></i> MANAGER</span>`;
+            if (r.includes('EMPLOYEE')) return `<span class="badge-role role-employee"><i class="fa fa-id-badge"></i> EMPLOYEE</span>`;
             if (r.includes('USER')) return `<span class="badge-role role-user"><i class="fa fa-user"></i> USER</span>`;
-            return `<span class="badge-role role-user"><i class="fa fa-user"></i> ${escapeHtml(role)}</span>`;
+            return `<span class="badge-role role-user"><i class="fa fa-user"></i> ${escapeHtml(role.replace('ROLE_', ''))}</span>`;
         }
 
         function getStatusBadge(status) {

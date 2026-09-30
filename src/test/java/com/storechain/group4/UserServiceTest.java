@@ -193,5 +193,18 @@ public class UserServiceTest {
         userService.deleteUser(5L, adminUserDetails);
         verify(userRepository).delete(target);
     }
+
+    @Test
+    void testDeleteUserInternalSuccess() {
+        User target = User.builder().id(6L).username("employeeTarget").email("emp@test.com").role(userRole).build();
+        when(userRepository.findById(6L)).thenReturn(Optional.of(target));
+        jakarta.persistence.Query mockQuery = mock(jakarta.persistence.Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(mockQuery);
+        when(mockQuery.setParameter(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.executeUpdate()).thenReturn(1);
+
+        userService.deleteUserInternal(6L);
+        verify(userRepository).delete(target);
+    }
 }
 

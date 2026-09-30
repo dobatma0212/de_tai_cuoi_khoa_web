@@ -238,9 +238,14 @@ public class ShopServiceImpl implements ShopService {
                 List<User> employees = userRepository.findByShopId(id);
                 for (User emp : employees) {
                     boolean isEmployed = emp.getRole() != null && RoleType.ROLE_EMPLOYEE.equals(emp.getRole().getName());
-                    if (isEmployed) {
-                        activeEmployeeCount++;
+                    // Chỉ hiển thị nhân viên đang làm việc trong chi nhánh (không hiển thị người đã bị sa thải / tài khoản đã xóa / role khác)
+                    if (!isEmployed) {
+                        continue;
                     }
+                    activeEmployeeCount++;
+                    String roleDesc = emp.getRole() != null && emp.getRole().getDescription() != null && !emp.getRole().getDescription().isBlank()
+                            ? emp.getRole().getDescription()
+                            : "Nhân viên làm việc tại chi nhánh";
                     employeeItems.add(ShopDetailDto.BranchEmployeeItemDto.builder()
                             .id(emp.getId())
                             .username(emp.getUsername())
@@ -249,9 +254,9 @@ public class ShopServiceImpl implements ShopService {
                             .phone(emp.getPhone())
                             .avatarUrl(emp.getAvatarUrl())
                             .status(emp.getStatus())
-                            .employed(isEmployed)
-                            .roleName(emp.getRole() != null ? emp.getRole().getName().name() : "N/A")
-                            .roleDescription(emp.getRole() != null ? emp.getRole().getDescription() : "")
+                            .employed(true)
+                            .roleName("EMPLOYEE")
+                            .roleDescription(roleDesc)
                             .createdAt(emp.getCreatedAt())
                             .build());
                 }

@@ -63,6 +63,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final com.storechain.group4.repository.UserRepository userRepository;
     private final com.storechain.group4.repository.RoleRepository roleRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.storechain.group4.service.UserService userService;
 
     /**
      * Dùng để tính thống kê công/hoa hồng của nhân viên. Inject @Lazy (không qua
@@ -452,10 +453,9 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     @Transactional(readOnly = true)
     public List<com.storechain.group4.dto.EmployeeDto> getMyEmployees(Long managerId) {
         Shop shop = findMyShop(managerId);
-        // Bao gồm cả nhân viên đã sa thải (role USER nhưng vẫn gắn với chi nhánh)
-        // để quản lý tra cứu lịch sử công việc và hoa hồng
+        // Chỉ lấy nhân viên đang làm việc (ROLE_EMPLOYEE) tại chi nhánh
         return userRepository.findByShopIdAndRoleNameIn(shop.getId(),
-                        java.util.List.of(RoleType.ROLE_EMPLOYEE, RoleType.ROLE_USER)).stream()
+                        java.util.List.of(RoleType.ROLE_EMPLOYEE)).stream()
                 .map(this::toEmployeeDto)
                 .toList();
     }
@@ -484,7 +484,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
             if (RoleType.ROLE_EMPLOYEE.equals(employee.getRole() == null ? null : employee.getRole().getName())) {
                 throw new IllegalArgumentException("Người này hiện đã là nhân viên của một chi nhánh.");
             }
-            // Người dùng từng là nhân viên của chi nhánh này (đã sa thải) được thuê lại
+            // Người dùng được thăng làm nhân viên của chi nhánh này
             employee.setRole(employeeRole);
             employee.setShop(shop);
         } else {
@@ -543,14 +543,10 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 || employee.getShop() == null || !shop.getId().equals(employee.getShop().getId())) {
             throw new IllegalArgumentException("Người này không phải nhân viên của chi nhánh bạn.");
         }
-        // Sa thải = trả về quyền khách hàng (không xóa tài khoản).
-        // Vẫn giữ gắn với chi nhánh để quản lý tra cứu được lịch sử công/hoa hồng
-        // của nhân viên đã sa thải (getMyEmployees lọc theo role nên họ không
-        // xuất hiện trong danh sách "đang làm việc" nữa).
-        Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
-                .orElseThrow(() -> new IllegalArgumentException("Role USER chưa được khởi tạo."));
-        employee.setRole(userRole);
-        userRepository.save(employee);
+        // Sa thải nhân viên = xóa hoàn toàn tài khoản nhân viên khỏi hệ thống (theo yêu cầu)
+        userService.deleteUserInternal(employeeId);
+        log.info("Quản lý ID {} đã sa thải và xóa hoàn toàn tài khoản nhân viên ID {} ({})",
+                managerId, employeeId, employee.getUsername());
     }
 
     @Override
@@ -560,15 +556,13 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         Shop shop = findMyShop(managerId);
         User employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên."));
-        // Nhân viên đang làm việc (ROLE_EMPLOYEE) hoặc đã sa thải (ROLE_USER)
-        // nhưng từng thuộc chi nhánh của quản lý
+        // Nhân viên đang làm việc (ROLE_EMPLOYEE) thuộc chi nhánh của quản lý
         RoleType role = employee.getRole() == null ? null : employee.getRole().getName();
         boolean belongsToShop = employee.getShop() != null
                 && shop.getId().equals(employee.getShop().getId());
-        boolean isStaffOrFormer = RoleType.ROLE_EMPLOYEE.equals(role)
-                || RoleType.ROLE_USER.equals(role);
-        if (!belongsToShop || !isStaffOrFormer) {
-            throw new IllegalArgumentException("Người này không phải nhân viên (hiện tại hoặc cũ) của chi nhánh bạn.");
+        boolean isStaff = RoleType.ROLE_EMPLOYEE.equals(role);
+        if (!belongsToShop || !isStaff) {
+            throw new IllegalArgumentException("Người này không phải nhân viên đang làm việc của chi nhánh bạn.");
         }
         return employeeService.getMyStats(employeeId, month);
     }
