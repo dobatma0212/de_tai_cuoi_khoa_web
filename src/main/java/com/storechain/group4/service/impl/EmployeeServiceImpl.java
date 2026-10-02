@@ -1,9 +1,7 @@
 package com.storechain.group4.service.impl;
 
 import com.storechain.group4.dto.EmployeeStatsDto;
-import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
-import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.model.BranchStock;
 import com.storechain.group4.model.EmployeeWorkday;
@@ -13,23 +11,18 @@ import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.ShopCategory;
 import com.storechain.group4.model.User;
 import com.storechain.group4.repository.BranchStockRepository;
-import com.storechain.group4.repository.CartItemRepository;
 import com.storechain.group4.repository.EmployeeWorkdayRepository;
 import com.storechain.group4.repository.OrderItemRepository;
 import com.storechain.group4.repository.OrderRepository;
 import com.storechain.group4.repository.ProductRepository;
-import com.storechain.group4.repository.ProductReviewRepository;
-import com.storechain.group4.repository.ReviewMediaRepository;
 import com.storechain.group4.repository.ShopCategoryRepository;
 import com.storechain.group4.repository.UserRepository;
 import com.storechain.group4.service.EmployeeService;
-import com.storechain.group4.service.ManagerShopService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -52,13 +45,10 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final BranchStockRepository branchStockRepository;
-    private final CartItemRepository cartItemRepository;
-    private final ProductReviewRepository reviewRepository;
-    private final ReviewMediaRepository reviewMediaRepository;
     private final EmployeeWorkdayRepository workdayRepository;
     private final com.storechain.group4.repository.TransporterRepository transporterRepository;
     private final com.storechain.group4.repository.RoleRepository roleRepository;
-    private final ManagerShopService managerShopService; // dùng chung logic upload ảnh
+    private final com.storechain.group4.service.support.ProductMapper productMapper;
 
     @Value("${app.employee.commission-rate:0.02}")
     private BigDecimal commissionRate;
@@ -94,14 +84,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         return shop;
     }
 
-    @Override
-    @Transactional
-    public List<ShopCategoryDto> getMyCategories(Long employeeId) {
-        Shop shop = findMyShop(employeeId);
-        ensureDefaultCategories(shop);
-        return shopCategoryRepository.findByShopIdOrderBySortOrderAscIdAsc(shop.getId())
-                .stream().map(this::toCategoryDto).toList();
-    }
 
     /** Chi nhánh chưa có danh mục thì tạo sẵn 2 danh mục mặc định (như manager) */
     private void ensureDefaultCategories(Shop shop) {
@@ -117,168 +99,33 @@ public class EmployeeServiceImpl implements EmployeeService {
     // ============ Sản phẩm của chi nhánh ============
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ProductResponseDto> getMyProducts(Long employeeId, Long categoryId) {
         Shop shop = findMyShop(employeeId);
         ensureDefaultCategories(shop);
-        List<Product> products = (categoryId == null || categoryId <= 0)
-                ? productRepository.findByShopIdOrderByCreatedAtDesc(shop.getId())
-                : productRepository.findByShopIdAndCategoryIdOrderByCreatedAtDesc(shop.getId(), categoryId);
-        return products.stream().map(this::toProductDto).toList();
+        return findActiveProducts(categoryId, shop).stream()
+                .map(p -> productMapper.toDto(p, shop.getId())).toList();
     }
 
-    @Override
-    @Transactional
-    public ProductResponseDto createProduct(Long employeeId, ProductRequestDto request) {
-        Shop shop = findMyShop(employeeId);
-        ensureDefaultCategories(shop);
-        validatePrice(request);
-        ShopCategory category = findOwnedCategory(shop, request.getCategoryId());
-        Product product = Product.builder()
-                .shop(shop)
-                .category(category)
-                .name(request.getName().trim())
-                .price(request.getPrice())
-                .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
-                .stock(request.getStock() == null ? 0 : Math.max(0, request.getStock()))
-                .sizes(normalizeSizes(request.getSizes()))
-                .color(request.getColor() == null ? null : request.getColor().trim())
-                .build();
-        Product saved = productRepository.save(product);
-        syncBranchStock(shop, saved, product.getStock());
-        if (!productRepository.existsByShopIdAndCategoryIdAndRepresentativeTrue(
-                shop.getId(), category.getId())) {
-            saved.setRepresentative(true);
-            saved = productRepository.save(saved);
+    /**
+     * Sản phẩm đang mở bán của TOÀN hệ thống (đồng bộ với phần admin);
+     * có categoryId thì lấy danh mục của chi nhánh rồi lọc theo TÊN danh mục
+     * (danh mục là dữ liệu theo từng shop, giống cách admin gộp trùng tên).
+     */
+    private List<Product> findActiveProducts(Long categoryId, Shop shop) {
+        if (categoryId == null || categoryId <= 0) {
+            return productRepository.findByStatusOrderByCreatedAtDesc("active");
         }
-        return toProductDto(saved);
+        ShopCategory category = shopCategoryRepository.findByIdAndShopId(categoryId, shop.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục trong chi nhánh của bạn."));
+        String name = category.getName().trim().toLowerCase();
+        return productRepository.findByStatusOrderByCreatedAtDesc("active").stream()
+                .filter(p -> p.getCategory() != null
+                        && p.getCategory().getName() != null
+                        && p.getCategory().getName().trim().toLowerCase().equals(name))
+                .toList();
     }
 
-    @Override
-    @Transactional
-    public ProductResponseDto updateProduct(Long employeeId, Long productId, ProductRequestDto request) {
-        Product product = findOwnedProduct(employeeId, productId);
-        validatePrice(request);
-        ShopCategory newCategory = findOwnedCategory(product.getShop(), request.getCategoryId());
-        boolean categoryChanged = !product.getCategory().getId().equals(newCategory.getId());
-        product.setCategory(newCategory);
-        product.setName(request.getName().trim());
-        product.setPrice(request.getPrice());
-        product.setDescription(request.getDescription());
-        product.setImageUrl(request.getImageUrl());
-        if (request.getStock() != null) {
-            product.setStock(Math.max(0, request.getStock()));
-            syncBranchStock(product.getShop(), product, product.getStock());
-        }
-        product.setSizes(normalizeSizes(request.getSizes()));
-        product.setColor(request.getColor() == null ? null : request.getColor().trim());
-        if (categoryChanged) {
-            product.setRepresentative(false);
-            Product saved = productRepository.save(product);
-            if (!productRepository.existsByShopIdAndCategoryIdAndRepresentativeTrue(
-                    saved.getShop().getId(), newCategory.getId())) {
-                saved.setRepresentative(true);
-                saved = productRepository.save(saved);
-            }
-            return toProductDto(saved);
-        }
-        return toProductDto(productRepository.save(product));
-    }
-
-    @Override
-    @Transactional
-    public void deleteProduct(Long employeeId, Long productId) {
-        Product product = findOwnedProduct(employeeId, productId);
-        boolean wasRepresentative = product.isRepresentative();
-        Long categoryId = product.getCategory().getId();
-        Long shopId = product.getShop().getId();
-
-        // Dọn dữ liệu liên quan (như manager): tồn kho, giỏ hàng, đánh giá, tham chiếu đơn hàng
-        branchStockRepository.deleteAll(branchStockRepository.findByProductId(productId));
-        cartItemRepository.deleteAll(cartItemRepository.findByProductId(productId));
-        reviewRepository.findByProductIdOrderByCreatedAtDesc(productId).forEach(review -> {
-            reviewMediaRepository.deleteAll(reviewMediaRepository.findByReviewId(review.getId()));
-            reviewRepository.delete(review);
-        });
-        orderItemRepository.findByProductId(productId).forEach(oi -> {
-            oi.setProduct(null);
-            orderItemRepository.save(oi);
-        });
-
-        productRepository.delete(product);
-
-        if (wasRepresentative) {
-            List<Product> remaining = productRepository
-                    .findByShopIdAndCategoryIdOrderByCreatedAtDesc(shopId, categoryId);
-            if (!remaining.isEmpty()) {
-                Product next = remaining.get(0);
-                next.setRepresentative(true);
-                productRepository.save(next);
-            }
-        }
-    }
-
-    @Override
-    @Transactional
-    public ProductResponseDto setRepresentative(Long employeeId, Long productId, boolean representative) {
-        Product product = findOwnedProduct(employeeId, productId);
-        if (representative) {
-            productRepository.findByShopIdAndCategoryIdAndRepresentativeTrue(
-                            product.getShop().getId(), product.getCategory().getId())
-                    .forEach(p -> {
-                        if (!p.getId().equals(productId)) {
-                            p.setRepresentative(false);
-                            productRepository.save(p);
-                        }
-                    });
-            product.setRepresentative(true);
-        } else {
-            product.setRepresentative(false);
-        }
-        return toProductDto(productRepository.save(product));
-    }
-
-    @Override
-    public String uploadImage(MultipartFile file) {
-        return managerShopService.uploadImage(file);
-    }
-
-    private String normalizeSizes(String sizes) {
-        if (sizes == null) return null;
-        String cleaned = sizes.replaceAll("\\s*,\\s*", ",").trim();
-        return cleaned.isEmpty() ? null : cleaned;
-    }
-
-    private void validatePrice(ProductRequestDto request) {
-        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Giá sản phẩm phải là số VND hợp lệ (>= 0).");
-        }
-    }
-
-    private void syncBranchStock(Shop shop, Product product, int stock) {
-        BranchStock bs = branchStockRepository
-                .findByProductIdAndShopId(product.getId(), shop.getId())
-                .orElse(BranchStock.builder().product(product).shop(shop).stock(0).build());
-        bs.setStock(Math.max(0, stock));
-        branchStockRepository.save(bs);
-    }
-
-    private ShopCategory findOwnedCategory(Shop shop, Long categoryId) {
-        return shopCategoryRepository.findByIdAndShopId(categoryId, shop.getId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Không tìm thấy danh mục trong chi nhánh của bạn."));
-    }
-
-    private Product findOwnedProduct(Long employeeId, Long productId) {
-        Shop shop = findMyShop(employeeId);
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
-        if (!product.getShop().getId().equals(shop.getId())) {
-            throw new IllegalArgumentException("Sản phẩm này không thuộc chi nhánh bạn đang làm việc.");
-        }
-        return product;
-    }
 
 
     // ============ Đơn hàng của chi nhánh (như manager) ============
@@ -400,6 +247,10 @@ public class EmployeeServiceImpl implements EmployeeService {
             }
             Product product = productRepository.findById(reqItem.getProductId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong đơn."));
+            if (!"active".equals(product.getStatus())) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" đã ngừng bán hoặc đang là bản nháp.");
+            }
             if (!product.getShop().getId().equals(shop.getId())) {
                 throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
                         + "\" không thuộc chi nhánh bạn đang làm việc.");
@@ -698,35 +549,4 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
     }
 
-    private ShopCategoryDto toCategoryDto(ShopCategory c) {
-        return ShopCategoryDto.builder()
-                .id(c.getId())
-                .name(c.getName())
-                .sortOrder(c.getSortOrder())
-                .totalProducts(productRepository.countByShopIdAndCategoryId(c.getShop().getId(), c.getId()))
-                .build();
-    }
-
-    private ProductResponseDto toProductDto(Product p) {
-        return ProductResponseDto.builder()
-                .id(p.getId())
-                .shopId(p.getShop().getId())
-                .shopName(p.getShop().getName())
-                .categoryId(p.getCategory().getId())
-                .categoryName(p.getCategory().getName())
-                .name(p.getName())
-                .price(p.getPrice())
-                .description(p.getDescription())
-                .imageUrl(p.getImageUrl())
-                .stock(p.getStock())
-                .sizes(p.getSizes())
-                .sizesList(p.getSizes() == null || p.getSizes().isBlank() ? List.of()
-                        : Arrays.stream(p.getSizes().split(","))
-                        .map(String::trim).filter(s -> !s.isEmpty()).toList())
-                .color(p.getColor())
-                .representative(p.isRepresentative())
-                .status(p.getStatus())
-                .createdAt(p.getCreatedAt())
-                .build();
-    }
 }

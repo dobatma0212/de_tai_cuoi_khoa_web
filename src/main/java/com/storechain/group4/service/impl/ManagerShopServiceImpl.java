@@ -28,20 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,6 +44,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final ShopRepository shopRepository;
     private final ShopCategoryRepository shopCategoryRepository;
     private final ProductRepository productRepository;
+    private final com.storechain.group4.service.support.ProductMapper productMapper;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final PromotionRepository promotionRepository;
@@ -63,7 +56,6 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     private final com.storechain.group4.repository.UserRepository userRepository;
     private final com.storechain.group4.repository.RoleRepository roleRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
-    private final com.storechain.group4.service.UserService userService;
 
     /**
      * Dùng để tính thống kê công/hoa hồng của nhân viên. Inject @Lazy (không qua
@@ -73,9 +65,6 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     @org.springframework.context.annotation.Lazy
     @org.springframework.beans.factory.annotation.Autowired
     private com.storechain.group4.service.EmployeeService employeeService;
-
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
 
     /** Số phút đơn đã xác nhận chuyển sang Đang giao (mặc định 2 phút) */
     @Value("${app.order.shipping-delay-minutes:2}")
@@ -149,52 +138,34 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     // ============ Sản phẩm chi nhánh (manager chỉ được xem) ============
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ProductResponseDto> getMyProducts(Long managerId, Long categoryId) {
         Shop shop = findMyShop(managerId);
         ensureDefaultCategories(shop);
-        List<Product> products = (categoryId == null || categoryId <= 0)
-                ? productRepository.findByShopIdOrderByCreatedAtDesc(shop.getId())
-                : productRepository.findByShopIdAndCategoryIdOrderByCreatedAtDesc(shop.getId(), categoryId);
-        return products.stream().map(this::toProductDto).toList();
+        return findActiveProducts(categoryId, shop).stream()
+                .map(p -> productMapper.toDto(p, shop.getId())).toList();
     }
 
-    // Thêm/sửa/xóa sản phẩm do nhân viên thực hiện (EmployeeServiceImpl), manager chỉ được xem
-
-    // ============ Upload ảnh ============
-
-    @Override
-    public String uploadImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Vui lòng chọn tệp hình ảnh để tải lên.");
+    /**
+     * Sản phẩm đang mở bán của TOÀN hệ thống (đồng bộ với phần admin);
+     * có categoryId thì lấy danh mục của chi nhánh rồi lọc theo TÊN danh mục
+     * (danh mục là dữ liệu theo từng shop, giống cách admin gộp trùng tên).
+     */
+    private List<Product> findActiveProducts(Long categoryId, Shop shop) {
+        if (categoryId == null || categoryId <= 0) {
+            return productRepository.findByStatusOrderByCreatedAtDesc("active");
         }
-        String original = file.getOriginalFilename() == null ? "image" : file.getOriginalFilename();
-        String ext = "";
-        int dot = original.lastIndexOf('.');
-        if (dot >= 0) {
-            ext = original.substring(dot).toLowerCase(Locale.ROOT);
-        }
-        List<String> allowed = List.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
-        if (!allowed.contains(ext)) {
-            throw new IllegalArgumentException("Chỉ chấp nhận hình ảnh JPG, PNG, GIF, WEBP.");
-        }
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("Kích thước ảnh tối đa là 5MB.");
-        }
-        try {
-            Path dir = Paths.get(uploadDir, "products");
-            Files.createDirectories(dir);
-            String filename = UUID.randomUUID() + ext;
-            Path target = dir.resolve(filename);
-            try (var in = file.getInputStream()) {
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-            return "/uploads/products/" + filename;
-        } catch (IOException e) {
-            log.error("Lỗi lưu tệp ảnh tải lên: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể lưu tệp ảnh, vui lòng thử lại.");
-        }
+        ShopCategory category = shopCategoryRepository.findByIdAndShopId(categoryId, shop.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục trong chi nhánh của bạn."));
+        String name = category.getName().trim().toLowerCase();
+        return productRepository.findByStatusOrderByCreatedAtDesc("active").stream()
+                .filter(p -> p.getCategory() != null
+                        && p.getCategory().getName() != null
+                        && p.getCategory().getName().trim().toLowerCase().equals(name))
+                .toList();
     }
+
+    // Sản phẩm: manager chỉ được xem; thêm/sửa/xóa do admin thực hiện
 
     // ============ Quản lý đơn hàng của chi nhánh ============
 
@@ -453,9 +424,10 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     @Transactional(readOnly = true)
     public List<com.storechain.group4.dto.EmployeeDto> getMyEmployees(Long managerId) {
         Shop shop = findMyShop(managerId);
-        // Chỉ lấy nhân viên đang làm việc (ROLE_EMPLOYEE) tại chi nhánh
+        // ROLE_EMPLOYEE = đang làm việc; ROLE_USER có shop_id của chi nhánh = đã bị sa thải
+        // (fireEmployee giữ shop_id làm dấu vết để quản lý vẫn xem được thông tin sau khi sa thải)
         return userRepository.findByShopIdAndRoleNameIn(shop.getId(),
-                        java.util.List.of(RoleType.ROLE_EMPLOYEE)).stream()
+                        java.util.List.of(RoleType.ROLE_EMPLOYEE, RoleType.ROLE_USER)).stream()
                 .map(this::toEmployeeDto)
                 .toList();
     }
@@ -543,10 +515,15 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 || employee.getShop() == null || !shop.getId().equals(employee.getShop().getId())) {
             throw new IllegalArgumentException("Người này không phải nhân viên của chi nhánh bạn.");
         }
-        // Sa thải nhân viên = xóa hoàn toàn tài khoản nhân viên khỏi hệ thống (theo yêu cầu)
-        userService.deleteUserInternal(employeeId);
-        log.info("Quản lý ID {} đã sa thải và xóa hoàn toàn tài khoản nhân viên ID {} ({})",
-                managerId, employeeId, employee.getUsername());
+        // Sa thải = trả vai trò về ROLE_USER nhưng GIỮ shop_id làm dấu vết thuộc chi nhánh
+        // (không xóa tài khoản, giữ lịch sử đơn hàng để quản lý đối soát sau này).
+        // getMyEmployees dựa vào shop_id để vẫn liệt kê người đã sa thải (employed = false).
+        Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
+                .orElseThrow(() -> new IllegalArgumentException("Role USER chưa được khởi tạo."));
+        employee.setRole(userRole);
+        userRepository.save(employee);
+        log.info("Quản lý ID {} đã sa thải nhân viên ID {} ({}) — trả về vai trò USER, giữ shop_id {} để tra cứu",
+                managerId, employeeId, employee.getUsername(), shop.getId());
     }
 
     @Override
@@ -556,13 +533,15 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         Shop shop = findMyShop(managerId);
         User employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên."));
-        // Nhân viên đang làm việc (ROLE_EMPLOYEE) thuộc chi nhánh của quản lý
+        // Nhân viên đang làm việc HOẶC đã bị sa thải (giữ shop_id sau khi về ROLE_USER)
+        // thuộc chi nhánh của quản lý — để đối soát công/hoa hồng sau khi nghỉ việc.
         RoleType role = employee.getRole() == null ? null : employee.getRole().getName();
         boolean belongsToShop = employee.getShop() != null
                 && shop.getId().equals(employee.getShop().getId());
         boolean isStaff = RoleType.ROLE_EMPLOYEE.equals(role);
-        if (!belongsToShop || !isStaff) {
-            throw new IllegalArgumentException("Người này không phải nhân viên đang làm việc của chi nhánh bạn.");
+        boolean isFiredStaff = RoleType.ROLE_USER.equals(role);
+        if (!belongsToShop || !(isStaff || isFiredStaff)) {
+            throw new IllegalArgumentException("Người này không phải nhân viên của chi nhánh bạn.");
         }
         return employeeService.getMyStats(employeeId, month);
     }
@@ -610,33 +589,6 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 .build();
     }
 
-    private ProductResponseDto toProductDto(Product p) {
-        // Tồn kho hiển thị cho manager là tồn kho thực tế tại chi nhánh
-        // (đơn bị hủy/trả hoàn về branch_stocks chứ không cộng lại vào products.stock)
-        Integer branchStock = branchStockRepository
-                .findByProductIdAndShopId(p.getId(), p.getShop().getId())
-                .map(BranchStock::getStock)
-                .orElse(p.getStock());
-        return ProductResponseDto.builder()
-                .id(p.getId())
-                .shopId(p.getShop().getId())
-                .shopName(p.getShop().getName())
-                .categoryId(p.getCategory().getId())
-                .categoryName(p.getCategory().getName())
-                .name(p.getName())
-                .price(p.getPrice())
-                .description(p.getDescription())
-                .imageUrl(p.getImageUrl())
-                .stock(p.getStock())
-                .branchStock(branchStock)
-                .sizes(p.getSizes())
-                .sizesList(parseSizes(p.getSizes()))
-                .color(p.getColor())
-                .representative(p.isRepresentative())
-                .status(p.getStatus())
-                .createdAt(p.getCreatedAt())
-                .build();
-    }
 
     private OrderDto toOrderDto(Order o) {
         List<OrderDto.ItemDto> items = orderItemRepository.findByOrderId(o.getId())

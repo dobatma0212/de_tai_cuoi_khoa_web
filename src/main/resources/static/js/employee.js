@@ -398,9 +398,11 @@
     function renderOfflineProductOptions() {
         var select = $("empOfflineProduct");
         var current = select.value;
-        select.innerHTML = '<option value="">— Chọn sản phẩm —</option>' + offlineProducts.map(function (p) {
+        // Chỉ bán được sản phẩm đang mở bán (đồng bộ trạng thái từ phần quản trị)
+        var sellable = offlineProducts.filter(function (p) { return !p.status || p.status === "active"; });
+        select.innerHTML = '<option value="">— Chọn sản phẩm —</option>' + sellable.map(function (p) {
             return '<option value="' + p.id + '">' + escapeHtml(p.name) +
-                " — " + formatVnd(p.price) + " (còn " + (p.stock || 0) + ")</option>";
+                " — " + formatVnd(p.price) + " (còn " + (p.branchStock || 0) + ")</option>";
         }).join("");
         if (current) select.value = current;
         syncOfflineProductHint();
@@ -424,7 +426,9 @@
             : '<option value="">—</option>';
         sizeSelect.disabled = !sizes.length;
         $("empOfflineProductHint").textContent =
-            "Giá: " + formatVnd(p.price) + " — Tồn kho chi nhánh: " + (p.stock || 0) +
+            "Giá: " + formatVnd(p.price) + " — Tồn kho chi nhánh: " + (p.branchStock || 0) +
+            (p.baseSku ? " — SKU: " + p.baseSku : "") +
+            (p.brand ? " — Thương hiệu: " + p.brand : "") +
             (p.color ? " — Màu: " + p.color : "");
     }
 
@@ -454,9 +458,9 @@
             var alreadyInCart = offlineCart
                 .filter(function (it) { return it.productId === p.id && (it.size || "") === (size || ""); })
                 .reduce(function (sum, it) { return sum + it.quantity; }, 0);
-            if (alreadyInCart + qty > (p.stock || 0)) {
+            if (alreadyInCart + qty > (p.branchStock || 0)) {
                 showAlert("empOfflineAlert", 'Sản phẩm "' + p.name + (size ? " (size " + size + ")" : "") +
-                    '" chỉ còn ' + (p.stock || 0) + " cái tại chi nhánh.", "error");
+                    '" chỉ còn ' + (p.branchStock || 0) + " cái tại chi nhánh.", "error");
                 return;
             }
             var existing = offlineCart.find(function (it) {
@@ -467,7 +471,7 @@
             } else {
                 offlineCart.push({
                     productId: p.id, name: p.name, price: Number(p.price) || 0,
-                    size: size, color: p.color || "", quantity: qty, stock: p.stock || 0
+                    size: size, color: p.color || "", quantity: qty, stock: p.branchStock || 0
                 });
             }
             renderOfflineCart();
