@@ -18,9 +18,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByShopIdAndCategoryIdOrderByCreatedAtDesc(Long shopId, Long categoryId);
 
-    List<Product> findByShopIdAndCategoryIdAndRepresentativeTrue(Long shopId, Long categoryId);
-
-    boolean existsByShopIdAndCategoryIdAndRepresentativeTrue(Long shopId, Long categoryId);
+    /** Toàn bộ sản phẩm đang mở bán của hệ thống (manager/employee xem chéo các chi nhánh) */
+    List<Product> findByStatusOrderByCreatedAtDesc(String status);
 
     long countByShopIdAndCategoryId(Long shopId, Long categoryId);
 

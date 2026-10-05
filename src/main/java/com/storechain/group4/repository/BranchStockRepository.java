@@ -1,7 +1,9 @@
 package com.storechain.group4.repository;
 
 import com.storechain.group4.model.BranchStock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,6 +15,12 @@ import java.util.Optional;
 public interface BranchStockRepository extends JpaRepository<BranchStock, Long> {
 
     Optional<BranchStock> findByProductIdAndShopId(Long productId, Long shopId);
+
+    /** Khóa dòng kho (PESSIMISTIC_WRITE) khi cộng/trừ tồn trong một transaction */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM BranchStock b WHERE b.product.id = :productId AND b.shop.id = :shopId")
+    Optional<BranchStock> findByProductIdAndShopIdForUpdate(@Param("productId") Long productId,
+                                                            @Param("shopId") Long shopId);
 
     List<BranchStock> findByProductId(Long productId);
 

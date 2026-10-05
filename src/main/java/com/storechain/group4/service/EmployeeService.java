@@ -1,19 +1,15 @@
 package com.storechain.group4.service;
 
 import com.storechain.group4.dto.EmployeeStatsDto;
-import com.storechain.group4.dto.ProductRequestDto;
 import com.storechain.group4.dto.ProductResponseDto;
-import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopResponseDto;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 /**
  * API dành cho nhân viên chi nhánh (ROLE_EMPLOYEE):
- * - Thêm/sửa/xóa sản phẩm của chi nhánh mình được phân công
- * - Xem hoa hồng theo đơn hàng đã bán được
- * - Chấm công / tính công theo tháng
+ * - Xem chi nhánh, sản phẩm, đơn hàng của chi nhánh mình
+ * - Bán tại quầy (đơn offline), chấm công / tính hoa hồng
  */
 public interface EmployeeService {
 
@@ -21,21 +17,9 @@ public interface EmployeeService {
 
     ShopResponseDto getMyShop(Long employeeId);
 
-    List<ShopCategoryDto> getMyCategories(Long employeeId);
-
     // ============ Sản phẩm của chi nhánh ============
 
     List<ProductResponseDto> getMyProducts(Long employeeId, Long categoryId);
-
-    ProductResponseDto createProduct(Long employeeId, ProductRequestDto request);
-
-    ProductResponseDto updateProduct(Long employeeId, Long productId, ProductRequestDto request);
-
-    void deleteProduct(Long employeeId, Long productId);
-
-    ProductResponseDto setRepresentative(Long employeeId, Long productId, boolean representative);
-
-    String uploadImage(MultipartFile file);
 
     // ============ Đơn hàng của chi nhánh (như manager) ============
 

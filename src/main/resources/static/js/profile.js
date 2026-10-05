@@ -466,17 +466,33 @@
         }
         container.innerHTML = list.map(function (p) {
             var stock = (p.branchStock !== undefined && p.branchStock !== null) ? p.branchStock : (p.stock || 0);
+            // Thuộc tính đồng bộ từ phần quản trị (admin): status, SKU, brand, collection, nhãn, biến thể
+            var statusMap = { active: ["status-active", "Đang mở bán"], draft: ["status-draft", "Bản nháp"], inactive: ["status-inactive", "Ngừng kinh doanh"] };
+            var st = statusMap[p.status] || statusMap.active;
+            var sizes = p.sizesList && p.sizesList.length ? p.sizesList.join(", ") : (p.sizes || "");
+            var labels = "";
+            if (p.isNew) labels += ' <span class="badge-mgr-label">Mới</span>';
+            if (p.isBestSeller) labels += ' <span class="badge-mgr-label">Bán chạy</span>';
+            if (p.isFeatured) labels += ' <span class="badge-mgr-label">Nổi bật</span>';
             return '<div class="product-card-mgr' + (p.representative ? " is-representative" : "") + '">' +
                 '<img src="' + escapeHtml(p.imageUrl || "/img/product/product-1.jpg") + '" alt="' + escapeHtml(p.name) + '">' +
                 "<div style='flex:1;'>" +
                 '<h6 class="font-weight-bold mb-1">' + escapeHtml(p.name) +
-                (p.representative ? ' <span class="badge-representative">Đại diện danh mục</span>' : "") + "</h6>" +
+                (p.representative ? ' <span class="badge-representative">Đại diện danh mục</span>' : "") +
+                ' <span class="badge-status ' + st[0] + '">' + st[1] + "</span>" + labels + "</h6>" +
                 '<div style="color:#e53637;font-weight:700;">' + formatVnd(p.price) + "</div>" +
+                '<small class="text-muted d-block">SKU: ' + escapeHtml(p.baseSku || "—") +
+                (p.brand ? " · Thương hiệu: " + escapeHtml(p.brand) : "") +
+                (p.collectionName ? " · Bộ sưu tập: " + escapeHtml(p.collectionName) : "") + "</small>" +
                 '<small class="text-muted">Tồn kho tại chi nhánh: <b style="color:' +
                 (stock > 0 ? "#28a745" : "#e53637") + ';">' + stock + "</b>" +
                 (stock > 0 ? "" : ' <span class="badge badge-danger">Hết hàng</span>') + "</small>" +
-                (p.sizes ? '<small class="text-muted d-block">Size: ' + escapeHtml(p.sizes) + "</small>" : "") +
+                (sizes ? '<small class="text-muted d-block">Size: ' + escapeHtml(sizes) + "</small>" : "") +
                 (p.color ? '<small class="text-muted d-block">Màu: ' + escapeHtml(p.color) + "</small>" : "") +
+                (p.variants && p.variants.length
+                    ? '<small class="text-muted d-block">Biến thể: ' + p.variants.length +
+                      " (" + p.variants.map(function (v) { return escapeHtml(v.sku || ((v.color || "") + "/" + (v.size || ""))); }).join(", ") + ")</small>"
+                    : "") +
                 '<p class="text-muted mb-0" style="font-size:13px;">' + escapeHtml(p.description || "") + "</p>" +
                 "</div></div>";
         }).join("");

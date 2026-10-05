@@ -6,7 +6,6 @@ import com.storechain.group4.dto.PromotionDto;
 import com.storechain.group4.dto.RevenueDto;
 import com.storechain.group4.dto.ShopCategoryDto;
 import com.storechain.group4.dto.ShopResponseDto;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,9 +23,6 @@ public interface ManagerShopService {
     // ============ Sản phẩm chi nhánh (manager chỉ được xem) ============
 
     List<ProductResponseDto> getMyProducts(Long managerId, Long categoryId);
-
-    /** Tải ảnh từ máy lên (dùng chung cho nhân viên khi thêm/sửa sản phẩm) */
-    String uploadImage(MultipartFile file);
 
     // ============ Quản lý đơn hàng của chi nhánh ============
 
