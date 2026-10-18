@@ -23,10 +23,10 @@ import com.storechain.group4.repository.PromotionRepository;
 import com.storechain.group4.repository.ReviewMediaRepository;
 import com.storechain.group4.repository.ShopCategoryRepository;
 import com.storechain.group4.repository.ShopRepository;
+import com.storechain.group4.service.CloudinaryService;
 import com.storechain.group4.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,13 +35,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -58,9 +53,6 @@ public class ProductServiceImpl implements ProductService {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
-
     private final ProductRepository productRepository;
     private final ShopRepository shopRepository;
     private final ShopCategoryRepository shopCategoryRepository;
@@ -70,6 +62,7 @@ public class ProductServiceImpl implements ProductService {
     private final ReviewMediaRepository reviewMediaRepository;
     private final OrderItemRepository orderItemRepository;
     private final PromotionRepository promotionRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @Transactional(readOnly = true)
@@ -217,6 +210,9 @@ public class ProductServiceImpl implements ProductService {
 
         validateRequest(request);
 
+        // Ghi nhận ảnh cũ để dọn các ảnh bị thay thế trên Cloudinary sau khi cập nhật
+        Set<String> oldImages = collectImageUrls(product);
+
         if (request.getCategoryId() != null && (product.getCategory() == null || !request.getCategoryId().equals(product.getCategory().getId()))) {
             ShopCategory newCategory = shopCategoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục với ID: " + request.getCategoryId()));
@@ -279,6 +275,10 @@ public class ProductServiceImpl implements ProductService {
 
         // Đảm bảo các chi nhánh đều có bản ghi kho
         initBranchStocksForAllShops(saved, saved.getSizes());
+
+        // Xóa trên Cloudinary các ảnh cũ không còn được dùng
+        oldImages.removeAll(collectImageUrls(saved));
+        cloudinaryService.deleteAfterCommit(oldImages);
 
         return toProductDto(saved);
     }
@@ -355,8 +355,11 @@ public class ProductServiceImpl implements ProductService {
         cartItemRepository.deleteAll(cartItemRepository.findByProductId(id));
 
         // 4. Dọn đánh giá & media đánh giá
+        Set<String> filesToDelete = collectImageUrls(product);
         reviewRepository.findByProductIdOrderByCreatedAtDesc(id).forEach(review -> {
-            reviewMediaRepository.deleteAll(reviewMediaRepository.findByReviewId(review.getId()));
+            var mediaList = reviewMediaRepository.findByReviewId(review.getId());
+            mediaList.forEach(m -> filesToDelete.add(m.getUrl()));
+            reviewMediaRepository.deleteAll(mediaList);
             reviewRepository.delete(review);
         });
 
@@ -368,6 +371,9 @@ public class ProductServiceImpl implements ProductService {
 
         // 6. Xóa sản phẩm
         productRepository.delete(product);
+
+        // 7. Xóa ảnh/video trên Cloudinary (chỉ thực hiện khi transaction commit thành công)
+        cloudinaryService.deleteAfterCommit(filesToDelete);
     }
 
     @Override
@@ -388,19 +394,7 @@ public class ProductServiceImpl implements ProductService {
         if (file.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("Kích thước ảnh tối đa là 5MB.");
         }
-        try {
-            Path dir = Paths.get(uploadDir, "products");
-            Files.createDirectories(dir);
-            String filename = UUID.randomUUID() + ext;
-            Path target = dir.resolve(filename);
-            try (var in = file.getInputStream()) {
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-            return "/uploads/products/" + filename;
-        } catch (IOException e) {
-            log.error("Lỗi lưu tệp ảnh tải lên: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể lưu tệp ảnh, vui lòng thử lại.");
-        }
+        return cloudinaryService.upload(file, "products", false);
     }
 
     @Override
@@ -547,6 +541,20 @@ public class ProductServiceImpl implements ProductService {
         }
         if (sb.length() < 3) sb.append("MF");
         return sb.toString().toUpperCase(Locale.ROOT) + "-" + ((int) (Math.random() * 900) + 100);
+    }
+
+    /** Gom tất cả URL ảnh mà sản phẩm đang dùng: ảnh chính, gallery, ảnh của từng biến thể. */
+    private Set<String> collectImageUrls(Product p) {
+        Set<String> urls = new LinkedHashSet<>();
+        if (p.getImageUrl() != null && !p.getImageUrl().isBlank()) urls.add(p.getImageUrl().trim());
+        deserializeGallery(p.getGalleryImages()).stream()
+                .filter(u -> u != null && !u.isBlank())
+                .forEach(u -> urls.add(u.trim()));
+        deserializeVariants(p.getVariantsJson()).stream()
+                .map(ProductVariantDto::getImageUrl)
+                .filter(u -> u != null && !u.isBlank())
+                .forEach(u -> urls.add(u.trim()));
+        return urls;
     }
 
     private String serializeGallery(List<String> gallery) {

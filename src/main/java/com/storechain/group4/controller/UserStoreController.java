@@ -5,25 +5,19 @@ import com.storechain.group4.dto.OrderCreateRequest;
 import com.storechain.group4.dto.OrderDto;
 import com.storechain.group4.dto.ReviewDto;
 import com.storechain.group4.security.services.CustomUserDetails;
+import com.storechain.group4.service.CloudinaryService;
 import com.storechain.group4.service.StorefrontService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * API phía người mua (đã đăng nhập — gồm cả User, Manager, Admin):
@@ -38,9 +32,7 @@ public class UserStoreController {
 
     private final StorefrontService storefrontService;
     private final com.storechain.group4.repository.TransporterRepository transporterRepository;
-
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+    private final CloudinaryService cloudinaryService;
 
     /** Danh sách nhà vận chuyển đang hoạt động để khách chọn khi đặt hàng */
     @GetMapping("/transporters")
@@ -117,17 +109,12 @@ public class UserStoreController {
             if (file.getSize() > max) {
                 throw new IllegalArgumentException("Kích thước tệp tối đa là " + (max / 1024 / 1024) + "MB.");
             }
-            Path dir = Paths.get(uploadDir, "reviews");
-            Files.createDirectories(dir);
-            String filename = UUID.randomUUID() + ext;
-            try (var in = file.getInputStream()) {
-                Files.copy(in, dir.resolve(filename), StandardCopyOption.REPLACE_EXISTING);
-            }
+            String url = cloudinaryService.upload(file, "reviews", "VIDEO".equals(type));
             return ResponseEntity.ok(ApiResponse.success("Tải tệp lên thành công!",
-                    Map.of("url", "/uploads/reviews/" + filename, "type", type)));
+                    Map.of("url", url, "type", type)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             log.error("Lỗi lưu tệp đánh giá: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().body(ApiResponse.error("Không thể lưu tệp, vui lòng thử lại."));
         }
