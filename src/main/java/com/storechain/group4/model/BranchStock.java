@@ -4,8 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Tồn kho của một sản phẩm tại một chi nhánh.
- * Đơn hàng được phân phối về chi nhánh còn đủ hàng gần địa chỉ nhận nhất.
+ * Tồn kho của một sản phẩm (danh mục dùng chung toàn hãng) tại một chi nhánh.
+ * Sản phẩm là danh mục chung, mỗi chi nhánh giữ số lượng riêng;
+ * khi khách đặt hàng, đơn được phân phối về chi nhánh gần nhất còn hàng.
  */
 @Entity
 @Table(name = "branch_stocks",
@@ -35,4 +36,17 @@ public class BranchStock {
     @Column(name = "stock", nullable = false)
     @Builder.Default
     private int stock = 0;
+
+    /** Phân bổ tồn kho theo từng size (JSON hoặc format "S:10,M:15,L:12,XL:8") */
+    @Column(name = "size_stocks", length = 500)
+    private String sizeStocks;
+
+    @Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = java.time.LocalDateTime.now();
+    }
 }

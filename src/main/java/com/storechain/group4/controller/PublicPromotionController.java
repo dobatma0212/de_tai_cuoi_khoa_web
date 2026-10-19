@@ -30,6 +30,16 @@ public class PublicPromotionController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách Flash Sale thành công", flashSales));
     }
 
+    // GET /available-vouchers - authenticated user
+    // Danh sách mã giảm giá đang có hiệu lực để người dùng chọn khi đặt hàng
+    @GetMapping("/available-vouchers")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<List<PromotionResponseDto>>> getAvailableVouchers() {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy danh sách mã giảm giá thành công",
+                promotionService.getAvailableVouchers()));
+    }
+
     // POST /check-voucher - authenticated user
     // Preview voucher validation without applying
     @PostMapping("/check-voucher")

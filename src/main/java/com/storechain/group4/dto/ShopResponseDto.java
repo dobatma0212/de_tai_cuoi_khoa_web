@@ -36,4 +36,11 @@ public class ShopResponseDto {
     private String managerFullName;
     private String managerEmail;
     private String managerPhone;
+
+    // Chỉ số tóm tắt của chi nhánh
+    private java.math.BigDecimal currentMonthRevenue;
+    private Integer totalStock;
+    private Long totalProducts;
+    private Long currentMonthOrders;
+    private Long totalEmployees;
 }

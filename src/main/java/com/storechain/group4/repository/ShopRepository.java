@@ -37,6 +37,8 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     long countByStatus(String status);
 
+    List<Shop> findByStatus(String status);
+
     long countByManagerIsNotNull();
 
     boolean existsByNameIgnoreCase(String name);
@@ -44,6 +46,4 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     List<Shop> findByManagerId(Long managerId);
-
-    List<Shop> findByStatus(String status);
 }

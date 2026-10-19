@@ -19,6 +19,8 @@ public class PromotionResponseDto {
 
     private Long id;
     private String promotionType;
+    /** PERCENT/SHIPPING — chỉ có với voucher của chi nhánh; null với voucher toàn server */
+    private String promoType;
     private String name;
     private String description;
     private String code;
@@ -37,6 +39,9 @@ public class PromotionResponseDto {
     private LocalDateTime endDate;
 
     private String status;
+    /** Chi nhánh sở hữu voucher; null = voucher toàn server của admin */
+    private Long shopId;
+    private String shopName;
     private boolean expired;
     private boolean currentlyActive;
     private Integer remainingUsage;

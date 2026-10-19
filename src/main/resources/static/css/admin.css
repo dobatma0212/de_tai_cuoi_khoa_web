@@ -1,0 +1,223 @@
+/* ==========================================================================
+   Admin Portal Stylesheet - Male Fashion
+   Tối ưu hóa giao diện thanh điều hướng, các nút chức năng và cấu trúc Admin
+   ========================================================================== */
+
+/* Top bar tối ưu */
+.admin-header .header__top {
+    background: #0f1218;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 0;
+}
+
+.admin-header .header__top__left p {
+    font-size: 13px;
+    color: #a0a6b1;
+    margin-bottom: 0;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.admin-header .header__top__left p i {
+    color: #e53637;
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.admin-header .header__top__right .header__top__links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.admin-header .header__top__right .header__top__links span {
+    font-size: 13px;
+    color: #e2e8f0;
+}
+
+/* Nút Xem Cửa Hàng đặt trên Topbar */
+.topbar-shop-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none !important;
+    margin-right: 18px;
+    transition: all 0.2s ease;
+}
+
+.topbar-shop-link:hover {
+    background: #e53637;
+    color: #ffffff !important;
+    border-color: #e53637;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(229, 54, 55, 0.35);
+}
+
+.topbar-shop-link i {
+    font-size: 11px;
+}
+
+/* Triệt tiêu hoàn toàn role-indicator thừa thãi */
+#role-indicator,
+.role-indicator-badge {
+    display: none !important;
+}
+
+/* Logo & Portal Badge */
+.admin-header-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-header-logo-wrap .admin-portal-tag {
+    background: #1e2430;
+    color: #f1f3f6;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    text-transform: uppercase;
+    display: inline-block;
+    line-height: 1.4;
+}
+
+/* Header main container */
+.admin-header .container {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+/* Admin Main Navigation Menu */
+.admin-header .header__menu {
+    padding: 18px 0 !important;
+    text-align: right;
+}
+
+.admin-header .admin-nav-list {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.admin-header .admin-nav-list li {
+    display: inline-block;
+    margin: 0 !important;
+    padding: 0;
+    position: relative;
+}
+
+.admin-header .admin-nav-list li a {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #4b5563 !important;
+    padding: 8px 13px !important;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+}
+
+.admin-header .admin-nav-list li a i {
+    font-size: 13.5px;
+    color: #6b7280;
+    transition: all 0.2s ease-in-out;
+}
+
+.admin-header .admin-nav-list li a:after {
+    display: none !important; /* Gỡ bỏ underline mặc định của theme */
+}
+
+/* Hover effect */
+.admin-header .admin-nav-list li:hover a {
+    color: #e53637 !important;
+    background-color: #fff1f2;
+    border-color: #ffe4e6;
+}
+
+.admin-header .admin-nav-list li:hover a i {
+    color: #e53637;
+}
+
+/* Active tab */
+.admin-header .admin-nav-list li.active a {
+    color: #ffffff !important;
+    background: #e53637 !important;
+    border-color: #e53637 !important;
+    box-shadow: 0 3px 10px rgba(229, 54, 55, 0.28);
+}
+
+.admin-header .admin-nav-list li.active a i {
+    color: #ffffff !important;
+}
+
+/* Breadcrumb tối ưu */
+.breadcrumb-option {
+    background: #fbfbfb;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 20px 0;
+}
+
+.breadcrumb__text h4 {
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 6px;
+}
+
+.breadcrumb__links a,
+.breadcrumb__links span {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.breadcrumb__links a {
+    color: #6b7280;
+}
+
+.breadcrumb__links a:hover {
+    color: #e53637;
+}
+
+.breadcrumb__links span {
+    color: #111827;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+    .admin-header .admin-nav-list {
+        display: none !important;
+    }
+}
+
+/* Slicknav mobile menu styling */
+.slicknav_nav li.active > a {
+    color: #e53637 !important;
+    font-weight: 700;
+}
+.slicknav_nav a i {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+}

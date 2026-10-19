@@ -31,9 +31,15 @@ public class AdminPromotionController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir
     ) {
-        Page<PromotionResponseDto> promotions = promotionService.getPromotions(
-                keyword, status, type, page, size, sortBy, sortDir);
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách khuyến mãi thành công", promotions));
+        try {
+            Page<PromotionResponseDto> promotions = promotionService.getPromotions(
+                    keyword, status, type, page, size, sortBy, sortDir);
+            return ResponseEntity.ok(ApiResponse.success("Lấy danh sách khuyến mãi thành công", promotions));
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách khuyến mãi: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Lỗi khi tải danh sách khuyến mãi: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/stats")

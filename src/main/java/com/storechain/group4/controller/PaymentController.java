@@ -1,132 +1,84 @@
 package com.storechain.group4.controller;
 
-import com.storechain.group4.model.Order;
+import com.storechain.group4.dto.ApiResponse;
 import com.storechain.group4.service.PaymentService;
-import com.storechain.group4.service.StorefrontService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Nhận kết quả trả về từ cổng thanh toán VNPay / MoMo (return URL + IPN)
- * và trang mô phỏng nội bộ khi chưa cấu hình key cổng thật.
- * Các endpoint phải public vì cổng thanh toán gọi trực tiếp (không kèm JWT).
+ * API tạo link thanh toán + nhận callback từ VNPay / MoMo.
  */
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/api/payment")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*", maxAge = 3600)
 @Slf4j
 public class PaymentController {
 
     private final PaymentService paymentService;
-    private final StorefrontService storefrontService;
 
-    private static RedirectView result(String pay, String ref) {
-        return new RedirectView("/checkout.html?pay=" + pay + "&ref=" + ref, true);
+    /**
+     * Tạo URL thanh toán (gọi sau khi checkout tạo đơn thành công).
+     * Body: { "method": "VNPAY"|"MOMO", "orderCode": "...", "amount": 150000, "orderInfo": "..." }
+     */
+    @PostMapping("/create")
+    public ResponseEntity<ApiResponse<Map<String, String>>> createPayment(
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request) {
+        try {
+            String method = String.valueOf(body.getOrDefault("method", "COD"));
+            String orderCode = String.valueOf(body.get("orderCode"));
+            BigDecimal amount = new BigDecimal(String.valueOf(body.get("amount")));
+            String orderInfo = body.get("orderInfo") != null ? String.valueOf(body.get("orderInfo")) : null;
+            String returnUrl = body.get("returnUrl") != null ? String.valueOf(body.get("returnUrl")) : null;
+            String ip = request.getRemoteAddr();
+
+            Map<String, String> result = paymentService.createPayment(
+                    method, orderCode, amount, orderInfo, returnUrl, ip);
+            return ResponseEntity.ok(ApiResponse.success("Tạo link thanh toán thành công", result));
+        } catch (Exception e) {
+            log.error("createPayment error: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
     }
 
-    // ==================== VNPay ====================
-
-    /** VNPay redirect khách về sau khi thanh toán (kiểm secure hash rồi cập nhật đơn) */
+    /** VNPay return URL (user browser redirect) */
     @GetMapping("/vnpay/return")
     public RedirectView vnpayReturn(@RequestParam Map<String, String> params) {
-        String ref = params.getOrDefault("vnp_TxnRef", "");
-        try {
-            boolean ok = paymentService.verifyVnpaySignature(params)
-                    && "00".equals(params.get("vnp_ResponseCode"));
-            storefrontService.markPaymentResult(ref, ok);
-            return result(ok ? "success" : "failed", ref);
-        } catch (Exception e) {
-            log.error("Lỗi xử lý VNPay return cho {}: {}", ref, e.getMessage(), e);
-            return result("failed", ref);
-        }
+        boolean ok = paymentService.handleCallback("VNPAY", params);
+        String orderCode = params.getOrDefault("vnp_TxnRef", "");
+        String target = ok
+                ? "/profile.html?tab=orders&payment=success&order=" + orderCode
+                : "/profile.html?tab=orders&payment=failed&order=" + orderCode;
+        return new RedirectView(target);
     }
 
-    /** VNPay IPN (server-to-server): trả JSON chuẩn VNPay */
-    @GetMapping("/vnpay/ipn")
-    public ResponseEntity<Map<String, String>> vnpayIpn(@RequestParam Map<String, String> params) {
-        Map<String, String> rsp = new HashMap<>();
-        String ref = params.getOrDefault("vnp_TxnRef", "");
-        try {
-            if (!paymentService.verifyVnpaySignature(params)) {
-                rsp.put("RspCode", "97");
-                rsp.put("Message", "Invalid Signature");
-            } else {
-                storefrontService.markPaymentResult(ref, "00".equals(params.get("vnp_ResponseCode")));
-                rsp.put("RspCode", "00");
-                rsp.put("Message", "Confirm Success");
-            }
-        } catch (Exception e) {
-            log.error("Lỗi VNPay IPN cho {}: {}", ref, e.getMessage(), e);
-            rsp.put("RspCode", "99");
-            rsp.put("Message", "Unknown error");
-        }
-        return ResponseEntity.ok(rsp);
-    }
-
-    // ==================== MoMo ====================
-
-    /** MoMo redirect khách về sau khi thanh toán (kiểm signature rồi cập nhật đơn) */
+    /** MoMo return */
     @GetMapping("/momo/return")
     public RedirectView momoReturn(@RequestParam Map<String, String> params) {
-        String ref = params.getOrDefault("orderId", "");
-        try {
-            boolean ok = params.containsKey("signature")
-                    ? paymentService.verifyMomoSignature(params)
-                      && "0".equals(params.get("resultCode"))
-                    : "0".equals(params.get("resultCode"));
-            storefrontService.markPaymentResult(ref, ok);
-            return result(ok ? "success" : "failed", ref);
-        } catch (Exception e) {
-            log.error("Lỗi xử lý MoMo return cho {}: {}", ref, e.getMessage(), e);
-            return result("failed", ref);
-        }
+        boolean ok = paymentService.handleCallback("MOMO", params);
+        String orderCode = params.getOrDefault("orderId", "");
+        String target = ok
+                ? "/profile.html?tab=orders&payment=success&order=" + orderCode
+                : "/profile.html?tab=orders&payment=failed&order=" + orderCode;
+        return new RedirectView(target);
     }
 
     /** MoMo IPN (server-to-server) */
     @PostMapping("/momo/ipn")
     public ResponseEntity<Map<String, Object>> momoIpn(@RequestBody Map<String, String> params) {
-        String ref = params.getOrDefault("orderId", "");
-        try {
-            storefrontService.markPaymentResult(ref, "0".equals(params.get("resultCode")));
-            return ResponseEntity.ok(Map.of(
-                    "partnerCode", params.getOrDefault("partnerCode", ""),
-                    "orderId", ref,
-                    "requestId", params.getOrDefault("requestId", ""),
-                    "resultCode", 0,
-                    "message", "Success",
-                    "responseTime", System.currentTimeMillis(),
-                    "extraData", ""));
-        } catch (Exception e) {
-            log.error("Lỗi MoMo IPN cho {}: {}", ref, e.getMessage(), e);
-            return ResponseEntity.ok(Map.of(
-                    "orderId", ref,
-                    "resultCode", 99,
-                    "message", "Error",
-                    "responseTime", System.currentTimeMillis()));
-        }
-    }
-
-    // ==================== Trang mô phỏng (demo khi chưa có key cổng thật) ====================
-
-    /**
-     * Xác nhận/thất bại giao dịch từ trang mô phỏng nội bộ.
-     * Chỉ hoạt động khi cổng chưa cấu hình key thật.
-     */
-    @GetMapping("/simulate/{ref}")
-    public RedirectView simulate(@PathVariable String ref, @RequestParam(defaultValue = "true") boolean success,
-                                 @RequestParam String method) {
-        if (paymentService.isGatewayConfigured(method)) {
-            // Đã cấu hình cổng thật thì không cho mô phỏng
-            return result("failed", ref);
-        }
-        storefrontService.markPaymentResult(ref, success);
-        return result(success ? "success" : "failed", ref);
+        boolean ok = paymentService.handleCallback("MOMO", params);
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("resultCode", ok ? 0 : 1);
+        resp.put("message", ok ? "Success" : "Failed");
+        return ResponseEntity.ok(resp);
     }
 }

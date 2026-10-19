@@ -36,27 +36,12 @@ public interface StorefrontService {
 
     // ============ Đặt hàng từ giỏ ============
 
-    /**
-     * Tách giỏ hàng thành các đơn theo từng chi nhánh (trạng thái NEW).
-     * Nếu thanh toán VNPAY/MOMO: đơn ở trạng thái thanh toán PENDING và kết quả
-     * kèm paymentUrl để chuyển hướng khách sang cổng.
-     */
-    com.storechain.group4.dto.CheckoutResultDto checkout(Long userId, OrderCreateRequest request,
-                                                         String clientIp);
-
-    /** Xem trước giảm giá khi áp mã khuyến mãi cho giỏ hàng hiện tại (chưa đặt hàng) */
-    com.storechain.group4.dto.PromoPreviewDto previewPromo(Long userId, String promoCode,
-                                                           Long transporterId);
-
-    /**
-     * Cổng thanh toán trả về kết quả cho mã giao dịch:
-     * thành công -> PENDING thành PAID; thất bại -> hủy các đơn PENDING và hoàn tồn kho.
-     *
-     * @return số đơn đã cập nhật
-     */
-    int markPaymentResult(String paymentRef, boolean success);
+    /** Tách giỏ hàng thành các đơn theo từng chi nhánh (trạng thái NEW) */
+    List<OrderDto> checkout(Long userId, OrderCreateRequest request);
 
     List<OrderDto> getMyOrders(Long userId);
+
+    List<OrderDto> getMyOrdersByStatus(Long userId, String status);
 
     /** Khách hủy đơn (kèm lý do) khi đơn chưa được giao tới */
     OrderDto cancelMyOrder(Long userId, Long orderId, String reason);

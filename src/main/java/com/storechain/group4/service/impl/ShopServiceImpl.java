@@ -1,12 +1,19 @@
 package com.storechain.group4.service.impl;
 
+import com.storechain.group4.dto.ShopDetailDto;
 import com.storechain.group4.dto.ShopRequestDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.dto.ShopStatsDto;
 import com.storechain.group4.dto.UserResponseDto;
+import com.storechain.group4.model.BranchStock;
+import com.storechain.group4.model.Order;
+import com.storechain.group4.model.Product;
 import com.storechain.group4.model.RoleType;
 import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.User;
+import com.storechain.group4.repository.BranchStockRepository;
+import com.storechain.group4.repository.OrderRepository;
+import com.storechain.group4.repository.ProductRepository;
 import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.repository.UserRepository;
 import com.storechain.group4.service.ShopService;
@@ -20,7 +27,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.text.Normalizer;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -34,6 +45,9 @@ public class ShopServiceImpl implements ShopService {
     private final ShopRepository shopRepository;
     private final UserRepository userRepository;
     private final EntityManager entityManager;
+    private final BranchStockRepository branchStockRepository;
+    private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
 
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
@@ -81,6 +95,209 @@ public class ShopServiceImpl implements ShopService {
         Shop shop = shopRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + id));
         return toResponseDto(shop);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopDetailDto getShopDetail(Long id) {
+        Shop shop = shopRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi nhánh với ID: " + id));
+
+        YearMonth ym = YearMonth.now();
+        LocalDateTime startOfMonth = ym.atDay(1).atStartOfDay();
+        LocalDateTime endOfMonth = ym.plusMonths(1).atDay(1).atStartOfDay();
+
+        BigDecimal monthRevenue = BigDecimal.ZERO;
+        long monthOrders = 0L;
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        long totalOrders = 0L;
+
+        if (orderRepository != null) {
+            try {
+                BigDecimal mr = orderRepository.sumMonthlyRevenueByShopId(id, startOfMonth, endOfMonth);
+                if (mr != null) monthRevenue = mr;
+                monthOrders = orderRepository.countMonthlyOrdersByShopId(id, startOfMonth, endOfMonth);
+                BigDecimal tr = orderRepository.sumTotalRevenueByShopId(id);
+                if (tr != null) totalRevenue = tr;
+                totalOrders = orderRepository.countTotalOrdersByShopId(id);
+            } catch (Exception e) {
+                log.warn("Lỗi lấy chỉ số doanh thu đơn hàng chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+
+        int totalStock = 0;
+        if (branchStockRepository != null) {
+            try {
+                totalStock = branchStockRepository.sumStockByShopId(id);
+            } catch (Exception e) {
+                log.warn("Lỗi lấy tổng tồn kho từ branch_stocks cho chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+        if (totalStock == 0 && productRepository != null) {
+            try {
+                totalStock = productRepository.sumStockByShopId(id);
+            } catch (Exception e) {
+                log.warn("Lỗi lấy tổng tồn kho từ products cho chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+
+        // Danh sách sản phẩm tồn kho tại chi nhánh
+        List<ShopDetailDto.BranchProductStockItemDto> productItems = new ArrayList<>();
+        if (branchStockRepository != null) {
+            try {
+                List<BranchStock> branchStocks = branchStockRepository.findByShopIdWithProduct(id);
+                for (BranchStock bs : branchStocks) {
+                    if (bs.getProduct() == null) continue;
+                    productItems.add(ShopDetailDto.BranchProductStockItemDto.builder()
+                            .productId(bs.getProduct().getId())
+                            .productName(bs.getProduct().getName())
+                            .baseSku(bs.getProduct().getBaseSku())
+                            .categoryName(bs.getProduct().getCategory() != null ? bs.getProduct().getCategory().getName() : "Khác")
+                            .price(bs.getProduct().getPrice())
+                            .imageUrl(bs.getProduct().getImageUrl())
+                            .stock(bs.getStock())
+                            .sizeStocks(bs.getSizeStocks())
+                            .status(bs.getProduct().getStatus())
+                            .build());
+                }
+            } catch (Exception e) {
+                log.warn("Lỗi lấy danh sách branch_stocks cho chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+
+        // Fallback sang products liên kết trực tiếp với chi nhánh nếu branch_stocks trống
+        if (productItems.isEmpty() && productRepository != null) {
+            try {
+                List<Product> directProducts = productRepository.findByShopIdOrderByCreatedAtDesc(id);
+                for (Product p : directProducts) {
+                    productItems.add(ShopDetailDto.BranchProductStockItemDto.builder()
+                            .productId(p.getId())
+                            .productName(p.getName())
+                            .baseSku(p.getBaseSku())
+                            .categoryName(p.getCategory() != null ? p.getCategory().getName() : "Khác")
+                            .price(p.getPrice())
+                            .imageUrl(p.getImageUrl())
+                            .stock(p.getStock())
+                            .sizeStocks(p.getSizes())
+                            .status(p.getStatus())
+                            .build());
+                }
+            } catch (Exception e) {
+                log.warn("Lỗi lấy danh sách products trực tiếp cho chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+
+        // Danh sách đơn hàng gần đây của chi nhánh
+        List<ShopDetailDto.BranchRecentOrderItemDto> recentOrders = new ArrayList<>();
+        if (orderRepository != null) {
+            try {
+                List<Order> orders = orderRepository.findRecentOrdersByShopId(id, PageRequest.of(0, 10));
+                for (Order o : orders) {
+                    String statusLabel = switch (o.getStatus() == null ? "" : o.getStatus()) {
+                        case Order.STATUS_NEW -> "Đơn mới";
+                        case Order.STATUS_CONFIRMED -> "Đã xác nhận";
+                        case Order.STATUS_PICKED_UP -> "Đã lấy hàng";
+                        case Order.STATUS_SHIPPING -> "Đang giao";
+                        case Order.STATUS_DELIVERED -> "Đã giao";
+                        case Order.STATUS_RECEIVED -> "Đã nhận hàng";
+                        case Order.STATUS_CANCELLED -> "Đã hủy";
+                        case Order.STATUS_RETURNED -> "Trả hàng";
+                        case Order.STATUS_RETURN_REQUESTED -> "Yêu cầu trả";
+                        default -> o.getStatus() != null ? o.getStatus() : "Chờ xử lý";
+                    };
+
+                    String customerName = o.getReceiverName();
+                    if ((customerName == null || customerName.isBlank()) && o.getUser() != null) {
+                        customerName = o.getUser().getFullName() != null ? o.getUser().getFullName() : o.getUser().getUsername();
+                    }
+
+                    recentOrders.add(ShopDetailDto.BranchRecentOrderItemDto.builder()
+                            .orderId(o.getId())
+                            .orderCode(o.getOrderCode())
+                            .customerName(customerName != null ? customerName : "Khách lẻ")
+                            .customerPhone(o.getReceiverPhone())
+                            .grandTotal(o.getGrandTotal() != null ? o.getGrandTotal() : BigDecimal.ZERO)
+                            .status(o.getStatus())
+                            .statusLabel(statusLabel)
+                            .orderType(o.getOrderType())
+                            .paymentMethod(o.getPaymentMethod())
+                            .paymentStatus(o.getPaymentStatus())
+                            .createdAt(o.getCreatedAt())
+                            .build());
+                }
+            } catch (Exception e) {
+                log.warn("Lỗi lấy đơn hàng gần đây của chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+
+        // Danh sách nhân viên làm việc trong chi nhánh
+        List<ShopDetailDto.BranchEmployeeItemDto> employeeItems = new ArrayList<>();
+        long activeEmployeeCount = 0L;
+        if (userRepository != null) {
+            try {
+                List<User> employees = userRepository.findByShopId(id);
+                for (User emp : employees) {
+                    boolean isEmployed = emp.getRole() != null && RoleType.ROLE_EMPLOYEE.equals(emp.getRole().getName());
+                    // Chỉ hiển thị nhân viên đang làm việc trong chi nhánh (không hiển thị người đã bị sa thải / tài khoản đã xóa / role khác)
+                    if (!isEmployed) {
+                        continue;
+                    }
+                    activeEmployeeCount++;
+                    String roleDesc = emp.getRole() != null && emp.getRole().getDescription() != null && !emp.getRole().getDescription().isBlank()
+                            ? emp.getRole().getDescription()
+                            : "Nhân viên làm việc tại chi nhánh";
+                    employeeItems.add(ShopDetailDto.BranchEmployeeItemDto.builder()
+                            .id(emp.getId())
+                            .username(emp.getUsername())
+                            .fullName(emp.getFullName())
+                            .email(emp.getEmail())
+                            .phone(emp.getPhone())
+                            .avatarUrl(emp.getAvatarUrl())
+                            .status(emp.getStatus())
+                            .employed(true)
+                            .roleName("EMPLOYEE")
+                            .roleDescription(roleDesc)
+                            .createdAt(emp.getCreatedAt())
+                            .build());
+                }
+            } catch (Exception e) {
+                log.warn("Lỗi lấy danh sách nhân viên chi nhánh ID {}: {}", id, e.getMessage());
+            }
+        }
+
+        ShopDetailDto detail = ShopDetailDto.builder()
+                .id(shop.getId())
+                .name(shop.getName())
+                .slug(shop.getSlug())
+                .address(shop.getAddress())
+                .phone(shop.getPhone())
+                .description(shop.getDescription())
+                .logoUrl(shop.getLogoUrl())
+                .bannerUrl(shop.getBannerUrl())
+                .status(shop.getStatus())
+                .createdAt(shop.getCreatedAt())
+                .updatedAt(shop.getUpdatedAt())
+                .currentMonthRevenue(monthRevenue)
+                .totalStock(totalStock)
+                .totalProducts((long) productItems.size())
+                .currentMonthOrders(monthOrders)
+                .totalRevenue(totalRevenue)
+                .totalOrders(totalOrders)
+                .totalEmployees(activeEmployeeCount)
+                .products(productItems)
+                .recentOrders(recentOrders)
+                .employees(employeeItems)
+                .build();
+
+        if (shop.getManager() != null) {
+            detail.setManagerId(shop.getManager().getId());
+            detail.setManagerUsername(shop.getManager().getUsername());
+            detail.setManagerFullName(shop.getManager().getFullName());
+            detail.setManagerEmail(shop.getManager().getEmail());
+            detail.setManagerPhone(shop.getManager().getPhone());
+        }
+
+        return detail;
     }
 
     @Override
@@ -199,6 +416,15 @@ public class ShopServiceImpl implements ShopService {
             log.warn("Lỗi dọn dẹp sản phẩm liên kết với chi nhánh ID {}: {}", id, e.getMessage());
         }
 
+        // Dọn dẹp tồn kho chi nhánh
+        try {
+            if (branchStockRepository != null) {
+                branchStockRepository.deleteByShopId(id);
+            }
+        } catch (Exception e) {
+            log.warn("Lỗi dọn dẹp branch_stocks của chi nhánh ID {}: {}", id, e.getMessage());
+        }
+
         shopRepository.delete(shop);
         log.info("Đã xóa chi nhánh ID {} thành công", id);
     }
@@ -247,6 +473,10 @@ public class ShopServiceImpl implements ShopService {
                 .status(shop.getStatus())
                 .createdAt(shop.getCreatedAt())
                 .updatedAt(shop.getUpdatedAt())
+                .currentMonthRevenue(BigDecimal.ZERO)
+                .totalStock(0)
+                .totalProducts(0L)
+                .currentMonthOrders(0L)
                 .build();
 
         if (shop.getManager() != null) {
@@ -255,6 +485,36 @@ public class ShopServiceImpl implements ShopService {
             dto.setManagerFullName(shop.getManager().getFullName());
             dto.setManagerEmail(shop.getManager().getEmail());
             dto.setManagerPhone(shop.getManager().getPhone());
+        }
+
+        // Bổ sung chỉ số tóm tắt nếu có shop ID
+        if (shop.getId() != null) {
+            try {
+                if (orderRepository != null) {
+                    YearMonth ym = YearMonth.now();
+                    LocalDateTime startOfMonth = ym.atDay(1).atStartOfDay();
+                    LocalDateTime endOfMonth = ym.plusMonths(1).atDay(1).atStartOfDay();
+                    BigDecimal mRev = orderRepository.sumMonthlyRevenueByShopId(shop.getId(), startOfMonth, endOfMonth);
+                    if (mRev != null) dto.setCurrentMonthRevenue(mRev);
+                    dto.setCurrentMonthOrders(orderRepository.countMonthlyOrdersByShopId(shop.getId(), startOfMonth, endOfMonth));
+                }
+                if (branchStockRepository != null) {
+                    int bStock = branchStockRepository.sumStockByShopId(shop.getId());
+                    if (bStock == 0 && productRepository != null) {
+                        int pStock = productRepository.sumStockByShopId(shop.getId());
+                        bStock = Math.max(bStock, pStock);
+                    }
+                    dto.setTotalStock(bStock);
+                }
+                if (productRepository != null) {
+                    dto.setTotalProducts(productRepository.countByShopId(shop.getId()));
+                }
+                if (userRepository != null) {
+                    dto.setTotalEmployees(userRepository.countEmployeesByShopId(shop.getId()));
+                }
+            } catch (Exception e) {
+                log.debug("Lỗi lấy chỉ số tóm tắt cho chi nhánh #{}: {}", shop.getId(), e.getMessage());
+            }
         }
 
         return dto;

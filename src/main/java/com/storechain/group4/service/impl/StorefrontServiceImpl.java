@@ -1,11 +1,9 @@
 package com.storechain.group4.service.impl;
 
 import com.storechain.group4.dto.CartItemDto;
-import com.storechain.group4.dto.CheckoutResultDto;
 import com.storechain.group4.dto.OrderCreateRequest;
 import com.storechain.group4.dto.OrderDto;
 import com.storechain.group4.dto.ProductResponseDto;
-import com.storechain.group4.dto.PromoPreviewDto;
 import com.storechain.group4.dto.ReviewDto;
 import com.storechain.group4.model.BranchStock;
 import com.storechain.group4.model.CartItem;
@@ -31,7 +29,6 @@ import com.storechain.group4.repository.ShippingAddressRepository;
 import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
-import com.storechain.group4.service.PaymentService;
 import com.storechain.group4.service.StorefrontService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +71,6 @@ public class StorefrontServiceImpl implements StorefrontService {
     private final UserRepository userRepository;
     private final BranchStockRepository branchStockRepository;
     private final ShopRepository shopRepository;
-    private final PaymentService paymentService;
 
     // ============ Chi tiết sản phẩm ============
 
@@ -106,6 +102,20 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Điểm đánh giá phải từ 1 đến 5 sao.");
         }
+        String trimmed = comment == null ? "" : comment.trim();
+        if (trimmed.length() < 50) {
+            throw new IllegalArgumentException("Bình luận phải có tối thiểu 50 ký tự.");
+        }
+        // Chỉ cho đánh giá khi đã mua và đơn ở trạng thái RECEIVED
+        boolean purchasedAndReceived = orderRepository.existsByUserIdAndProductIdAndStatus(
+                userId, productId, Order.STATUS_RECEIVED);
+        if (!purchasedAndReceived) {
+            throw new IllegalArgumentException(
+                    "Bạn chỉ có thể đánh giá sản phẩm sau khi đã nhận hàng (trạng thái Đã nhận).");
+        }
+        if (reviewRepository.existsByUserIdAndProductId(userId, productId)) {
+            throw new IllegalArgumentException("Bạn đã đánh giá sản phẩm này rồi.");
+        }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
         User user = userRepository.findById(userId)
@@ -114,7 +124,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .product(product)
                 .user(user)
                 .rating(rating)
-                .comment(comment == null ? "" : comment.trim())
+                .comment(trimmed)
                 .build());
         if (media != null) {
             for (ReviewDto.MediaDto m : media) {
@@ -232,12 +242,9 @@ public class StorefrontServiceImpl implements StorefrontService {
 
     // ============ Đặt hàng từ giỏ (phân phối về chi nhánh gần nhất) ============
 
-    /** Một nhóm sản phẩm trong giỏ sẽ xử lý tại cùng một chi nhánh */
-    private record ShopCart(Shop shop, List<CartItem> items) {}
-
     @Override
     @Transactional
-    public CheckoutResultDto checkout(Long userId, OrderCreateRequest request, String clientIp) {
+    public List<OrderDto> checkout(Long userId, OrderCreateRequest request) {
         List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByAddedAtDesc(userId);
         if (cartItems.isEmpty()) {
             throw new IllegalArgumentException("Giỏ hàng của bạn đang trống.");
@@ -253,62 +260,8 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhà vận chuyển."));
         }
 
-        String paymentMethod = normalizePaymentMethod(request.getPaymentMethod());
-
         // Với từng sản phẩm trong giỏ, chọn chi nhánh gần địa chỉ nhận hàng nhất CÒN HÀNG,
         // rồi gom các sản phẩm theo chi nhánh được phân phối -> mỗi chi nhánh một đơn.
-        List<ShopCart> groups = groupCartByShop(cartItems, address);
-
-        // Các đơn tách từ một lần đặt dùng chung mã giao dịch thanh toán
-        String paymentRef = Order.PAYMENT_COD.equals(paymentMethod)
-                ? null
-                : "PAY-" + System.currentTimeMillis() + "-"
-                        + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-
-        List<OrderDto> created = new ArrayList<>();
-        for (ShopCart group : groups) {
-            created.add(createOrderForShop(userId, group, address, transporter,
-                    request, paymentMethod, paymentRef));
-        }
-        cartItemRepository.deleteByUserId(userId);
-
-        BigDecimal totalGrand = created.stream()
-                .map(OrderDto::getGrandTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        String paymentUrl = null;
-        boolean simulated = false;
-        if (!Order.PAYMENT_COD.equals(paymentMethod)) {
-            String orderCodes = created.stream()
-                    .map(OrderDto::getOrderCode)
-                    .collect(Collectors.joining(", "));
-            PaymentService.PaymentUrl url = paymentService.createPaymentUrl(
-                    paymentRef, totalGrand, paymentMethod,
-                    "Thanh toan don hang " + orderCodes, clientIp);
-            paymentUrl = url.url();
-            simulated = url.simulated();
-        }
-        return CheckoutResultDto.builder()
-                .orders(created)
-                .paymentMethod(paymentMethod)
-                .paymentRef(paymentRef)
-                .totalGrandTotal(totalGrand)
-                .paymentUrl(paymentUrl)
-                .simulated(simulated)
-                .build();
-    }
-
-    private String normalizePaymentMethod(String method) {
-        if (method == null || method.isBlank()) return Order.PAYMENT_COD;
-        String m = method.trim().toUpperCase(java.util.Locale.ROOT);
-        if (!List.of(Order.PAYMENT_COD, Order.PAYMENT_VNPAY, Order.PAYMENT_MOMO).contains(m)) {
-            throw new IllegalArgumentException(
-                    "Phương thức thanh toán không hợp lệ (chỉ COD, VNPAY hoặc MOMO).");
-        }
-        return m;
-    }
-
-    private List<ShopCart> groupCartByShop(List<CartItem> cartItems, ShippingAddress address) {
         Map<Long, List<CartItem>> byShop = new java.util.LinkedHashMap<>();
         Map<Long, Shop> assignedShops = new java.util.HashMap<>();
         for (CartItem ci : cartItems) {
@@ -316,9 +269,14 @@ public class StorefrontServiceImpl implements StorefrontService {
             byShop.computeIfAbsent(shop.getId(), k -> new ArrayList<>()).add(ci);
             assignedShops.putIfAbsent(shop.getId(), shop);
         }
-        return byShop.entrySet().stream()
-                .map(e -> new ShopCart(assignedShops.get(e.getKey()), e.getValue()))
-                .toList();
+
+        List<OrderDto> created = new ArrayList<>();
+        for (Map.Entry<Long, List<CartItem>> entry : byShop.entrySet()) {
+            created.add(createOrderForShop(userId, assignedShops.get(entry.getKey()),
+                    entry.getValue(), address, transporter, request));
+        }
+        cartItemRepository.deleteByUserId(userId);
+        return created;
     }
 
     /**
@@ -376,11 +334,9 @@ public class StorefrontServiceImpl implements StorefrontService {
         return p;
     }
 
-    private OrderDto createOrderForShop(Long userId, ShopCart group, ShippingAddress address,
-                                        Transporter transporter, OrderCreateRequest request,
-                                        String paymentMethod, String paymentRef) {
-        Shop shop = group.shop();
-        List<CartItem> items = group.items();
+    private OrderDto createOrderForShop(Long userId, Shop shop, List<CartItem> items,
+                                        ShippingAddress address, Transporter transporter,
+                                        OrderCreateRequest request) {
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CartItem ci : items) {
             totalAmount = totalAmount.add(ci.getProduct().getPrice()
@@ -391,10 +347,33 @@ public class StorefrontServiceImpl implements StorefrontService {
                 ? transporter.getBaseFee()
                 : BigDecimal.ZERO;
 
-        // Áp khuyến mãi của chi nhánh (nếu nhập mã hợp lệ) — ném lỗi nếu mã không dùng được
-        Promotion promo = findValidPromotion(shop.getId(), request.getPromoCode(),
-                totalAmount, shippingFee);
-        BigDecimal discount = calcDiscount(promo, totalAmount, shippingFee);
+        // Áp khuyến mãi của chi nhánh (nếu nhập mã hợp lệ); mã của admin (toàn server) được xử lý ở PromotionService
+        BigDecimal discount = BigDecimal.ZERO;
+        Promotion promo = null;
+        if (request.getPromoCode() != null && !request.getPromoCode().isBlank()) {
+            promo = promotionRepository
+                    .findActiveByShopIdAndCodeIgnoreCase(shop.getId(), request.getPromoCode().trim())
+                    .orElse(null);
+            if (promo == null) {
+                throw new IllegalArgumentException("Mã khuyến mãi \"" + request.getPromoCode()
+                        + "\" không tồn tại hoặc đã hết hiệu lực.");
+            }
+            LocalDateTime now = LocalDateTime.now();
+            if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
+                throw new IllegalArgumentException("Khuyến mãi \"" + promo.getName() + "\" đã hết hạn.");
+            }
+            if (promo.getMinOrderValue() != null && totalAmount.compareTo(promo.getMinOrderValue()) < 0) {
+                throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderValue()
+                        + "₫ để áp dụng khuyến mãi \"" + promo.getName() + "\".");
+            }
+            if (Promotion.TYPE_PERCENT.equals(promo.getPromoType())) {
+                discount = totalAmount.multiply(promo.getDiscountValue())
+                        .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+                if (discount.compareTo(totalAmount) > 0) discount = totalAmount;
+            } else {
+                discount = promo.getDiscountValue().min(shippingFee);
+            }
+        }
 
         BigDecimal grandTotal = totalAmount.add(shippingFee).subtract(discount);
 
@@ -409,11 +388,6 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .grandTotal(grandTotal)
                 .promoName(promo != null ? promo.getName() : null)
                 .transporter(transporter)
-                .paymentMethod(paymentMethod)
-                .paymentStatus(Order.PAYMENT_COD.equals(paymentMethod)
-                        ? Order.PAY_STATUS_UNPAID
-                        : Order.PAY_STATUS_PENDING)
-                .paymentRef(paymentRef)
                 .receiverName(address.getReceiverName())
                 .receiverPhone(address.getReceiverPhone())
                 .receiverAddress(joinAddress(address))
@@ -442,52 +416,6 @@ public class StorefrontServiceImpl implements StorefrontService {
         return toOrderDto(order);
     }
 
-    /**
-     * Tìm khuyến mãi hợp lệ của chi nhánh theo mã (null nếu không nhập mã).
-     * Ném lỗi nếu mã không tồn tại, hết hạn hoặc không đủ giá trị tối thiểu
-     * (khi truyền totalAmount). Caller xem trước có tự bắt lỗi để hiển thị
-     * promoError thay vì chặn cả giao dịch.
-     */
-    private Promotion findValidPromotion(Long shopId, String promoCode, BigDecimal totalAmount,
-                                         BigDecimal shippingFee) {
-        if (promoCode == null || promoCode.isBlank()) {
-            return null;
-        }
-        Promotion promo = promotionRepository
-                .findByShopIdAndCodeIgnoreCaseAndActiveTrue(shopId, promoCode.trim())
-                .orElse(null);
-        if (promo == null) {
-            throw new IllegalArgumentException("Mã khuyến mãi \"" + promoCode
-                    + "\" không tồn tại hoặc đã hết hiệu lực.");
-        }
-        LocalDateTime now = LocalDateTime.now();
-        if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
-            throw new IllegalArgumentException("Khuyến mãi \"" + promo.getName() + "\" đã hết hạn.");
-        }
-        if (totalAmount != null && promo.getMinOrderValue() != null
-                && totalAmount.compareTo(promo.getMinOrderValue()) < 0) {
-            throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderValue()
-                    + "₫ để áp dụng khuyến mãi \"" + promo.getName() + "\".");
-        }
-        return promo;
-    }
-
-    /** Tính số tiền giảm theo DiscountType của Promotion (PERCENTAGE / FIXED_AMOUNT). */
-    private BigDecimal calcDiscount(Promotion promo, BigDecimal totalAmount, BigDecimal shippingFee) {
-        if (promo == null) return BigDecimal.ZERO;
-        BigDecimal value = promo.getDiscountValue() != null ? promo.getDiscountValue() : BigDecimal.ZERO;
-        if (promo.getDiscountType() == com.storechain.group4.model.DiscountType.PERCENTAGE) {
-            BigDecimal discount = totalAmount.multiply(value)
-                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
-            if (promo.getMaxDiscountAmount() != null) {
-                discount = discount.min(promo.getMaxDiscountAmount());
-            }
-            return discount.min(totalAmount);
-        }
-        // FIXED_AMOUNT: giảm số tiền cố định (áp cho giá trị đơn, không vượt quá tạm tính)
-        return value.min(totalAmount != null ? totalAmount : value);
-    }
-
     private String generateOrderCode() {
         String code = "ORD-" + System.currentTimeMillis() + "-"
                 + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
@@ -499,120 +427,6 @@ public class StorefrontServiceImpl implements StorefrontService {
                 a.getDetailAddress(), a.getWard(), a.getDistrict(), a.getProvince());
         return parts.stream().filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.joining(", "));
-    }
-
-    // ============ Xem trước mã khuyến mãi ============
-
-    @Override
-    @Transactional(readOnly = true)
-    public PromoPreviewDto previewPromo(Long userId, String promoCode, Long transporterId) {
-        List<CartItem> cartItems = cartItemRepository.findByUserIdOrderByAddedAtDesc(userId);
-        if (cartItems.isEmpty()) {
-            throw new IllegalArgumentException("Giỏ hàng của bạn đang trống.");
-        }
-        ShippingAddress address = shippingAddressRepository
-                .findByUserIdOrderByIsDefaultDescCreatedAtDesc(userId)
-                .stream().findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Bạn chưa có địa chỉ nhận hàng. Hãy thêm địa chỉ ở trang Hồ sơ cá nhân."));
-        Transporter transporter = null;
-        BigDecimal shippingFee = BigDecimal.ZERO;
-        if (transporterId != null && transporterId > 0) {
-            transporter = transporterRepository.findById(transporterId).orElse(null);
-            if (transporter != null && transporter.getBaseFee() != null) {
-                shippingFee = transporter.getBaseFee();
-            }
-        }
-
-        List<ShopCart> groups = groupCartByShop(cartItems, address);
-        List<PromoPreviewDto.ShopPreview> shops = new ArrayList<>();
-        BigDecimal subtotal = BigDecimal.ZERO;
-        BigDecimal discountSum = BigDecimal.ZERO;
-        boolean allValid = true;
-        String promoName = null;
-
-        for (ShopCart group : groups) {
-            BigDecimal total = BigDecimal.ZERO;
-            for (CartItem ci : group.items()) {
-                total = total.add(ci.getProduct().getPrice()
-                        .multiply(BigDecimal.valueOf(ci.getQuantity())));
-            }
-            subtotal = subtotal.add(total);
-
-            PromoPreviewDto.ShopPreview.ShopPreviewBuilder b = PromoPreviewDto.ShopPreview.builder()
-                    .shopId(group.shop().getId())
-                    .shopName(group.shop().getName())
-                    .totalAmount(total);
-            if (promoCode != null && !promoCode.isBlank()) {
-                try {
-                    Promotion promo = findValidPromotion(group.shop().getId(), promoCode,
-                            total, shippingFee);
-                    BigDecimal discount = calcDiscount(promo, total, shippingFee);
-                    discountSum = discountSum.add(discount);
-                    promoName = promo.getName();
-                    b.discountAmount(discount)
-                            .grandTotal(total.add(shippingFee).subtract(discount))
-                            .promoName(promo.getName());
-                } catch (IllegalArgumentException e) {
-                    // Mã không áp dụng được cho chi nhánh này — báo lỗi từng đơn
-                    allValid = false;
-                    b.discountAmount(BigDecimal.ZERO)
-                            .grandTotal(total.add(shippingFee))
-                            .promoError(e.getMessage());
-                }
-            } else {
-                b.discountAmount(BigDecimal.ZERO).grandTotal(total.add(shippingFee));
-            }
-            shops.add(b.build());
-        }
-
-        BigDecimal grandTotal = subtotal.add(shippingFee).subtract(discountSum);
-        return PromoPreviewDto.builder()
-                .promoCode(promoCode == null || promoCode.isBlank() ? null : promoCode.trim())
-                .promoName(promoName)
-                .valid(promoCode != null && !promoCode.isBlank() && allValid)
-                .subtotal(subtotal)
-                .shippingFee(shippingFee)
-                .discountAmount(discountSum)
-                .grandTotal(grandTotal)
-                .shops(shops)
-                .build();
-    }
-
-    // ============ Kết quả thanh toán từ cổng ============
-
-    @Override
-    @Transactional
-    public int markPaymentResult(String paymentRef, boolean success) {
-        List<Order> orders = orderRepository.findByPaymentRef(paymentRef);
-        int updated = 0;
-        for (Order order : orders) {
-            if (!Order.PAY_STATUS_PENDING.equals(order.getPaymentStatus())) {
-                continue;
-            }
-            if (success) {
-                order.setPaymentStatus(Order.PAY_STATUS_PAID);
-                orderRepository.save(order);
-                updated++;
-            } else {
-                // Thanh toán thất bại: hủy đơn và hoàn tồn kho về chi nhánh
-                order.setPaymentStatus(Order.PAY_STATUS_FAILED);
-                order.setStatus(Order.STATUS_CANCELLED);
-                order.setCancelReason("Thanh toán qua " + order.getPaymentMethod() + " thất bại");
-                orderRepository.save(order);
-                for (var oi : orderItemRepository.findByOrderId(order.getId())) {
-                    if (oi.getProduct() == null) continue;
-                    BranchStock bs = branchStockRepository
-                            .findByProductIdAndShopId(oi.getProduct().getId(), order.getShop().getId())
-                            .orElse(BranchStock.builder().product(oi.getProduct())
-                                    .shop(order.getShop()).stock(0).build());
-                    bs.setStock(bs.getStock() + oi.getQuantity());
-                    branchStockRepository.save(bs);
-                }
-                updated++;
-            }
-        }
-        return updated;
     }
 
     // ============ Đơn hàng của tôi ============
@@ -642,6 +456,13 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (!toSave.isEmpty()) {
             orderRepository.saveAll(toSave);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDto> getMyOrdersByStatus(Long userId, String status) {
+        return orderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, status)
+                .stream().map(this::toOrderDto).toList();
     }
 
     @Override
@@ -706,11 +527,6 @@ public class StorefrontServiceImpl implements StorefrontService {
             throw new IllegalArgumentException("Chỉ xác nhận được khi đơn đã được giao tới bạn.");
         }
         order.setStatus(Order.STATUS_RECEIVED);
-        // COD: khách nhận hàng đồng nghĩa đã thu tiền xong
-        if (Order.PAYMENT_COD.equals(order.getPaymentMethod())
-                && Order.PAY_STATUS_UNPAID.equals(order.getPaymentStatus())) {
-            order.setPaymentStatus(Order.PAY_STATUS_PAID);
-        }
         return toOrderDto(orderRepository.save(order));
     }
 
@@ -810,9 +626,6 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .promoName(o.getPromoName())
                 .transporterName(o.getTransporter() != null ? o.getTransporter().getName() : null)
                 .transporterId(o.getTransporter() != null ? o.getTransporter().getId() : null)
-                .paymentMethod(o.getPaymentMethod())
-                .paymentStatus(o.getPaymentStatus())
-                .paymentRef(o.getPaymentRef())
                 .cancelReason(o.getCancelReason())
                 .receiverName(o.getReceiverName())
                 .receiverPhone(o.getReceiverPhone())

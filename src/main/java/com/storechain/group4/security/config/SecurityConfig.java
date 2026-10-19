@@ -82,15 +82,18 @@ public class SecurityConfig {
                         // 2. Các endpoint công khai
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/api/payment/vnpay/return", "/api/payment/momo/return", "/api/payment/momo/ipn").permitAll()
                         .requestMatchers("/api/test/all").permitAll()
-                        // Cổng thanh toán (VNPay/MoMo) gọi trả về/IPN trực tiếp, không kèm JWT
-                        .requestMatchers("/api/payments/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 3. Phân quyền theo Role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                        // Nhân viên chi nhánh: quản lý sản phẩm, hoa hồng, tính công
+                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
+                        // Manager kế thừa toàn bộ quyền của User; Employee cũng có quyền User cơ bản
+                        .requestMatchers("/api/user/**")
+                            .hasAnyRole("USER", "MANAGER", "EMPLOYEE", "ADMIN")
 
                         // 4. API hồ sơ cá nhân / địa chỉ nhận hàng: mọi người dùng đã đăng nhập
                         .requestMatchers("/api/profile/**").authenticated()

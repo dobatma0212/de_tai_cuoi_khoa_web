@@ -8,6 +8,9 @@ import com.storechain.group4.model.Role;
 import com.storechain.group4.model.RoleType;
 import com.storechain.group4.model.Shop;
 import com.storechain.group4.model.User;
+import com.storechain.group4.repository.BranchStockRepository;
+import com.storechain.group4.repository.OrderRepository;
+import com.storechain.group4.repository.ProductRepository;
 import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.repository.UserRepository;
 import com.storechain.group4.service.impl.ShopServiceImpl;
@@ -43,6 +46,15 @@ public class ShopServiceTest {
 
     @Mock
     private EntityManager entityManager;
+
+    @Mock
+    private BranchStockRepository branchStockRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
+
+    @Mock
+    private ProductRepository productRepository;
 
     @InjectMocks
     private ShopServiceImpl shopService;
@@ -264,5 +276,41 @@ public class ShopServiceTest {
 
         assertEquals(1, result.getTotalElements());
         assertEquals("Male Fashion Quận 1", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void testGetShopDetail_Success() {
+        when(shopRepository.findById(1L)).thenReturn(Optional.of(sampleShop));
+        when(orderRepository.sumMonthlyRevenueByShopId(eq(1L), any(), any()))
+                .thenReturn(new java.math.BigDecimal("15000000"));
+        when(orderRepository.countMonthlyOrdersByShopId(eq(1L), any(), any())).thenReturn(10L);
+        when(orderRepository.sumTotalRevenueByShopId(1L)).thenReturn(new java.math.BigDecimal("50000000"));
+        when(orderRepository.countTotalOrdersByShopId(1L)).thenReturn(35L);
+        when(branchStockRepository.sumStockByShopId(1L)).thenReturn(120);
+
+        Role employeeRole = new Role(RoleType.ROLE_EMPLOYEE, "Nhân viên");
+        User emp = User.builder()
+                .id(101L)
+                .username("emp1")
+                .fullName("Nhân Viên 1")
+                .email("emp1@shop.vn")
+                .role(employeeRole)
+                .build();
+        when(userRepository.findByShopId(1L)).thenReturn(List.of(emp));
+
+        com.storechain.group4.dto.ShopDetailDto detail = shopService.getShopDetail(1L);
+
+        assertNotNull(detail);
+        assertEquals(1L, detail.getId());
+        assertEquals("Male Fashion Quận 1", detail.getName());
+        assertEquals(new java.math.BigDecimal("15000000"), detail.getCurrentMonthRevenue());
+        assertEquals(120, detail.getTotalStock());
+        assertEquals(10L, detail.getCurrentMonthOrders());
+        assertEquals(new java.math.BigDecimal("50000000"), detail.getTotalRevenue());
+        assertEquals(35L, detail.getTotalOrders());
+        assertEquals(2L, detail.getManagerId());
+        assertEquals(1, detail.getEmployees().size());
+        assertEquals("emp1", detail.getEmployees().get(0).getUsername());
+        assertEquals(1L, detail.getTotalEmployees());
     }
 }

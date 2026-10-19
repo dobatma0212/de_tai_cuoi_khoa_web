@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Ảnh/video minh họa kèm theo một đánh giá sản phẩm.
+ * Ảnh/video minh họa đính kèm một đánh giá sản phẩm.
  */
 @Entity
 @Table(name = "review_media")
@@ -28,7 +28,6 @@ public class ReviewMedia {
     private String url;
 
     /** IMAGE hoặc VIDEO */
-    @Column(name = "media_type", nullable = false, length = 20)
-    @Builder.Default
-    private String mediaType = "IMAGE";
+    @Column(name = "media_type", nullable = false, length = 10)
+    private String mediaType;
 }

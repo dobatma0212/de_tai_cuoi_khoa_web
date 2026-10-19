@@ -1,6 +1,7 @@
 package com.storechain.group4.controller;
 
 import com.storechain.group4.dto.ApiResponse;
+import com.storechain.group4.dto.ShopDetailDto;
 import com.storechain.group4.dto.ShopRequestDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.dto.ShopStatsDto;
@@ -57,6 +58,16 @@ public class AdminShopController {
         try {
             ShopResponseDto shop = shopService.getShopById(id);
             return ResponseEntity.ok(ApiResponse.success("Lấy thông tin chi nhánh thành công", shop));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/detail")
+    public ResponseEntity<ApiResponse<ShopDetailDto>> getShopDetail(@PathVariable Long id) {
+        try {
+            ShopDetailDto detail = shopService.getShopDetail(id);
+            return ResponseEntity.ok(ApiResponse.success("Lấy thông tin chi tiết chi nhánh thành công", detail));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
         }

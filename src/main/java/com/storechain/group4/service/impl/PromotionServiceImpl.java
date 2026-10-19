@@ -59,7 +59,34 @@ public class PromotionServiceImpl implements PromotionService {
             }
         }
 
-        return promotionRepository.searchPromotions(keyword, status, typeEnum, pageable)
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasStatus = status != null && !status.trim().isEmpty();
+        boolean hasType = typeEnum != null;
+
+        // Nếu không có bộ lọc nào (trường hợp load mặc định của trang), dùng findAll để tránh lỗi null param của JPQL
+        if (!hasKeyword && !hasStatus && !hasType) {
+            return promotionRepository.findAll(pageable).map(this::toDto);
+        }
+
+        // Nếu chỉ lọc theo loại chương trình
+        if (!hasKeyword && !hasStatus && hasType) {
+            return promotionRepository.findByPromotionType(typeEnum, pageable).map(this::toDto);
+        }
+
+        // Nếu chỉ lọc theo trạng thái
+        if (!hasKeyword && hasStatus && !hasType) {
+            return promotionRepository.findByStatus(status.trim(), pageable).map(this::toDto);
+        }
+
+        // Nếu lọc theo cả loại và trạng thái (không có từ khóa)
+        if (!hasKeyword && hasStatus && hasType) {
+            return promotionRepository.findByPromotionTypeAndStatus(typeEnum, status.trim(), pageable).map(this::toDto);
+        }
+
+        // Trường hợp có từ khóa hoặc kết hợp phức tạp
+        String searchKeyword = hasKeyword ? keyword.trim() : null;
+        String searchStatus = hasStatus ? status.trim() : null;
+        return promotionRepository.searchPromotions(searchKeyword, searchStatus, typeEnum, pageable)
                 .map(this::toDto);
     }
 
@@ -83,7 +110,7 @@ public class PromotionServiceImpl implements PromotionService {
                 throw new IllegalArgumentException("Mã voucher không được để trống");
             }
             code = request.getCode().trim().toUpperCase();
-            if (promotionRepository.existsByCodeIgnoreCase(code)) {
+            if (promotionRepository.existsByCodeIgnoreCaseAndShopIsNull(code)) {
                 throw new IllegalArgumentException("Mã voucher đã tồn tại");
             }
         }
@@ -155,7 +182,7 @@ public class PromotionServiceImpl implements PromotionService {
                 throw new IllegalArgumentException("Mã voucher không được để trống");
             }
             code = request.getCode().trim().toUpperCase();
-            if (promotionRepository.existsByCodeIgnoreCaseAndIdNot(code, id)) {
+            if (promotionRepository.existsByCodeIgnoreCaseAndShopIsNullAndIdNot(code, id)) {
                 throw new IllegalArgumentException("Mã voucher đã tồn tại");
             }
         }
@@ -274,8 +301,24 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<PromotionResponseDto> getAvailableVouchers() {
+        LocalDateTime now = LocalDateTime.now();
+        // Gộp cả voucher toàn server (admin tạo) và voucher của từng chi nhánh (manager tạo)
+        List<PromotionResponseDto> result = promotionRepository.findAvailableVouchers(now).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+        promotionRepository.findAvailableShopVouchers(now).stream()
+                .map(this::toDto)
+                .forEach(result::add);
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ApplyVoucherResponseDto checkVoucher(String code, BigDecimal orderTotal, Long userId) {
-        Promotion promotion = promotionRepository.findByCodeIgnoreCase(code)
+        // Ưu tiên voucher toàn server; không thấy thì tìm trong voucher của các chi nhánh
+        Promotion promotion = promotionRepository.findByCodeIgnoreCaseAndShopIsNull(code)
+                .or(() -> promotionRepository.findActiveShopVouchersByCode(code).stream().findFirst())
                 .orElseThrow(() -> new IllegalArgumentException("Mã voucher không tồn tại"));
 
         long userUsageCount = promotionUsageRepository.countByPromotionIdAndUserId(promotion.getId(), userId);
@@ -293,18 +336,27 @@ public class PromotionServiceImpl implements PromotionService {
                     .build();
         }
 
+        boolean isShopShipping = promotion.getShop() != null
+                && Promotion.TYPE_SHIPPING.equals(promotion.getPromoType());
         BigDecimal discountAmount = promotionCalculator.calculateDiscount(promotion, orderTotal);
         BigDecimal finalTotal = orderTotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        String message = isShopShipping
+                ? "Mã giảm phí vận chuyển " + promotion.getDiscountValue().longValue()
+                    + "₫ — áp dụng khi đơn được chi nhánh \"" + promotion.getShop().getName() + "\" xử lý"
+                : promotion.getShop() != null
+                    ? "Mã voucher hợp lệ — áp dụng tại chi nhánh \"" + promotion.getShop().getName() + "\""
+                    : "Mã voucher hợp lệ";
         return ApplyVoucherResponseDto.builder()
                 .valid(true)
                 .promotionId(promotion.getId())
                 .promotionName(promotion.getName())
                 .code(promotion.getCode())
+                .promoType(promotion.getPromoType())
                 .discountType(promotion.getDiscountType() != null ? promotion.getDiscountType().name() : null)
                 .discountValue(promotion.getDiscountValue())
                 .discountAmount(discountAmount)
                 .finalTotal(finalTotal)
-                .message("Mã voucher hợp lệ")
+                .message(message)
                 .build();
     }
 
@@ -316,7 +368,7 @@ public class PromotionServiceImpl implements PromotionService {
 
         while (attempts < maxRetries) {
             try {
-                Promotion promotion = promotionRepository.findByCodeIgnoreCase(code)
+                Promotion promotion = promotionRepository.findByCodeIgnoreCaseAndShopIsNull(code)
                         .orElseThrow(() -> new IllegalArgumentException("Mã voucher không tồn tại"));
 
                 promotion = promotionRepository.findByIdForUpdate(promotion.getId())
@@ -407,18 +459,42 @@ public class PromotionServiceImpl implements PromotionService {
 
         List<Long> productIds = new java.util.ArrayList<>();
         List<ProductOptionDto> productDtos = new java.util.ArrayList<>();
-        if (promotion.getProducts() != null) {
-            for (Product p : promotion.getProducts()) {
-                productIds.add(p.getId());
-                productDtos.add(ProductOptionDto.builder()
-                        .id(p.getId())
-                        .name(p.getName())
-                        .price(p.getPrice())
-                        .imageUrl(p.getImageUrl())
-                        .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
-                        .stock(p.getStock())
-                        .build());
+        try {
+            if (promotion.getProducts() != null) {
+                for (Product p : promotion.getProducts()) {
+                    if (p != null) {
+                        productIds.add(p.getId());
+                        String catName = null;
+                        try {
+                            if (p.getCategory() != null) {
+                                catName = p.getCategory().getName();
+                            }
+                        } catch (Exception ignored) {}
+
+                        productDtos.add(ProductOptionDto.builder()
+                                .id(p.getId())
+                                .name(p.getName())
+                                .price(p.getPrice())
+                                .imageUrl(p.getImageUrl())
+                                .categoryName(catName)
+                                .stock(p.getStock())
+                                .build());
+                    }
+                }
             }
+        } catch (Exception e) {
+            log.warn("Không thể load products cho promotion id={}: {}", promotion.getId(), e.getMessage());
+        }
+
+        Long shopId = null;
+        String shopName = null;
+        try {
+            if (promotion.getShop() != null) {
+                shopId = promotion.getShop().getId();
+                shopName = promotion.getShop().getName();
+            }
+        } catch (Exception e) {
+            log.warn("Không thể load shop cho promotion id={}: {}", promotion.getId(), e.getMessage());
         }
 
         return PromotionResponseDto.builder()
@@ -427,6 +503,7 @@ public class PromotionServiceImpl implements PromotionService {
                 .description(promotion.getDescription())
                 .code(promotion.getCode())
                 .promotionType(promotion.getPromotionType() != null ? promotion.getPromotionType().name() : null)
+                .promoType(promotion.getPromoType())
                 .discountType(promotion.getDiscountType() != null ? promotion.getDiscountType().name() : null)
                 .discountValue(promotion.getDiscountValue())
                 .maxDiscountAmount(promotion.getMaxDiscountAmount())
@@ -437,6 +514,8 @@ public class PromotionServiceImpl implements PromotionService {
                 .usageLimitPerUser(promotion.getUsageLimitPerUser())
                 .minOrderValue(promotion.getMinOrderValue())
                 .status(promotion.getStatus())
+                .shopId(shopId)
+                .shopName(shopName)
                 .expired(expired)
                 .currentlyActive(currentlyActive)
                 .remainingUsage(remainingUsage)

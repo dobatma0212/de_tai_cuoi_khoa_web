@@ -15,8 +15,22 @@ public class OrderCreateRequest {
     /** ID nhà vận chuyển */
     private Long transporterId;
 
-    /** Phương thức thanh toán: COD (mặc định) / VNPAY / MOMO */
+    /** ID địa chỉ nhận hàng đã lưu (ưu tiên dùng nếu có) */
+    private Long shippingAddressId;
+
+    /**
+     * Phương thức thanh toán: COD | VNPAY | MOMO
+     * Mặc định COD nếu không gửi.
+     */
     private String paymentMethod;
 
     private String note;
+
+    /** Thông tin địa chỉ nhận hàng (dùng khi không chọn shippingAddressId) */
+    private String receiverName;
+    private String receiverPhone;
+    private String province;
+    private String district;
+    private String ward;
+    private String detailAddress;
 }

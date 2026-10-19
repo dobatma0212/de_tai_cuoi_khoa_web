@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Quản lý Khuyến mãi & Flash Sale - Male Fashion Admin">
+    <meta name="keywords" content="Male_Fashion, admin, promotion, flash sale, voucher">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Quản lý Khuyến mãi | Male-Fashion Admin</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
+    <link rel="stylesheet" href="/css/magnific-popup.css" type="text/css">
+    <link rel="stylesheet" href="/css/nice-select.css" type="text/css">
+    <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+    <link rel="stylesheet" href="/css/admin.css" type="text/css">
+
+    <style>
+        .admin-stat-card {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 22px 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #111111;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .admin-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-stat-card.stat-primary { border-left-color: #e53637; }
+        .admin-stat-card.stat-success { border-left-color: #28a745; }
+        .admin-stat-card.stat-warning { border-left-color: #ffc107; }
+        .admin-stat-card.stat-info { border-left-color: #17a2b8; }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .stat-primary .stat-icon { background: #ffeaea; color: #e53637; }
+        .stat-success .stat-icon { background: #eafaf1; color: #28a745; }
+        .stat-warning .stat-icon { background: #fff8e1; color: #ff9800; }
+        .stat-info .stat-icon { background: #e8f7fa; color: #17a2b8; }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 800;
+            color: #111111;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888888;
+            font-weight: 600;
+        }
+
+        .filter-panel {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .filter-input-group {
+            position: relative;
+        }
+
+        .filter-input-group input {
+            width: 100%;
+            height: 44px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            padding: 0 40px 0 40px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-input-group input:focus {
+            border-color: #e53637;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        .filter-input-group .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 14px;
+            color: #999999;
+            font-size: 15px;
+        }
+
+        .filter-input-group .clear-search {
+            position: absolute;
+            right: 14px;
+            top: 12px;
+            color: #bbbbbb;
+            font-size: 16px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .filter-input-group .clear-search:hover { color: #e53637; }
+
+        .filter-select {
+            width: 100%;
+            height: 44px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            padding: 0 14px;
+            font-size: 14px;
+            background: #ffffff;
+            color: #333333;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            border-color: #e53637;
+            outline: none;
+        }
+
+        .admin-table-container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .admin-table {
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .admin-table thead th {
+            background: #fafafa;
+            border-bottom: 2px solid #eeeeee;
+            border-top: none;
+            color: #333333;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 16px 14px;
+        }
+
+        .admin-table tbody td {
+            padding: 14px;
+            vertical-align: middle;
+            border-top: 1px solid #f2f2f2;
+            font-size: 14px;
+            color: #333333;
+        }
+
+        .admin-table tbody tr:hover {
+            background-color: #fcfcfc;
+        }
+
+        .promo-type-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .promo-type-flash {
+            background: #ffeaea;
+            color: #e53637;
+            border: 1px solid #ffcdd2;
+        }
+
+        .promo-type-voucher {
+            background: #e3f2fd;
+            color: #0288d1;
+            border: 1px solid #b3e5fc;
+        }
+
+        .voucher-code-badge {
+            background: #f5f5f5;
+            color: #111111;
+            border: 1px dashed #444;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .badge-status-active {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .badge-status-active:hover { background-color: #c8e6c9; }
+
+        .badge-status-inactive {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .badge-status-inactive:hover { background-color: #ffcdd2; }
+
+        .badge-status-expired {
+            background-color: #eeeeee;
+            color: #757575;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            border: 1px solid #e1e1e1;
+            background: #ffffff;
+            color: #555555;
+            transition: all 0.2s;
+            margin: 0 2px;
+            cursor: pointer;
+        }
+
+        .btn-action:hover {
+            border-color: #111111;
+            background: #111111;
+            color: #ffffff;
+        }
+
+        .btn-action.btn-delete:hover {
+            border-color: #e53637;
+            background: #e53637;
+            color: #ffffff;
+        }
+
+        .btn-action.btn-edit:hover {
+            border-color: #0288d1;
+            background: #0288d1;
+            color: #ffffff;
+        }
+
+        .btn-male-fashion {
+            background: #111111;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 20px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .btn-male-fashion:hover {
+            background: #e53637;
+            color: #ffffff;
+        }
+
+        .pagination-container {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #f0f0f0;
+            background: #ffffff;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: #777777;
+        }
+
+        .pagination-buttons .btn {
+            height: 36px;
+            min-width: 36px;
+            padding: 0 10px;
+            margin: 0 2px;
+            border-radius: 4px;
+            border: 1px solid #e1e1e1;
+            background: #ffffff;
+            color: #111111;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .pagination-buttons .btn.active {
+            background: #111111;
+            border-color: #111111;
+            color: #ffffff;
+        }
+
+        .pagination-buttons .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 99999;
+            min-width: 320px;
+            max-width: 420px;
+        }
+
+        .custom-toast {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-left: 4px solid #111111;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .custom-toast.toast-success { border-left-color: #28a745; }
+        .custom-toast.toast-danger { border-left-color: #dc3545; }
+        .custom-toast.toast-warning { border-left-color: #ffc107; }
+        .custom-toast.toast-info { border-left-color: #17a2b8; }
+
+        .toast-icon { font-size: 20px; }
+        .toast-success .toast-icon { color: #28a745; }
+        .toast-danger .toast-icon { color: #dc3545; }
+        .toast-warning .toast-icon { color: #ffc107; }
+        .toast-info .toast-icon { color: #17a2b8; }
+
+        .toast-message { font-size: 14px; font-weight: 600; color: #222222; flex-grow: 1; }
+        .toast-close { cursor: pointer; color: #999; font-size: 16px; }
+
+        .modal-header {
+            background: #111111;
+            color: #ffffff;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            padding: 16px 20px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .modal-header .close {
+            color: #ffffff;
+            opacity: 0.8;
+            outline: none;
+        }
+
+        .modal-content {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group label {
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #111111;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            height: 44px;
+            border-radius: 4px;
+            border: 1px solid #e1e1e1;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            border-color: #e53637;
+            box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .detail-label { font-weight: 600; color: #666666; }
+        .detail-value { font-weight: 700; color: #111111; text-align: right; }
+
+        .progress-mini {
+            height: 6px;
+            border-radius: 3px;
+            background: #eee;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .progress-mini .progress-bar {
+            background-color: #e53637;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="preloder">
+        <div class="loader"></div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Offcanvas Menu Begin -->
+    <div class="offcanvas-menu-overlay"></div>
+    <div class="offcanvas-menu-wrapper">
+        <div class="offcanvas__option">
+            <div class="offcanvas__links" id="mobile-auth-section"></div>
+        </div>
+        <div id="mobile-menu-wrap"></div>
+        <div class="offcanvas__text">
+            <p>Hệ thống Quản lý Chuỗi Cửa hàng - Male Fashion</p>
+        </div>
+    </div>
+
+    <header class="header admin-header">
+        <div class="header__top">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-5 col-md-5 col-5">
+                        <div class="header__top__left">
+                            <p><i class="fa fa-sliders"></i> Bảng điều khiển Quản trị</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-7 col-md-7 col-7">
+                        <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <a href="/index.html" class="topbar-shop-link" title="Xem trang bán hàng">
+                                <i class="fa fa-external-link"></i> Xem Cửa hàng
+                            </a>
+                            <div class="header__top__links" id="auth-user-info">
+                                <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                                <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-2 col-md-3">
+                    <div class="header__logo admin-header-logo-wrap">
+                        <a href="/admin-promotions.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                        <span class="admin-portal-tag">PORTAL</span>
+                    </div>
+                </div>
+                <div class="col-lg-10 col-md-9">
+                    <nav class="header__menu mobile-menu">
+                        <ul class="admin-nav-list">
+                            <li><a href="/admin-users.html"><i class="fa fa-users"></i> Người dùng</a></li>
+                            <li><a href="/admin-products.html"><i class="fa fa-cube"></i> Sản phẩm</a></li>
+                            <li><a href="/admin-categories.html"><i class="fa fa-tags"></i> Danh mục</a></li>
+                            <li><a href="/admin-shops.html"><i class="fa fa-building"></i> Chi nhánh</a></li>
+                            <li><a href="/admin-transporters.html"><i class="fa fa-truck"></i> Vận chuyển</a></li>
+                            <li class="active"><a href="/admin-promotions.html"><i class="fa fa-percent"></i> Khuyến mãi</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <div class="canvas__open"><i class="fa fa-bars"></i></div>
+        </div>
+    </header>
+
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Quản lý Khuyến mãi & Flash Sale</h4>
+                        <div class="breadcrumb__links">
+                            <a href="/admin-promotions.html">Hệ thống</a>
+                            <span>Danh sách chương trình & Voucher</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-promotion-section spad pt-4">
+        <div class="container">
+
+            <!-- KPI Cards -->
+            <div class="row">
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-primary">
+                        <div>
+                            <div class="stat-number" id="stat-total">0</div>
+                            <div class="stat-label">Tổng chương trình</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-gift"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-success">
+                        <div>
+                            <div class="stat-number" id="stat-active">0</div>
+                            <div class="stat-label">Đang hoạt động</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-info">
+                        <div>
+                            <div class="stat-number" id="stat-flash-sales">0</div>
+                            <div class="stat-label">Flash Sale</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-bolt"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="admin-stat-card stat-warning">
+                        <div>
+                            <div class="stat-number" id="stat-vouchers">0</div>
+                            <div class="stat-label">Mã Voucher</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fa fa-ticket"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-panel">
+                <div class="row align-items-center">
+                    <div class="col-lg-4 col-md-6 mb-3 mb-lg-0">
+                        <div class="filter-input-group">
+                            <i class="fa fa-search search-icon"></i>
+                            <input type="text" id="filter-keyword" placeholder="Tìm theo tên hoặc mã voucher...">
+                            <span class="clear-search" id="clear-search-btn" onclick="clearSearch()">&times;</span>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-2 col-md-3 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-type" onchange="onFilterChange()">
+                            <option value="">-- Tất cả hình thức --</option>
+                            <option value="FLASH_SALE">Flash Sale (Tự động)</option>
+                            <option value="VOUCHER">Voucher (Nhập mã)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 col-md-3 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-status" onchange="onFilterChange()">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive">Tạm ngưng</option>
+                            <option value="expired">Đã hết hạn</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 col-md-6 col-6 mb-3 mb-lg-0">
+                        <select class="filter-select" id="filter-sort" onchange="onFilterChange()">
+                            <option value="id-desc">Mới nhất trước</option>
+                            <option value="id-asc">Cũ nhất trước</option>
+                            <option value="name-asc">Tên A-Z</option>
+                            <option value="name-desc">Tên Z-A</option>
+                            <option value="startDate-asc">Bắt đầu sớm nhất</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2 col-md-6 col-12 text-right">
+                        <button class="btn-male-fashion w-100" onclick="openCreateModal()">
+                            <i class="fa fa-plus-circle mr-1"></i> Thêm mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="admin-table-container">
+                <div class="table-responsive">
+                    <table class="table admin-table text-nowrap">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên & Hình thức</th>
+                                <th>Mã Voucher</th>
+                                <th>Mức giảm</th>
+                                <th>Thời hạn hiệu lực</th>
+                                <th>Lượt dùng</th>
+                                <th>Trạng thái</th>
+                                <th class="text-right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promo-table-body">
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                                    <div>Đang tải danh sách khuyến mãi...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-container" id="pagination-container" style="display: none;">
+                    <div class="pagination-info" id="pagination-info">
+                        Hiển thị 0 - 0 trong tổng số 0 khuyến mãi
+                    </div>
+                    <div class="pagination-buttons" id="pagination-buttons"></div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Modal Create / Edit Promotion -->
+    <div class="modal fade" id="promoModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="promoModalTitle">Thêm Khuyến Mãi Mới</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="promoForm" onsubmit="savePromotion(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="p-id">
+
+                        <!-- Hình thức khuyến mãi -->
+                        <div class="form-group">
+                            <label>Hình thức khuyến mãi <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="custom-control custom-radio border p-3 rounded mb-2">
+                                        <input type="radio" id="type-flash-sale" name="promoTypeRadio" value="FLASH_SALE" class="custom-control-input" onchange="toggleFormFields()">
+                                        <label class="custom-control-label font-weight-bold" for="type-flash-sale">
+                                            <i class="fa fa-bolt text-danger mr-1"></i> Flash Sale (Giảm tự động)
+                                        </label>
+                                        <div class="text-muted small mt-1">Áp dụng trực tiếp lên sản phẩm, tự gạch giá cũ và hiển thị giá mới.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="custom-control custom-radio border p-3 rounded mb-2">
+                                        <input type="radio" id="type-voucher" name="promoTypeRadio" value="VOUCHER" class="custom-control-input" checked onchange="toggleFormFields()">
+                                        <label class="custom-control-label font-weight-bold" for="type-voucher">
+                                            <i class="fa fa-ticket text-primary mr-1"></i> Mã Voucher (Mã ưu đãi)
+                                        </label>
+                                        <div class="text-muted small mt-1">Khách hàng nhập mã tại giỏ hàng / checkout để được chiết khấu.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label for="p-name">Tên chương trình <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="p-name" placeholder="VD: Khuyến mãi mùa hè 2026, Flash Sale Áo Thun..." maxlength="200" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="group-code">
+                                <div class="form-group">
+                                    <label for="p-code">Mã Voucher <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control text-uppercase" id="p-code" placeholder="VD: SUMMER50, SALE20" maxlength="50" style="letter-spacing: 1px; font-weight: 700;">
+                                    <small class="form-text text-muted">Chữ in hoa, không khoảng trắng.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="p-description">Mô tả chương trình</label>
+                            <textarea class="form-control" id="p-description" rows="2" style="height: auto;" placeholder="Mô tả ngắn gọn điều kiện khuyến mãi..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-discount-type">Loại giảm giá <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="p-discount-type" onchange="toggleDiscountTypeHelp()">
+                                        <option value="PERCENTAGE">Phần trăm (%)</option>
+                                        <option value="FIXED_AMOUNT">Số tiền cố định (VNĐ)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-discount-value">Giá trị giảm <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="p-discount-value" placeholder="VD: 15 (hoặc 50000)" min="0.01" step="0.01" required>
+                                    <small class="form-text text-muted" id="discount-type-help">Nhập số % (từ 0.01 đến 100)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="group-max-discount">
+                                <div class="form-group">
+                                    <label for="p-max-discount">Mức giảm tối đa (VNĐ)</label>
+                                    <input type="number" class="form-control" id="p-max-discount" placeholder="VD: 100000 (để trống = vô hạn)" min="0" step="1000">
+                                    <small class="form-text text-muted">Áp dụng cho giảm theo %</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="group-voucher-rules">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-min-order">Đơn tối thiểu (VNĐ)</label>
+                                    <input type="number" class="form-control" id="p-min-order" placeholder="0" min="0" step="1000">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-usage-limit">Tổng lượt dùng tối đa</label>
+                                    <input type="number" class="form-control" id="p-usage-limit" placeholder="Để trống = Không giới hạn" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-limit-per-user">Lượt dùng / Mỗi khách hàng</label>
+                                    <input type="number" class="form-control" id="p-limit-per-user" value="1" min="1">
+                                    <small class="form-text text-muted">Mặc định: 1 lượt/khách</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Khu vực áp dụng sản phẩm cho Flash Sale -->
+                        <div id="group-flash-sale-products" style="display: none;" class="form-group border rounded p-3 bg-light">
+                            <label class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="font-weight-bold text-dark"><i class="fa fa-cubes text-danger mr-1"></i> Phạm vi sản phẩm áp dụng Flash Sale</span>
+                                <span class="badge badge-secondary" id="selected-products-badge">Toàn bộ sản phẩm</span>
+                            </label>
+                            
+                            <div class="row mb-2">
+                                <div class="col-md-6">
+                                    <div class="custom-control custom-radio bg-white p-2 border rounded">
+                                        <input type="radio" id="scope-all-products" name="flashScopeRadio" value="ALL" class="custom-control-input" checked onchange="toggleFlashScope()">
+                                        <label class="custom-control-label font-weight-bold" for="scope-all-products">
+                                            Toàn bộ sản phẩm cửa hàng
+                                        </label>
+                                        <small class="text-muted d-block">Áp dụng giảm giá tự động lên toàn bộ sản phẩm</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="custom-control custom-radio bg-white p-2 border rounded">
+                                        <input type="radio" id="scope-specific-products" name="flashScopeRadio" value="SPECIFIC" class="custom-control-input" onchange="toggleFlashScope()">
+                                        <label class="custom-control-label font-weight-bold" for="scope-specific-products">
+                                            Chọn sản phẩm cụ thể
+                                        </label>
+                                        <small class="text-muted d-block">Chỉ giảm giá trên các sản phẩm được tích chọn</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="specific-products-container" style="display: none;" class="mt-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="input-group input-group-sm" style="max-width: 280px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fa fa-search"></i></span>
+                                        </div>
+                                        <input type="text" id="product-picker-search" class="form-control" placeholder="Tìm tên sản phẩm..." oninput="filterProductPicker()">
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-dark" onclick="selectAllProducts(true)"><i class="fa fa-check-square-o mr-1"></i> Chọn hết</button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="selectAllProducts(false)"><i class="fa fa-square-o mr-1"></i> Bỏ chọn</button>
+                                    </div>
+                                </div>
+                                <div id="product-picker-list" style="max-height: 240px; overflow-y: auto; background: #fff; border: 1px solid #ced4da; border-radius: 4px; padding: 4px;">
+                                    <div class="text-center py-3 text-muted small">
+                                        <i class="fa fa-spinner fa-spin mr-1"></i> Đang tải danh sách sản phẩm...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-start-date">Thời gian bắt đầu <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" class="form-control" id="p-start-date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-end-date">Thời gian kết thúc <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" class="form-control" id="p-end-date" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="p-status">Trạng thái</label>
+                                    <select class="form-control" id="p-status">
+                                        <option value="active">Đang hoạt động (active)</option>
+                                        <option value="inactive">Tạm ngưng (inactive)</option>
+                                        <option value="expired">Đã kết thúc (expired)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn-male-fashion" id="btn-save-promo">
+                            <i class="fa fa-check mr-1"></i> Lưu khuyến mãi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal fade" id="promoDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa fa-info-circle mr-1"></i> Chi Tiết Khuyến Mãi</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="promo-detail-content"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-dark" id="btn-edit-from-detail">
+                        <i class="fa fa-pencil mr-1"></i> Chỉnh sửa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal fade" id="deletePromoModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title text-white"><i class="fa fa-exclamation-triangle mr-1"></i> Xác Nhận Xóa</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="fa fa-trash text-danger fa-4x mb-3"></i>
+                    <h5>Bạn có chắc chắn muốn xóa khuyến mãi này?</h5>
+                    <p class="text-muted mt-2 mb-0">Chương trình: <strong id="delete-p-name" class="text-dark">...</strong></p>
+                    <small class="text-danger d-block mt-2">Hành động này sẽ xóa vĩnh viễn cả lịch sử sử dụng liên quan!</small>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Hủy bỏ</button>
+                    <button type="button" class="btn btn-danger px-4" id="btn-confirm-delete" onclick="executeDelete()">
+                        <i class="fa fa-trash mr-1"></i> Xác nhận Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa fa-lock mr-1"></i> Đăng nhập Quản trị</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="adminLoginForm" onsubmit="handleLogin(event)">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Tên đăng nhập / Email</label>
+                            <input type="text" class="form-control" id="login-username" required placeholder="admin hoặc manager">
+                        </div>
+                        <div class="form-group">
+                            <label>Mật khẩu</label>
+                            <input type="password" class="form-control" id="login-password" required placeholder="Mật khẩu">
+                        </div>
+                        <div class="mt-3">
+                            <p class="mb-1 text-muted" style="font-size: 13px;">Tài khoản thử nghiệm có sẵn:</p>
+                            <button type="button" class="btn btn-sm btn-outline-danger mb-1 mr-1" onclick="quickFillLogin('admin', 'admin123')">
+                                <i class="fa fa-user"></i> Admin (admin123)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn-male-fashion" id="btn-submit-login">
+                            <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/jquery.nicescroll.min.js"></script>
+    <script src="/js/jquery.magnific-popup.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/main.js"></script>
+
+    <script>
+        let currentUser = null;
+        let currentPage = 0;
+        let pageSize = 10;
+        let totalPages = 0;
+        let totalElements = 0;
+        let searchTimeout = null;
+        let currentlyEditingId = null;
+        let deletingId = null;
+        let allAvailableProducts = [];
+
+        const API_BASE = '/api/admin/promotions';
+        const AUTH_API = '/api/auth/login';
+
+        $(document).ready(function () {
+            checkAuth();
+            setupSearchDebounce();
+            setDefaultDateTimes();
+            loadStats();
+            loadPromotions();
+            loadAvailableProducts();
+        });
+
+        function getToken() {
+            const scRaw = localStorage.getItem('sc_auth');
+            if (scRaw) {
+                try {
+                    const parsed = JSON.parse(scRaw);
+                    if (parsed && parsed.token) return parsed.token;
+                } catch (e) {}
+            }
+            return localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token');
+        }
+
+        function getAuthHeaders() {
+            const token = getToken();
+            return token
+                ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                : { 'Content-Type': 'application/json' };
+        }
+
+        function checkAuth() {
+            let storedUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info');
+            if (!storedUser) {
+                const scRaw = localStorage.getItem('sc_auth');
+                if (scRaw) storedUser = scRaw;
+            }
+            if (storedUser) {
+                try {
+                    currentUser = JSON.parse(storedUser);
+                } catch (e) {
+                    currentUser = null;
+                }
+            }
+            updateAuthUI();
+        }
+
+        function updateAuthUI() {
+            const authContainer = $('#auth-user-info');
+            const roleIndicator = $('#role-indicator');
+
+            if (currentUser && getToken()) {
+                const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
+                const isAdmin = roleName.includes('ADMIN');
+                const isManager = roleName.includes('MANAGER');
+
+                if (roleIndicator.length) {
+                    roleIndicator.removeClass('badge-danger badge-primary badge-dark')
+                        .addClass(isAdmin ? 'badge-danger' : 'badge-primary')
+                        .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : (isManager ? 'MANAGER' : roleName)}`);
+                }
+
+                authContainer.html(`
+                    <span class="text-white mr-3">
+                        <i class="fa fa-user-circle text-danger mr-1"></i>
+                        <strong>${currentUser.fullName || currentUser.username}</strong>
+                    </span>
+                    <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
+                        <i class="fa fa-sign-out mr-1"></i> Đăng xuất
+                    </button>
+                `);
+            } else {
+                if (roleIndicator.length) {
+                    roleIndicator.removeClass('badge-danger badge-primary').addClass('badge-dark')
+                        .html(`<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP`);
+                }
+                authContainer.html(`
+                    <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                    <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()">Đăng nhập</button>
+                `);
+            }
+        }
+
+        function openLoginModal() {
+            $('#loginModal').modal('show');
+        }
+
+        function quickFillLogin(user, pass) {
+            $('#login-username').val(user);
+            $('#login-password').val(pass);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const username = $('#login-username').val().trim();
+            const password = $('#login-password').val().trim();
+            const submitBtn = $('#btn-submit-login');
+
+            submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang đăng nhập...');
+
+            $.ajax({
+                url: AUTH_API,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ usernameOrEmail: username, password: password }),
+                success: function (res) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
+                    const data = res.data || res;
+                    const token = data.token || data.accessToken;
+                    const userObj = {
+                        userId: data.id || data.userId,
+                        username: data.username,
+                        email: data.email,
+                        fullName: data.fullName || data.username,
+                        role: data.role || (data.roles ? data.roles[0] : 'ROLE_ADMIN')
+                    };
+
+                    if (!userObj.role.includes('ADMIN')) {
+                        showToast('Tài khoản của bạn không có quyền truy cập trang Quản lý Khuyến mãi (yêu cầu ADMIN)!', 'danger');
+                        return;
+                    }
+
+                    localStorage.setItem('jwt_token', token);
+                    localStorage.setItem('user_info', JSON.stringify(userObj));
+                    localStorage.setItem('sc_auth', JSON.stringify({ token: token, user: userObj }));
+                    currentUser = userObj;
+
+                    $('#loginModal').modal('hide');
+                    updateAuthUI();
+                    showToast('Đăng nhập thành công với vai trò ' + userObj.role, 'success');
+                    loadStats();
+                    loadPromotions();
+                },
+                error: function (xhr) {
+                    submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
+                    const msg = xhr.responseJSON?.message || 'Đăng nhập thất bại. Kiểm tra lại thông tin!';
+                    showToast(msg, 'danger');
+                }
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('jwt_token');
+            localStorage.removeItem('user_info');
+            localStorage.removeItem('sc_auth');
+            currentUser = null;
+            updateAuthUI();
+            showToast('Đã đăng xuất', 'info');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = $('#toast-container');
+            const iconMap = {
+                'success': 'fa-check-circle',
+                'danger': 'fa-exclamation-circle',
+                'warning': 'fa-exclamation-triangle',
+                'info': 'fa-info-circle'
+            };
+            const icon = iconMap[type] || 'fa-bell';
+            const toastId = 'toast-' + Date.now();
+
+            const toastHtml = `
+                <div class="custom-toast toast-${type}" id="${toastId}">
+                    <i class="fa ${icon} toast-icon"></i>
+                    <div class="toast-message">${message}</div>
+                    <i class="fa fa-times toast-close" onclick="$('#${toastId}').remove()"></i>
+                </div>
+            `;
+            container.append(toastHtml);
+
+            setTimeout(function () {
+                $('#' + toastId).fadeOut(400, function () { $(this).remove(); });
+            }, 4500);
+        }
+
+        function setupSearchDebounce() {
+            const input = $('#filter-keyword');
+            const clearBtn = $('#clear-search-btn');
+
+            input.on('input', function () {
+                clearBtn.toggle(!!input.val().trim());
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function () {
+                    currentPage = 0;
+                    loadPromotions();
+                }, 400);
+            });
+        }
+
+        function clearSearch() {
+            $('#filter-keyword').val('');
+            $('#clear-search-btn').hide();
+            currentPage = 0;
+            loadPromotions();
+        }
+
+        function onFilterChange() {
+            currentPage = 0;
+            loadPromotions();
+        }
+
+        function formatCurrency(amount) {
+            if (amount == null) return '0 ₫';
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function formatDate(str) {
+            if (!str) return '-';
+            return str.replace('T', ' ').substring(0, 16);
+        }
+
+        function setDefaultDateTimes() {
+            const now = new Date();
+            const future = new Date();
+            future.setDate(now.getDate() + 30);
+
+            const formatForInput = (d) => {
+                const pad = (n) => n < 10 ? '0' + n : n;
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            };
+
+            $('#p-start-date').val(formatForInput(now));
+            $('#p-end-date').val(formatForInput(future));
+        }
+
+        function toggleFormFields() {
+            const promoType = $('input[name="promoTypeRadio"]:checked').val();
+            const isVoucher = (promoType === 'VOUCHER');
+
+            if (isVoucher) {
+                $('#group-code').show();
+                $('#p-code').prop('required', true);
+                $('#group-voucher-rules').show();
+                $('#group-flash-sale-products').hide();
+            } else {
+                $('#group-code').hide();
+                $('#p-code').prop('required', false);
+                $('#group-voucher-rules').hide();
+                $('#group-flash-sale-products').show();
+                if (allAvailableProducts.length === 0) {
+                    loadAvailableProducts();
+                }
+            }
+        }
+
+        function toggleFlashScope() {
+            const scope = $('input[name="flashScopeRadio"]:checked').val();
+            if (scope === 'SPECIFIC') {
+                $('#specific-products-container').slideDown(200);
+                updateSelectedProductCount();
+            } else {
+                $('#specific-products-container').slideUp(200);
+                $('#selected-products-badge')
+                    .text('Toàn bộ sản phẩm')
+                    .removeClass('badge-primary badge-warning')
+                    .addClass('badge-secondary');
+            }
+        }
+
+        function loadAvailableProducts(callback) {
+            $.ajax({
+                url: API_BASE + '/products',
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res.success && Array.isArray(res.data)) {
+                        allAvailableProducts = res.data;
+                        renderProductPicker();
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    console.warn('Chưa tải được danh sách sản phẩm:', xhr.status);
+                    $('#product-picker-list').html('<div class="text-danger small p-2 text-center">Không tải được danh sách sản phẩm. Vui lòng đăng nhập quyền Admin!</div>');
+                }
+            });
+        }
+
+        function renderProductPicker(selectedIds = []) {
+            const container = $('#product-picker-list');
+            if (!allAvailableProducts || allAvailableProducts.length === 0) {
+                container.html('<div class="text-muted small p-2 text-center">Không có sản phẩm nào trong hệ thống.</div>');
+                return;
+            }
+
+            let html = '';
+            allAvailableProducts.forEach(prod => {
+                const isChecked = selectedIds.includes(prod.id) ? 'checked' : '';
+                const img = prod.imageUrl || '/img/product/product-1.jpg';
+                const catName = prod.categoryName ? ` | ${prod.categoryName}` : '';
+                html += `
+                    <div class="product-picker-item d-flex align-items-center p-2 border-bottom" data-id="${prod.id}" data-name="${(prod.name || '').toLowerCase()}" style="cursor: pointer;" onclick="toggleProductItemCheckbox(event, ${prod.id})">
+                        <div class="custom-control custom-checkbox mr-3">
+                            <input type="checkbox" class="custom-control-input prod-checkbox" id="prod-check-${prod.id}" value="${prod.id}" ${isChecked} onchange="updateSelectedProductCount()">
+                            <label class="custom-control-label" for="prod-check-${prod.id}"></label>
+                        </div>
+                        <img src="${img}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; margin-right: 10px; border: 1px solid #eee;" onerror="this.src='/img/product/product-1.jpg'">
+                        <div class="flex-grow-1 text-truncate">
+                            <div class="font-weight-bold text-dark text-truncate" style="font-size: 13px;">${prod.name}</div>
+                            <div class="small text-muted">${formatCurrency(prod.price)}${catName} <span class="badge badge-light border ml-1">Kho: ${prod.stock || 0}</span></div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.html(html);
+            updateSelectedProductCount();
+        }
+
+        function toggleProductItemCheckbox(event, prodId) {
+            if ($(event.target).is('input[type="checkbox"]') || $(event.target).is('label')) {
+                return;
+            }
+            const cb = $(`#prod-check-${prodId}`);
+            cb.prop('checked', !cb.prop('checked'));
+            updateSelectedProductCount();
+        }
+
+        function filterProductPicker() {
+            const query = $('#product-picker-search').val().trim().toLowerCase();
+            $('.product-picker-item').each(function () {
+                const name = $(this).attr('data-name') || '';
+                if (!query || name.includes(query)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        function selectAllProducts(checkAll) {
+            $('.product-picker-item:visible .prod-checkbox').prop('checked', checkAll);
+            updateSelectedProductCount();
+        }
+
+        function updateSelectedProductCount() {
+            const totalSelected = $('.prod-checkbox:checked').length;
+            const badge = $('#selected-products-badge');
+            const scope = $('input[name="flashScopeRadio"]:checked').val();
+
+            if (scope === 'ALL') {
+                badge.text('Toàn bộ sản phẩm').removeClass('badge-primary badge-warning').addClass('badge-secondary');
+            } else {
+                if (totalSelected > 0) {
+                    badge.text(`Đã chọn ${totalSelected} sản phẩm`).removeClass('badge-secondary badge-warning').addClass('badge-primary');
+                } else {
+                    badge.text('Chưa chọn sản phẩm nào').removeClass('badge-secondary badge-primary').addClass('badge-warning');
+                }
+            }
+        }
+
+        function toggleDiscountTypeHelp() {
+            const type = $('#p-discount-type').val();
+            if (type === 'PERCENTAGE') {
+                $('#discount-type-help').text('Nhập số % (từ 0.01 đến 100)');
+                $('#group-max-discount').show();
+            } else {
+                $('#discount-type-help').text('Nhập số tiền giảm cố định (VNĐ)');
+                $('#group-max-discount').hide();
+            }
+        }
+
+        // ============ LOAD STATS ============
+        function loadStats() {
+            $.ajax({
+                url: API_BASE + '/stats',
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res.success && res.data) {
+                        const s = res.data;
+                        $('#stat-total').text(s.totalPromotions || 0);
+                        $('#stat-active').text(s.activePromotions || 0);
+                        $('#stat-flash-sales').text(s.totalFlashSales || 0);
+                        $('#stat-vouchers').text(s.totalVouchers || 0);
+                    }
+                },
+                error: function (xhr) {
+                    console.warn('Không tải được thống kê:', xhr.status);
+                }
+            });
+        }
+
+        // ============ LOAD PROMOTIONS ============
+        function loadPromotions() {
+            const keyword = ($('#filter-keyword').val() || '').trim();
+            const type = $('#filter-type').val() || '';
+            const status = $('#filter-status').val() || '';
+            const sortVal = $('#filter-sort').val() || 'id-desc';
+            const [sortBy, sortDir] = sortVal.split('-');
+
+            const params = {
+                page: currentPage,
+                size: pageSize,
+                sortBy: sortBy,
+                sortDir: sortDir
+            };
+            if (keyword) params.keyword = keyword;
+            if (type) params.type = type;
+            if (status) params.status = status;
+
+            const tbody = $('#promo-table-body');
+            tbody.html(`
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
+                        <div>Đang tải dữ liệu...</div>
+                    </td>
+                </tr>
+            `);
+
+            $.ajax({
+                url: API_BASE,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                data: params,
+                success: function (res) {
+                    if (!res.success) {
+                        tbody.html(`<tr><td colspan="8" class="text-center py-4 text-danger">${escapeHtml(res.message || 'Có lỗi xảy ra')}</td></tr>`);
+                        return;
+                    }
+                    const pageData = res.data;
+                    renderTable(pageData.content || []);
+                    renderPagination(pageData);
+                },
+                error: function (xhr) {
+                    console.error("Lỗi tải khuyến mãi:", xhr);
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        tbody.html(`
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="text-danger mb-2"><i class="fa fa-lock fa-2x"></i></div>
+                                    <div class="font-weight-bold">Bạn chưa đăng nhập quyền Admin!</div>
+                                    <button class="btn btn-sm btn-dark mt-3" onclick="openLoginModal()">Đăng nhập ngay</button>
+                                </td>
+                            </tr>
+                        `);
+                    } else {
+                        const errMsg = (xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.error)) || xhr.statusText || 'Có lỗi khi tải danh sách khuyến mãi!';
+                        tbody.html(`<tr><td colspan="8" class="text-center py-4 text-danger"><i class="fa fa-exclamation-triangle mr-2"></i> ${escapeHtml(errMsg)}</td></tr>`);
+                    }
+                }
+            });
+        }
+
+        function renderTable(promotions) {
+            const tbody = $('#promo-table-body');
+            if (!promotions || promotions.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fa fa-folder-open-o fa-3x mb-3 text-secondary"></i>
+                            <div class="font-weight-bold">Không tìm thấy chương trình khuyến mãi nào!</div>
+                            <div class="small">Thử thay đổi bộ lọc hoặc thêm khuyến mãi mới.</div>
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            let html = '';
+            promotions.forEach(p => {
+                const isFlash = (p.promotionType === 'FLASH_SALE');
+                const typeBadge = isFlash
+                    ? `<span class="promo-type-badge promo-type-flash"><i class="fa fa-bolt mr-1"></i> Flash Sale</span>`
+                    : `<span class="promo-type-badge promo-type-voucher"><i class="fa fa-ticket mr-1"></i> Voucher</span>`;
+
+                const codeDisplay = p.code
+                    ? `<span class="voucher-code-badge">${p.code}</span>`
+                    : `<span class="text-muted italic">-</span>`;
+
+                let discountDisplay = '';
+                if (p.discountType === 'PERCENTAGE') {
+                    discountDisplay = `<strong>${p.discountValue}%</strong>`;
+                    if (p.maxDiscountAmount) {
+                        discountDisplay += `<div class="small text-muted">Tối đa ${formatCurrency(p.maxDiscountAmount)}</div>`;
+                    }
+                } else {
+                    discountDisplay = `<strong>${formatCurrency(p.discountValue)}</strong>`;
+                }
+
+                if (p.minOrderValue && p.minOrderValue > 0) {
+                    discountDisplay += `<div class="small text-secondary">Đơn từ ${formatCurrency(p.minOrderValue)}</div>`;
+                }
+
+                // Usage
+                let usageDisplay = '';
+                if (p.usageLimit && p.usageLimit > 0) {
+                    const percent = Math.min(100, Math.round((p.usedCount / p.usageLimit) * 100));
+                    usageDisplay = `
+                        <div class="font-weight-bold">${p.usedCount} / ${p.usageLimit}</div>
+                        <div class="progress-mini"><div class="progress-bar" style="width: ${percent}%;"></div></div>
+                    `;
+                } else {
+                    usageDisplay = `<div>${p.usedCount} <span class="text-muted small">/ Vô hạn</span></div>`;
+                }
+
+                // Status badge
+                let statusBadge = '';
+                if (p.expired || p.status === 'expired') {
+                    statusBadge = `<span class="badge-status-expired"><i class="fa fa-clock-o mr-1"></i> Hết hạn</span>`;
+                } else if (p.status === 'active') {
+                    statusBadge = `<span class="badge-status-active" onclick="toggleStatus(${p.id}, 'inactive')" title="Click để tạm ngưng"><i class="fa fa-check mr-1"></i> Đang chạy</span>`;
+                } else {
+                    statusBadge = `<span class="badge-status-inactive" onclick="toggleStatus(${p.id}, 'active')" title="Click để kích hoạt"><i class="fa fa-pause mr-1"></i> Tạm ngưng</span>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="font-weight-bold text-secondary">#${p.id}</td>
+                        <td>
+                            <a href="javascript:void(0)" onclick="viewDetail(${p.id})" class="font-weight-bold text-dark">${p.name}</a>
+                            <div class="mt-1">${typeBadge}</div>
+                        </td>
+                        <td>${codeDisplay}</td>
+                        <td>${discountDisplay}</td>
+                        <td>
+                            <div class="small"><i class="fa fa-calendar-check-o text-muted mr-1"></i> ${formatDate(p.startDate)}</div>
+                            <div class="small"><i class="fa fa-calendar-times-o text-muted mr-1"></i> ${formatDate(p.endDate)}</div>
+                        </td>
+                        <td>${usageDisplay}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-right">
+                            <button class="btn-action btn-detail" onclick="viewDetail(${p.id})" title="Xem chi tiết">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button class="btn-action btn-edit" onclick="openEditModal(${p.id})" title="Chỉnh sửa">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="confirmDelete(${p.id}, '${p.name.replace(/'/g, "\\'")}')" title="Xóa">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.html(html);
+        }
+
+        function renderPagination(pageData) {
+            totalPages = pageData.totalPages || 0;
+            totalElements = pageData.totalElements || 0;
+            const container = $('#pagination-container');
+            const info = $('#pagination-info');
+            const btns = $('#pagination-buttons');
+
+            if (totalElements === 0) {
+                container.hide();
+                return;
+            }
+
+            container.show();
+            const startItem = currentPage * pageSize + 1;
+            const endItem = Math.min((currentPage + 1) * pageSize, totalElements);
+            info.text(`Hiển thị ${startItem} - ${endItem} trong tổng số ${totalElements} khuyến mãi`);
+
+            let btnHtml = '';
+            btnHtml += `<button class="btn" ${currentPage === 0 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})"><i class="fa fa-angle-left"></i></button>`;
+
+            for (let i = 0; i < totalPages; i++) {
+                if (i === 0 || i === totalPages - 1 || Math.abs(i - currentPage) <= 1) {
+                    btnHtml += `<button class="btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i + 1}</button>`;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    btnHtml += `<button class="btn" disabled>...</button>`;
+                }
+            }
+
+            btnHtml += `<button class="btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})"><i class="fa fa-angle-right"></i></button>`;
+            btns.html(btnHtml);
+        }
+
+        function goToPage(p) {
+            if (p < 0 || p >= totalPages) return;
+            currentPage = p;
+            loadPromotions();
+        }
+
+        // ============ CREATE & EDIT ============
+        function openCreateModal() {
+            currentlyEditingId = null;
+            $('#promoModalTitle').text('Thêm Khuyến Mãi Mới');
+            $('#p-id').val('');
+            $('#p-name').val('');
+            $('#p-code').val('');
+            $('#p-description').val('');
+            $('#p-discount-type').val('PERCENTAGE');
+            $('#p-discount-value').val('');
+            $('#p-max-discount').val('');
+            $('#p-min-order').val('');
+            $('#p-usage-limit').val('');
+            $('#p-limit-per-user').val('1');
+            $('#p-status').val('active');
+            $('#type-voucher').prop('checked', true);
+
+            $('#scope-all-products').prop('checked', true);
+            $('.prod-checkbox').prop('checked', false);
+            toggleFlashScope();
+            updateSelectedProductCount();
+
+            setDefaultDateTimes();
+            toggleFormFields();
+            toggleDiscountTypeHelp();
+            $('#promoModal').modal('show');
+        }
+
+        function openEditModal(id) {
+            currentlyEditingId = id;
+            $('#promoModalTitle').text('Chỉnh Sửa Khuyến Mãi #' + id);
+
+            $.ajax({
+                url: API_BASE + '/' + id,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res.success && res.data) {
+                        const p = res.data;
+                        $('#p-id').val(p.id);
+                        $('#p-name').val(p.name);
+                        $('#p-code').val(p.code || '');
+                        $('#p-description').val(p.description || '');
+                        $('#p-discount-type').val(p.discountType);
+                        $('#p-discount-value').val(p.discountValue);
+                        $('#p-max-discount').val(p.maxDiscountAmount || '');
+                        $('#p-min-order').val(p.minOrderValue || '');
+                        $('#p-usage-limit').val(p.usageLimit || '');
+                        $('#p-limit-per-user').val(p.usageLimitPerUser || '1');
+                        $('#p-status').val(p.status);
+
+                        if (p.promotionType === 'FLASH_SALE') {
+                            $('#type-flash-sale').prop('checked', true);
+                            const pProductIds = p.productIds || [];
+                            const selectBoxes = () => {
+                                if (pProductIds.length > 0 && allAvailableProducts.length > 0 && pProductIds.length < allAvailableProducts.length) {
+                                    $('#scope-specific-products').prop('checked', true);
+                                    $('.prod-checkbox').each(function () {
+                                        const prodId = parseInt($(this).val());
+                                        $(this).prop('checked', pProductIds.includes(prodId));
+                                    });
+                                } else {
+                                    $('#scope-all-products').prop('checked', true);
+                                    $('.prod-checkbox').prop('checked', false);
+                                }
+                                toggleFlashScope();
+                                updateSelectedProductCount();
+                            };
+
+                            if (allAvailableProducts.length === 0) {
+                                loadAvailableProducts(selectBoxes);
+                            } else {
+                                selectBoxes();
+                            }
+                        } else {
+                            $('#type-voucher').prop('checked', true);
+                        }
+
+                        if (p.startDate) {
+                            $('#p-start-date').val(p.startDate.replace(' ', 'T').substring(0, 16));
+                        }
+                        if (p.endDate) {
+                            $('#p-end-date').val(p.endDate.replace(' ', 'T').substring(0, 16));
+                        }
+
+                        toggleFormFields();
+                        toggleDiscountTypeHelp();
+                        $('#promoDetailModal').modal('hide');
+                        $('#promoModal').modal('show');
+                    }
+                },
+                error: function (xhr) {
+                    showToast('Không tải được thông tin khuyến mãi ID: ' + id, 'danger');
+                }
+            });
+        }
+
+        function savePromotion(e) {
+            e.preventDefault();
+            const promoType = $('input[name="promoTypeRadio"]:checked').val();
+            const isVoucher = (promoType === 'VOUCHER');
+            const name = $('#p-name').val().trim();
+            const code = $('#p-code').val().trim().toUpperCase();
+            const desc = $('#p-description').val().trim();
+            const discountType = $('#p-discount-type').val();
+            const discountValue = parseFloat($('#p-discount-value').val());
+            const maxDiscount = $('#p-max-discount').val() ? parseFloat($('#p-max-discount').val()) : null;
+            const minOrder = $('#p-min-order').val() ? parseFloat($('#p-min-order').val()) : null;
+            const usageLimit = $('#p-usage-limit').val() ? parseInt($('#p-usage-limit').val()) : null;
+            const limitPerUser = $('#p-limit-per-user').val() ? parseInt($('#p-limit-per-user').val()) : 1;
+            const status = $('#p-status').val();
+
+            const startDateVal = $('#p-start-date').val();
+            const endDateVal = $('#p-end-date').val();
+
+            if (!startDateVal || !endDateVal) {
+                showToast('Vui lòng chọn ngày bắt đầu và kết thúc!', 'danger');
+                return;
+            }
+
+            let selectedProductIds = null;
+            if (!isVoucher) {
+                const scope = $('input[name="flashScopeRadio"]:checked').val();
+                if (scope === 'SPECIFIC') {
+                    selectedProductIds = [];
+                    $('.prod-checkbox:checked').each(function () {
+                        selectedProductIds.push(parseInt($(this).val()));
+                    });
+                    if (selectedProductIds.length === 0) {
+                        showToast('Vui lòng chọn ít nhất 1 sản phẩm cho chương trình Flash Sale!', 'warning');
+                        return;
+                    }
+                }
+            }
+
+            const formatForApi = (v) => v.replace('T', ' ') + ':00';
+
+            const payload = {
+                promotionType: promoType,
+                name: name,
+                description: desc,
+                code: isVoucher ? code : null,
+                discountType: discountType,
+                discountValue: discountValue,
+                maxDiscountAmount: maxDiscount,
+                minOrderValue: isVoucher ? minOrder : null,
+                usageLimit: usageLimit,
+                usageLimitPerUser: isVoucher ? limitPerUser : null,
+                startDate: formatForApi(startDateVal),
+                endDate: formatForApi(endDateVal),
+                status: status,
+                productIds: isVoucher ? null : selectedProductIds
+            };
+
+            const btnSave = $('#btn-save-promo');
+            btnSave.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Đang lưu...');
+
+            const isUpdate = !!currentlyEditingId;
+            const url = isUpdate ? (API_BASE + '/' + currentlyEditingId) : API_BASE;
+            const method = isUpdate ? 'PUT' : 'POST';
+
+            $.ajax({
+                url: url,
+                type: method,
+                headers: getAuthHeaders(),
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (res) {
+                    btnSave.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu khuyến mãi');
+                    $('#promoModal').modal('hide');
+                    showToast(res.message || 'Lưu khuyến mãi thành công!', 'success');
+                    loadStats();
+                    loadPromotions();
+                },
+                error: function (xhr) {
+                    btnSave.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu khuyến mãi');
+                    let msg = xhr.responseJSON?.message || 'Có lỗi xảy ra, vui lòng kiểm tra lại dữ liệu!';
+                    if (xhr.responseJSON?.data && typeof xhr.responseJSON.data === 'object') {
+                        const fieldErrors = Object.values(xhr.responseJSON.data).join(', ');
+                        if (fieldErrors) msg += ': ' + fieldErrors;
+                    }
+                    showToast(msg, 'danger');
+                }
+            });
+        }
+
+        // ============ TOGGLE STATUS ============
+        function toggleStatus(id, newStatus) {
+            $.ajax({
+                url: API_BASE + '/' + id + '/status?status=' + newStatus,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    showToast('Đã cập nhật trạng thái!', 'success');
+                    loadStats();
+                    loadPromotions();
+                },
+                error: function (xhr) {
+                    const msg = xhr.responseJSON?.message || 'Không thể đổi trạng thái!';
+                    showToast(msg, 'danger');
+                }
+            });
+        }
+
+        // ============ VIEW DETAIL ============
+        function viewDetail(id) {
+            $.ajax({
+                url: API_BASE + '/' + id,
+                type: 'GET',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res.success && res.data) {
+                        const p = res.data;
+                        const isFlash = (p.promotionType === 'FLASH_SALE');
+
+                        let html = `
+                            <div class="detail-row">
+                                <span class="detail-label">ID & Tên:</span>
+                                <span class="detail-value">#${p.id} - ${p.name}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Hình thức:</span>
+                                <span class="detail-value">${isFlash ? 'Flash Sale (Giảm giá tự động)' : 'Mã Voucher (Nhập ở thanh toán)'}</span>
+                            </div>
+                        `;
+
+                        if (p.code) {
+                            html += `
+                                <div class="detail-row">
+                                    <span class="detail-label">Mã Voucher:</span>
+                                    <span class="detail-value"><span class="voucher-code-badge">${p.code}</span></span>
+                                </div>
+                            `;
+                        }
+
+                        html += `
+                            <div class="detail-row">
+                                <span class="detail-label">Mức giảm:</span>
+                                <span class="detail-value text-danger font-weight-bold">
+                                    ${p.discountType === 'PERCENTAGE' ? p.discountValue + '%' : formatCurrency(p.discountValue)}
+                                </span>
+                            </div>
+                        `;
+
+                        if (p.maxDiscountAmount) {
+                            html += `
+                                <div class="detail-row">
+                                    <span class="detail-label">Giảm tối đa:</span>
+                                    <span class="detail-value">${formatCurrency(p.maxDiscountAmount)}</span>
+                                </div>
+                            `;
+                        }
+
+                        if (p.minOrderValue) {
+                            html += `
+                                <div class="detail-row">
+                                    <span class="detail-label">Đơn tối thiểu:</span>
+                                    <span class="detail-value">${formatCurrency(p.minOrderValue)}</span>
+                                </div>
+                            `;
+                        }
+
+                        html += `
+                            <div class="detail-row">
+                                <span class="detail-label">Thời gian bắt đầu:</span>
+                                <span class="detail-value">${p.startDate || '-'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Thời gian kết thúc:</span>
+                                <span class="detail-value">${p.endDate || '-'}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Lượt đã sử dụng:</span>
+                                <span class="detail-value">${p.usedCount} ${p.usageLimit ? ('/ ' + p.usageLimit) : '(Không giới hạn)'}</span>
+                            </div>
+                        `;
+
+                        if (p.usageLimitPerUser) {
+                            html += `
+                                <div class="detail-row">
+                                    <span class="detail-label">Giới hạn / Khách hàng:</span>
+                                    <span class="detail-value">${p.usageLimitPerUser} lần</span>
+                                </div>
+                            `;
+                        }
+
+                        html += `
+                            <div class="detail-row">
+                                <span class="detail-label">Trạng thái:</span>
+                                <span class="detail-value font-weight-bold ${p.status === 'active' ? 'text-success' : 'text-muted'}">
+                                    ${p.status.toUpperCase()} ${p.expired ? '(ĐÃ HẾT HẠN)' : ''}
+                                </span>
+                            </div>
+                        `;
+
+                        if (p.description) {
+                            html += `
+                                <div class="mt-3 p-3 bg-light rounded">
+                                    <div class="small font-weight-bold text-muted mb-1">MÔ TẢ:</div>
+                                    <div class="text-dark small">${p.description}</div>
+                                </div>
+                            `;
+                        }
+
+                        if (isFlash) {
+                            const prodCount = (p.products && p.products.length) || (p.productIds && p.productIds.length) || 0;
+                            const isAll = (allAvailableProducts.length > 0 && prodCount >= allAvailableProducts.length);
+                            html += `
+                                <div class="detail-row">
+                                    <span class="detail-label">Phạm vi Flash Sale:</span>
+                                    <span class="detail-value text-danger font-weight-bold">
+                                        ${isAll ? 'Toàn bộ cửa hàng (' + prodCount + ' sản phẩm)' : (prodCount + ' sản phẩm cụ thể')}
+                                    </span>
+                                </div>
+                            `;
+
+                            if (!isAll && p.products && p.products.length > 0) {
+                                html += `
+                                    <div class="mt-3 p-2 border rounded bg-white">
+                                        <div class="small font-weight-bold text-muted mb-2"><i class="fa fa-cubes mr-1 text-danger"></i> SẢN PHẨM ÁP DỤNG (${p.products.length}):</div>
+                                        <div style="max-height: 180px; overflow-y: auto;">
+                                            ${p.products.map(prod => `
+                                                <div class="d-flex align-items-center py-2 border-bottom">
+                                                    <img src="${prod.imageUrl || '/img/product/product-1.jpg'}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; margin-right: 10px; border: 1px solid #eee;" onerror="this.src='/img/product/product-1.jpg'">
+                                                    <div class="flex-grow-1 text-truncate">
+                                                        <div class="font-weight-bold text-dark text-truncate" style="font-size: 13px;">${prod.name}</div>
+                                                        <div class="small text-muted">Giá gốc: ${formatCurrency(prod.price)} ${prod.categoryName ? ' | ' + prod.categoryName : ''}</div>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        $('#promo-detail-content').html(html);
+                        $('#btn-edit-from-detail').attr('onclick', `openEditModal(${p.id})`);
+                        $('#promoDetailModal').modal('show');
+                    }
+                },
+                error: function (xhr) {
+                    showToast('Không lấy được chi tiết khuyến mãi!', 'danger');
+                }
+            });
+        }
+
+        // ============ DELETE ============
+        function confirmDelete(id, name) {
+            deletingId = id;
+            $('#delete-p-name').text(name);
+            $('#deletePromoModal').modal('show');
+        }
+
+        function executeDelete() {
+            if (!deletingId) return;
+            const btn = $('#btn-confirm-delete');
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Đang xóa...');
+
+            $.ajax({
+                url: API_BASE + '/' + deletingId,
+                type: 'DELETE',
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
+                    $('#deletePromoModal').modal('hide');
+                    showToast(res.message || 'Đã xóa khuyến mãi thành công!', 'success');
+                    loadStats();
+                    loadPromotions();
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
+                    const msg = xhr.responseJSON?.message || 'Lỗi khi xóa khuyến mãi!';
+                    showToast(msg, 'danger');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

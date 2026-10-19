@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="zxx">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="StoreChain — Thanh toán đơn hàng">
+    <meta name="description" content="Male_Fashion Template">
+    <meta name="keywords" content="Male_Fashion, unica, creative, html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StoreChain | Thanh toán</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Male-Fashion | Template</title>
 
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
@@ -21,174 +23,6 @@
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
     <link rel="stylesheet" href="/css/auth.css" type="text/css">
-    <style>
-        /* Trang thanh toán: chọn địa chỉ, vận chuyển, mã KM, phương thức thanh toán */
-        .checkout-block {
-            background: #fff;
-            border: 1px solid #ebebeb;
-            border-radius: 6px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
-
-        .checkout-block h6 {
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #111;
-            margin-bottom: 14px;
-        }
-
-        .address-option {
-            display: block;
-            border: 1px solid #ebebeb;
-            border-radius: 6px;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-
-        .address-option input {
-            margin-right: 10px;
-        }
-
-        .address-option:has(input:checked) {
-            border-color: #e53637;
-            background: #fff7f7;
-        }
-
-        .badge-default {
-            background: #e53637;
-            color: #fff;
-            border-radius: 10px;
-            padding: 2px 8px;
-            font-size: 11px;
-        }
-
-        .transporter-option {
-            display: flex;
-            justify-content: space-between;
-            border: 1px solid #ebebeb;
-            border-radius: 6px;
-            padding: 10px 14px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-
-        .transporter-option.active {
-            border-color: #e53637;
-            background: #fff7f7;
-        }
-
-        .payment-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid #ebebeb;
-            border-radius: 6px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            cursor: pointer;
-        }
-
-        .payment-option input {
-            margin: 0;
-        }
-
-        .payment-option:has(input:checked) {
-            border-color: #e53637;
-            background: #fff7f7;
-        }
-
-        .payment-option .pay-desc {
-            font-size: 12px;
-            color: #6b6b6b;
-        }
-
-        .promo-msg {
-            display: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-            margin-top: 8px;
-            font-size: 13px;
-        }
-
-        .promo-msg-ok {
-            background: #eaffea;
-            color: #1d7a1d;
-        }
-
-        .promo-msg-error {
-            background: #ffecec;
-            color: #c62828;
-        }
-
-        .pay-status-badge {
-            display: inline-block;
-            border-radius: 10px;
-            padding: 2px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #fff;
-            background: #999;
-        }
-
-        .pay-status-badge.pay-PAID { background: #28a745; }
-        .pay-status-badge.pay-PENDING { background: #f0ad4e; }
-        .pay-status-badge.pay-FAILED { background: #dc3545; }
-        .pay-status-badge.pay-UNPAID { background: #6c757d; }
-
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            border-bottom: 1px solid #f1f1f1;
-            padding: 12px 0;
-        }
-
-        .order-status-badge {
-            display: inline-block;
-            border-radius: 10px;
-            padding: 2px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #fff;
-            background: #999;
-        }
-
-        .order-status-badge.status-NEW { background: #0d6efd; }
-        .order-status-badge.status-CONFIRMED, .order-status-badge.status-PICKED_UP { background: #6610f2; }
-        .order-status-badge.status-SHIPPING { background: #fd7e14; }
-        .order-status-badge.status-DELIVERED { background: #20c997; }
-        .order-status-badge.status-RECEIVED { background: #28a745; }
-        .order-status-badge.status-CANCELLED, .order-status-badge.status-FAILED { background: #dc3545; }
-        .order-status-badge.status-RETURN_REQUESTED, .order-status-badge.status-RETURNED { background: #e83e8c; }
-
-        .btn-store {
-            background: #e53637;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            padding: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        .btn-store:hover { color: #fff; opacity: .9; }
-
-        .btn-outline-store {
-            border: 1px solid #e53637;
-            color: #e53637;
-            border-radius: 4px;
-        }
-
-        .btn-link-danger { color: #dc3545; }
-
-        .checkout__total__all li {
-            display: flex;
-            justify-content: space-between;
-            font-weight: 700;
-        }
-    </style>
 </head>
 
 <body>
@@ -202,14 +36,28 @@
     <div class="offcanvas-menu-wrapper">
         <div class="offcanvas__option">
             <div class="offcanvas__links">
-                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Đăng nhập</a>
-                <a href="/contact.html">Hỗ trợ</a>
+                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Sign in</a>
+                <a href="#">FAQs</a>
+            </div>
+            <div class="offcanvas__top__hover">
+                <span>Usd <i class="arrow_carrot-down"></i></span>
+                <ul>
+                    <li>USD</li>
+                    <li>EUR</li>
+                    <li>USD</li>
+                </ul>
             </div>
         </div>
         <div class="offcanvas__nav__option">
-            <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
+            <a href="#" class="search-switch"><img src="/img/icon/search.png" alt=""></a>
+            <a href="#"><img src="/img/icon/heart.png" alt=""></a>
+            <a href="#"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
+            <div class="price">$0.00</div>
         </div>
         <div id="mobile-menu-wrap"></div>
+        <div class="offcanvas__text">
+            <p>Free shipping, 30-day return or refund guarantee.</p>
+        </div>
     </div>
     <!-- Offcanvas Menu End -->
 
@@ -220,17 +68,22 @@
                 <div class="row">
                     <div class="col-lg-6 col-md-7">
                         <div class="header__top__left">
-                            <p>Miễn phí giao hàng cho đơn từ 1.000.000₫ — đổi trả trong 30 ngày.</p>
+                            <p>Free shipping, 30-day return or refund guarantee.</p>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-5">
                         <div class="header__top__right">
                             <div class="header__top__links">
-                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Đăng nhập</a>
-                                <a href="/profile.html">Tài khoản</a>
-                                <a href="/orders.html">Đơn hàng</a>
-                                <a href="/shopping-cart.html">Giỏ hàng</a>
-                                <a href="/contact.html">Liên hệ</a>
+                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Sign in</a>
+                                <a href="#">FAQs</a>
+                            </div>
+                            <div class="header__top__hover">
+                                <span>Usd <i class="arrow_carrot-down"></i></span>
+                                <ul>
+                                    <li>USD</li>
+                                    <li>EUR</li>
+                                    <li>USD</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -241,23 +94,34 @@
             <div class="row">
                 <div class="col-lg-3 col-md-3">
                     <div class="header__logo">
-                        <a href="/index.html"><img src="/img/logo.png" alt=""></a>
+                        <a href="./index.html"><img src="/img/logo.png" alt=""></a>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-6">
                     <nav class="header__menu mobile-menu">
                         <ul>
-                            <li><a href="/index.html">Trang chủ</a></li>
-                            <li><a href="/shop.html">Cửa hàng</a></li>
-                            <li class="active"><a href="/shopping-cart.html">Giỏ hàng</a></li>
-                            <li><a href="/profile.html">Tài khoản</a></li>
-                            <li><a href="/contact.html">Liên hệ</a></li>
+                            <li><a href="./index.html">Home</a></li>
+                            <li class="active"><a href="./shop.html">Shop</a></li>
+                            <li><a href="#">Pages</a>
+                                <ul class="dropdown">
+                                    <li><a href="./about.html">About Us</a></li>
+                                    <li><a href="./shop-details.html">Shop Details</a></li>
+                                    <li><a href="./shopping-cart.html">Shopping Cart</a></li>
+                                    <li><a href="./checkout.html">Check Out</a></li>
+                                    <li><a href="./blog-details.html">Blog Details</a></li>
+                                </ul>
+                            </li>
+                            <li><a href="./blog.html">Blog</a></li>
+                            <li><a href="./contact.html">Contacts</a></li>
                         </ul>
                     </nav>
                 </div>
                 <div class="col-lg-3 col-md-3">
                     <div class="header__nav__option">
-                        <a href="/shopping-cart.html"><img src="/img/icon/cart.png" alt="Giỏ hàng"> <span class="sc-cart-count">0</span></a>
+                        <a href="#" class="search-switch"><img src="/img/icon/search.png" alt=""></a>
+                        <a href="#"><img src="/img/icon/heart.png" alt=""></a>
+                        <a href="#"><img src="/img/icon/cart.png" alt=""> <span>0</span></a>
+                        <div class="price">$0.00</div>
                     </div>
                 </div>
             </div>
@@ -272,11 +136,11 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="breadcrumb__text">
-                        <h4>Thanh toán</h4>
+                        <h4>Check Out</h4>
                         <div class="breadcrumb__links">
-                            <a href="/index.html">Trang chủ</a>
-                            <a href="/shopping-cart.html">Giỏ hàng</a>
-                            <span>Thanh toán</span>
+                            <a href="./index.html">Home</a>
+                            <a href="./shop.html">Shop</a>
+                            <span>Check Out</span>
                         </div>
                     </div>
                 </div>
@@ -288,86 +152,153 @@
     <!-- Checkout Section Begin -->
     <section class="checkout spad">
         <div class="container">
-            <div class="alert auth-alert" id="checkoutAlert" style="display:none;"></div>
-            <div class="row">
-                <div class="col-lg-8 col-md-6">
-                    <!-- Địa chỉ nhận hàng -->
-                    <div class="checkout-block">
-                        <h6><span class="icon_pin_alt"></span> Địa chỉ nhận hàng</h6>
-                        <div id="addressBox">Đang tải địa chỉ...</div>
-                    </div>
-
-                    <!-- Nhà vận chuyển -->
-                    <div class="checkout-block">
-                        <h6><i class="fa fa-truck"></i> Nhà vận chuyển</h6>
-                        <div id="transporterBox">Đang tải nhà vận chuyển...</div>
-                    </div>
-
-                    <!-- Ghi chú -->
-                    <div class="checkout-block">
-                        <h6><span class="icon_pencil_alt"></span> Ghi chú đơn hàng</h6>
-                        <textarea id="orderNote" class="form-control" rows="2"
-                        placeholder="Ghi chú về đơn hàng, VD: giao giờ hành chính..."></textarea>
-                    </div>
-
-                    <!-- Đơn hàng của tôi (quay về từ cổng thanh toán sẽ thấy trạng thái) -->
-                    <div class="checkout-block">
-                        <h6><span class="icon_bag_alt"></span> Đơn hàng của tôi</h6>
-                        <div id="myOrders">Đang tải đơn hàng...</div>
-                    </div>
-                </div>
-
-                <div class="col-lg-4 col-md-6">
-                    <div class="checkout-block">
-                        <h6 class="order__title">Đơn hàng của bạn</h6>
-                        <ul class="checkout__total__products" id="checkoutItems"
-                            style="list-style:none;padding:0;"></ul>
-
-                        <!-- Mã giảm giá -->
-                        <div style="margin:14px 0;">
-                            <label style="font-weight:700;font-size:13px;">Mã giảm giá</label>
-                            <div style="display:flex;gap:8px;">
-                                <input type="text" id="promoCode" class="form-control"
-                                placeholder="VD: SALE10">
-                                <button type="button" id="btnApplyPromo" class="btn-store"
-                                        style="padding:8px 14px;white-space:nowrap;">Áp dụng</button>
+            <div class="checkout__form">
+                <form action="#">
+                    <div class="row">
+                        <div class="col-lg-8 col-md-6">
+                            <h6 class="coupon__code"><span class="icon_tag_alt"></span> Have a coupon? <a href="#">Click
+                            here</a> to enter your code</h6>
+                            <h6 class="checkout__title">Billing Details</h6>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="checkout__input">
+                                        <p>Fist Name<span>*</span></p>
+                                        <input type="text">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="checkout__input">
+                                        <p>Last Name<span>*</span></p>
+                                        <input type="text">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="promo-msg" id="promoMsg"></div>
+                            <div class="checkout__input">
+                                <p>Country<span>*</span></p>
+                                <input type="text">
+                            </div>
+                            <div class="checkout__input">
+                                <p>Address<span>*</span></p>
+                                <input type="text" placeholder="Street Address" class="checkout__input__add">
+                                <input type="text" placeholder="Apartment, suite, unite ect (optinal)">
+                            </div>
+                            <div class="checkout__input">
+                                <p>Town/City<span>*</span></p>
+                                <input type="text">
+                            </div>
+                            <div class="checkout__input">
+                                <p>Country/State<span>*</span></p>
+                                <input type="text">
+                            </div>
+                            <div class="checkout__input">
+                                <p>Postcode / ZIP<span>*</span></p>
+                                <input type="text">
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="checkout__input">
+                                        <p>Phone<span>*</span></p>
+                                        <input type="text">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="checkout__input">
+                                        <p>Email<span>*</span></p>
+                                        <input type="text">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="checkout__input__checkbox">
+                                <label for="acc">
+                                    Create an account?
+                                    <input type="checkbox" id="acc">
+                                    <span class="checkmark"></span>
+                                </label>
+                                <p>Create an account by entering the information below. If you are a returning customer
+                                please login at the top of the page</p>
+                            </div>
+                            <div class="checkout__input">
+                                <p>Account Password<span>*</span></p>
+                                <input type="text">
+                            </div>
+                            <div class="checkout__input__checkbox">
+                                <label for="diff-acc">
+                                    Note about your order, e.g, special noe for delivery
+                                    <input type="checkbox" id="diff-acc">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                            <div class="checkout__input">
+                                <p>Order notes<span>*</span></p>
+                                <input type="text"
+                                placeholder="Notes about your order, e.g. special notes for delivery.">
+                            </div>
                         </div>
+                        <div class="col-lg-4 col-md-6">
+                            <div class="checkout__order">
+                                <h4 class="order__title">Your order</h4>
+                                <div class="checkout__order__products">Product <span>Total</span></div>
+                                <ul class="checkout__total__products">
+                                    <li>01. Vanilla salted caramel <span>$ 300.0</span></li>
+                                    <li>02. German chocolate <span>$ 170.0</span></li>
+                                    <li>03. Sweet autumn <span>$ 170.0</span></li>
+                                    <li>04. Cluten free mini dozen <span>$ 110.0</span></li>
+                                </ul>
+                                <ul class="checkout__total__all">
+                                    <li>Subtotal <span>$750.99</span></li>
+                                    <li>Total <span>$750.99</span></li>
+                                </ul>
+                                <div class="checkout__input__checkbox">
+                                    <label for="acc-or">
+                                        Create an account?
+                                        <input type="checkbox" id="acc-or">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </div>
+                                <p>Lorem ipsum dolor sit amet, consectetur adip elit, sed do eiusmod tempor incididunt
+                                ut labore et dolore magna aliqua.</p>
+                                <div class="checkout__input__checkbox">
+                                    <label for="payment">
+                                        Check Payment
+                                        <input type="checkbox" id="payment">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </div>
+                                <div class="checkout__input__checkbox">
+                                    <label for="paypal">
+                                        Paypal
+                                        <input type="checkbox" id="paypal">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </div>
+                                <button type="submit" 
+<div class="checkout__input mb-3" id="paymentMethodBlock">
+  <p>Phương thức thanh toán <span>*</span></p>
+  <div class="form-check">
+    <input class="form-check-input" type="radio" name="paymentMethod" id="payCOD" value="COD" checked>
+    <label class="form-check-label" for="payCOD">COD – Thanh toán khi nhận hàng</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="radio" name="paymentMethod" id="payVNPAY" value="VNPAY">
+    <label class="form-check-label" for="payVNPAY">VNPay</label>
+  </div>
+  <div class="form-check">
+    <input class="form-check-input" type="radio" name="paymentMethod" id="payMOMO" value="MOMO">
+    <label class="form-check-label" for="payMOMO">MoMo</label>
+  </div>
+</div>
+<div class="checkout__input mb-3">
+  <p>Mã giảm giá</p>
+  <input type="text" id="promoCodeInput" placeholder="Nhập mã khuyến mãi">
+  <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="btnApplyPromo">Áp dụng</button>
+  <div id="promoResult" class="small text-success mt-1"></div>
+</div>
 
-                        <!-- Phương thức thanh toán -->
-                        <h6 style="margin-top:18px;">Phương thức thanh toán</h6>
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="COD" checked>
-                            <span>
-                                <i class="fa fa-money"></i> Thanh toán khi nhận hàng (COD)
-                                <div class="pay-desc">Trả tiền mặt cho nhân viên giao hàng khi nhận đơn.</div>
-                            </span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="VNPAY">
-                            <span>
-                                <i class="fa fa-credit-card"></i> VNPay
-                                <div class="pay-desc">Thẻ ATM/Visa/Mastercard hoặc QR code ngân hàng.</div>
-                            </span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="paymentMethod" value="MOMO">
-                            <span>
-                                <i class="fa fa-mobile"></i> Ví MoMo
-                                <div class="pay-desc">Quét mã QR bằng ứng dụng MoMo.</div>
-                            </span>
-                        </label>
-
-                        <ul class="checkout__total__all" style="list-style:none;padding:0;margin-top:16px;">
-                            <li>Tạm tính <span id="sumSubtotal">0₫</span></li>
-                            <li>Phí vận chuyển <span id="sumShipping">0₫</span></li>
-                            <li style="color:#1d7a1d;">Giảm giá <span id="sumDiscount">-0₫</span></li>
-                            <li style="font-size:18px;color:#e53637;">Tổng cộng <span id="sumTotal">0₫</span></li>
-                        </ul>
-                        <button type="button" id="btnPlaceOrder" class="btn-store w-100 mt-2">Đặt hàng</button>
+<button class="site-btn">PLACE ORDER</button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </section>
@@ -377,10 +308,62 @@
     <footer class="footer">
         <div class="container">
             <div class="row">
+                <div class="col-lg-3 col-md-6 col-sm-6">
+                    <div class="footer__about">
+                        <div class="footer__logo">
+                            <a href="#"><img src="/img/footer-logo.png" alt=""></a>
+                        </div>
+                        <p>The customer is at the heart of our unique business model, which includes design.</p>
+                        <a href="#"><img src="/img/payment.png" alt=""></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 offset-lg-1 col-md-3 col-sm-6">
+                    <div class="footer__widget">
+                        <h6>Shopping</h6>
+                        <ul>
+                            <li><a href="#">Clothing Store</a></li>
+                            <li><a href="#">Trending Shoes</a></li>
+                            <li><a href="#">Accessories</a></li>
+                            <li><a href="#">Sale</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-3 col-sm-6">
+                    <div class="footer__widget">
+                        <h6>Shopping</h6>
+                        <ul>
+                            <li><a href="#">Contact Us</a></li>
+                            <li><a href="#">Payment Methods</a></li>
+                            <li><a href="#">Delivary</a></li>
+                            <li><a href="#">Return & Exchanges</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 offset-lg-1 col-md-6 col-sm-6">
+                    <div class="footer__widget">
+                        <h6>NewLetter</h6>
+                        <div class="footer__newslatter">
+                            <p>Be the first to know about new arrivals, look books, sales & promos!</p>
+                            <form action="#">
+                                <input type="text" placeholder="Your email">
+                                <button type="submit"><span class="icon_mail_alt"></span></button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
                 <div class="col-lg-12 text-center">
                     <div class="footer__copyright__text">
-                        <p>Copyright &copy; <script>document.write(new Date().getFullYear());</script>
-                        StoreChain — Đồ án tốt nghiệp web</p>
+                        <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
+                        <p>Copyright ©
+                            <script>
+                                document.write(new Date().getFullYear());
+                            </script>2020
+                            All rights reserved | This template is made with <i class="fa fa-heart-o"
+                            aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
+                        </p>
+                        <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
                     </div>
                 </div>
             </div>
@@ -388,18 +371,71 @@
     </footer>
     <!-- Footer Section End -->
 
+    <!-- Search Begin -->
+    <div class="search-model">
+        <div class="h-100 d-flex align-items-center justify-content-center">
+            <div class="search-close-switch">+</div>
+            <form class="search-model-form">
+                <input type="text" id="search-input" placeholder="Search here.....">
+            </form>
+        </div>
+    </div>
+    <!-- Search End -->
+
     <!-- Js Plugins -->
     <script src="/js/jquery-3.3.1.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/jquery.nicescroll.min.js"></script>
     <script src="/js/jquery.magnific-popup.min.js"></script>
+    <script src="/js/jquery.countdown.min.js"></script>
     <script src="/js/jquery.slicknav.js"></script>
     <script src="/js/mixitup.min.js"></script>
     <script src="/js/owl.carousel.min.js"></script>
+    <script src="/js/storechain-api.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
-    <script src="/js/store.js"></script>
-    <script src="/js/checkout.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  if(!window.StoreChain) return;
+  const btn = document.querySelector('.site-btn, #btnPlaceOrder, button[type="submit"]');
+  // Intercept place order if custom handler not present
+  window.StoreChainPlaceOrder = async function(extra){
+    const method = (document.querySelector('input[name="paymentMethod"]:checked') || {}).value || 'COD';
+    const promo = (document.getElementById('promoCodeInput') || {}).value || '';
+    const body = Object.assign({
+      paymentMethod: method,
+      promoCode: promo || null,
+      transporterId: extra && extra.transporterId,
+      shippingAddressId: extra && extra.shippingAddressId,
+      note: extra && extra.note
+    }, extra || {});
+    const res = await StoreChain.API.post('/api/user/orders', body);
+    if(!res.success && res.message){ alert(res.message); return; }
+    const orders = res.data || [];
+    // Nếu không phải COD và có đơn – tạo link thanh toán cho đơn đầu
+    if(method !== 'COD' && orders.length){
+      const o = orders[0];
+      const payRes = await StoreChain.API.post('/api/payment/create', {
+        method: method,
+        orderCode: o.orderCode,
+        amount: o.grandTotal,
+        orderInfo: 'Thanh toan don ' + o.orderCode
+      });
+      const payUrl = payRes.data && payRes.data.payUrl;
+      if(payUrl && !payUrl.startsWith('#')){
+        location.href = payUrl;
+        return;
+      } else {
+        alert((payRes.data && payRes.data.message) || 'Đã tạo đơn. Cổng thanh toán chưa cấu hình – đơn ở trạng thái chờ thanh toán.');
+      }
+    }
+    location.href = '/profile.html?tab=orders';
+  };
+});
+</script>
+
 </body>
 
 </html>

@@ -1,5 +1,6 @@
 package com.storechain.group4.service;
 
+import com.storechain.group4.dto.ShopDetailDto;
 import com.storechain.group4.dto.ShopRequestDto;
 import com.storechain.group4.dto.ShopResponseDto;
 import com.storechain.group4.dto.ShopStatsDto;
@@ -15,6 +16,8 @@ public interface ShopService {
     ShopStatsDto getStats();
 
     ShopResponseDto getShopById(Long id);
+
+    ShopDetailDto getShopDetail(Long id);
 
     ShopResponseDto createShop(ShopRequestDto request);
 

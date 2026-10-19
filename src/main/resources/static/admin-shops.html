@@ -3,11 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="Quản lý Chuỗi cửa hàng / Chi nhánh - StoreChain Admin">
-    <meta name="keywords" content="StoreChain, admin, shops, branches, store management">
+    <meta name="description" content="Quản lý Chuỗi cửa hàng / Chi nhánh - Male Fashion Admin">
+    <meta name="keywords" content="Male_Fashion, admin, shops, branches, store management">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Quản lý Chi nhánh | StoreChain Admin</title>
+    <title>Quản lý Chi nhánh | Male-Fashion Admin</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
+    <link rel="stylesheet" href="/css/admin.css" type="text/css">
 
     <style>
         .admin-stat-card {
@@ -249,10 +250,69 @@
             color: #ffffff;
         }
 
+        .btn-action.btn-view:hover {
+            border-color: #17a2b8;
+            background: #17a2b8;
+            color: #ffffff;
+        }
+
         .btn-action.btn-assign:hover {
             border-color: #28a745;
             background: #28a745;
             color: #ffffff;
+        }
+
+        .badge-metric-rev {
+            display: inline-block;
+            background: #eafaf1;
+            color: #28a745;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-metric-stock {
+            display: inline-block;
+            background: #eef2ff;
+            color: #4338ca;
+            border: 1px solid #c7d2fe;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .custom-detail-tabs .nav-link {
+            color: #555;
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 10px 16px;
+            transition: all 0.2s;
+        }
+
+        .custom-detail-tabs .nav-link:hover {
+            color: #111;
+            border-bottom-color: #ddd;
+        }
+
+        .custom-detail-tabs .nav-link.active {
+            color: #e53637;
+            border-bottom: 2px solid #e53637;
+            background: transparent;
+        }
+
+        .shop-name-link {
+            cursor: pointer;
+            color: #111111;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .shop-name-link:hover {
+            color: #e53637;
+            text-decoration: underline;
         }
 
         .btn-male-fashion {
@@ -417,17 +477,20 @@
     <div class="toast-container-custom" id="toast-container"></div>
 
     <!-- Header Section -->
-    <header class="header">
+    <header class="header admin-header">
         <div class="header__top">
             <div class="container">
                 <div class="row align-items-center">
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-5 col-md-5 col-5">
                         <div class="header__top__left">
-                            <p><i class="fa fa-shield text-danger mr-1"></i> Trang Quản trị Hệ thống (Admin)</p>
+                            <p><i class="fa fa-sliders"></i> Bảng điều khiển Quản trị</p>
                         </div>
                     </div>
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-7 col-md-7 col-7">
                         <div class="header__top__right d-flex justify-content-end align-items-center">
+                            <a href="/index.html" class="topbar-shop-link" title="Xem trang bán hàng">
+                                <i class="fa fa-external-link"></i> Xem Cửa hàng
+                            </a>
                             <div class="header__top__links" id="auth-user-info">
                                 <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
                                 <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
@@ -439,31 +502,23 @@
         </div>
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__logo">
-                        <a href="/index.html"><img src="/img/logo.png" alt="StoreChain Logo"></a>
+                <div class="col-lg-2 col-md-3">
+                    <div class="header__logo admin-header-logo-wrap">
+                        <a href="/admin-shops.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
+                        <span class="admin-portal-tag">PORTAL</span>
                     </div>
                 </div>
-                <div class="col-lg-6 col-md-6">
+                <div class="col-lg-10 col-md-9">
                     <nav class="header__menu mobile-menu">
-                        <ul>
-                            <li><a href="/index.html">Trang chủ</a></li>
-                            <li><a href="/shop.html">Cửa hàng</a></li>
-                            <li><a href="/admin-users.html">Quản lý Users</a></li>
-                            <li><a href="/admin-categories.html">Quản lý Danh mục</a></li>
-                            <li class="active"><a href="/admin-shops.html">Quản lý Chi nhánh</a></li>
-                            <li><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
-                            <li><a href="/admin-promotions.html">Quản lý Khuyến mãi</a></li>
-                            <li><a href="/contact.html">Liên hệ</a></li>
+                        <ul class="admin-nav-list">
+                            <li><a href="/admin-users.html"><i class="fa fa-users"></i> Người dùng</a></li>
+                            <li><a href="/admin-products.html"><i class="fa fa-cube"></i> Sản phẩm</a></li>
+                            <li><a href="/admin-categories.html"><i class="fa fa-tags"></i> Danh mục</a></li>
+                            <li class="active"><a href="/admin-shops.html"><i class="fa fa-building"></i> Chi nhánh</a></li>
+                            <li><a href="/admin-transporters.html"><i class="fa fa-truck"></i> Vận chuyển</a></li>
+                            <li><a href="/admin-promotions.html"><i class="fa fa-percent"></i> Khuyến mãi</a></li>
                         </ul>
                     </nav>
-                </div>
-                <div class="col-lg-3 col-md-3">
-                    <div class="header__nav__option text-right">
-                        <span class="badge badge-danger p-2" id="role-indicator" style="font-size: 12px; letter-spacing: 0.5px;">
-                            <i class="fa fa-lock"></i> KHÁCH
-                        </span>
-                    </div>
                 </div>
             </div>
             <div class="canvas__open"><i class="fa fa-bars"></i></div>
@@ -476,11 +531,10 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="breadcrumb__text">
-                        <h4>Quản lý Cửa hàng & Chi nhánh (Branches)</h4>
+                        <h4>Quản lý Chi nhánh</h4>
                         <div class="breadcrumb__links">
-                            <a href="/index.html">Trang chủ</a>
-                            <a href="#">Quản trị viên (Admin)</a>
-                            <span>Danh sách chi nhánh cửa hàng</span>
+                            <a href="/admin-shops.html">Hệ thống</a>
+                            <span>Danh sách chi nhánh</span>
                         </div>
                     </div>
                 </div>
@@ -569,18 +623,20 @@
                 <table class="table custom-admin-table">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">ID</th>
+                            <th style="width: 50px;">ID</th>
                             <th>Tên Chi nhánh</th>
+                            <th>Doanh thu tháng</th>
+                            <th>Tổng hàng tồn</th>
                             <th>Địa chỉ</th>
                             <th>Hotline</th>
                             <th>Quản lý (Manager)</th>
-                            <th style="width: 130px;" class="text-center">Trạng thái</th>
-                            <th style="width: 140px;" class="text-center">Thao tác</th>
+                            <th style="width: 120px;" class="text-center">Trạng thái</th>
+                            <th style="width: 160px;" class="text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="shop-table-body">
                         <tr>
-                            <td colspan="7" class="empty-state">
+                            <td colspan="9" class="empty-state">
                                 <i class="fa fa-spinner fa-spin"></i>
                                 <p>Đang tải dữ liệu chi nhánh...</p>
                             </td>
@@ -595,6 +651,242 @@
             </div>
         </div>
     </section>
+
+    <!-- Modal Xem Chi tiết Chi nhánh -->
+    <div class="modal fade" id="shopDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="mr-3" style="font-size: 24px; color: #e53637;"><i class="fa fa-building"></i></div>
+                        <div>
+                            <h5 class="modal-title font-weight-bold text-white mb-0" id="detailModalShopName">Chi tiết Chi nhánh</h5>
+                            <small class="text-white-50" id="detailModalShopSubtitle">Mã chi nhánh: #0</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span id="detailModalStatusBadge" class="mr-3"></span>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="font-size: 24px;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- KPI Cards Row -->
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%); border-left: 4px solid #e53637 !important; border-radius: 8px;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-uppercase text-muted font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">Doanh thu tháng này</span>
+                                        <div class="rounded-circle p-2" style="background: #ffeaea; color: #e53637; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa fa-line-chart"></i>
+                                        </div>
+                                    </div>
+                                    <div class="font-weight-extrabold text-dark" id="detailKpiRevenue" style="font-size: 22px; line-height: 1.2;">0 đ</div>
+                                    <small class="text-muted" id="detailKpiRevenueSub">0 đơn hoàn tất</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%); border-left: 4px solid #007bff !important; border-radius: 8px;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-uppercase text-muted font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">Tổng hàng tồn kho</span>
+                                        <div class="rounded-circle p-2" style="background: #e8f3ff; color: #007bff; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa fa-cubes"></i>
+                                        </div>
+                                    </div>
+                                    <div class="font-weight-extrabold text-dark" id="detailKpiStock" style="font-size: 22px; line-height: 1.2;">0 SP</div>
+                                    <small class="text-muted" id="detailKpiStockSub">0 loại mặt hàng</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #f4fbf7 0%, #ffffff 100%); border-left: 4px solid #28a745 !important; border-radius: 8px;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-uppercase text-muted font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">Quản lý phụ trách</span>
+                                        <div class="rounded-circle p-2" style="background: #eafaf1; color: #28a745; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <div class="font-weight-bold text-dark text-truncate" id="detailKpiManager" style="font-size: 15px; line-height: 1.3;">Chưa bổ nhiệm</div>
+                                    <small class="text-muted text-truncate d-block" id="detailKpiManagerSub">Liên hệ: N/A</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%); border-left: 4px solid #ffc107 !important; border-radius: 8px;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-uppercase text-muted font-weight-bold" style="font-size: 11px; letter-spacing: 0.5px;">Tổng doanh thu lũy kế</span>
+                                        <div class="rounded-circle p-2" style="background: #fff8e1; color: #ff9800; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa fa-database"></i>
+                                        </div>
+                                    </div>
+                                    <div class="font-weight-extrabold text-dark" id="detailKpiTotalRev" style="font-size: 22px; line-height: 1.2;">0 đ</div>
+                                    <small class="text-muted" id="detailKpiTotalOrders">Tổng 0 đơn hàng</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-tabs custom-detail-tabs mb-3" id="branchDetailTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active font-weight-bold" id="tab-stock-link" data-toggle="tab" href="#tab-branch-stock" role="tab">
+                                <i class="fa fa-cubes mr-1 text-primary"></i> Hàng tồn kho chi nhánh (<span id="detailBadgeStockCount">0</span>)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-employees-link" data-toggle="tab" href="#tab-branch-employees" role="tab">
+                                <i class="fa fa-users mr-1 text-success"></i> Nhân viên chi nhánh (<span id="detailBadgeEmployeeCount">0</span>)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-orders-link" data-toggle="tab" href="#tab-branch-orders" role="tab">
+                                <i class="fa fa-shopping-bag mr-1 text-danger"></i> Đơn hàng gần đây (<span id="detailBadgeOrderCount">0</span>)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link font-weight-bold" id="tab-info-link" data-toggle="tab" href="#tab-branch-info" role="tab">
+                                <i class="fa fa-info-circle mr-1 text-info"></i> Thông tin chung & Liên hệ
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content" id="branchDetailTabContent">
+                        <!-- Tab 1: Stock Inventory -->
+                        <div class="tab-pane fade show active" id="tab-branch-stock" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="filter-input-group" style="max-width: 320px; width: 100%;">
+                                    <i class="fa fa-search search-icon"></i>
+                                    <input type="text" id="detailStockSearchInput" placeholder="Tìm sản phẩm theo tên, SKU..." onkeyup="filterDetailStockTable()">
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fa fa-lightbulb-o text-warning mr-1"></i> Số lượng tồn kho cập nhật theo thời gian thực
+                                </div>
+                            </div>
+                            <div class="table-responsive border rounded" style="max-height: 380px; overflow-y: auto;">
+                                <table class="table table-hover table-striped mb-0" id="detailStockTable">
+                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 1;">
+                                        <tr>
+                                            <th style="width: 60px;">Ảnh</th>
+                                            <th>Sản phẩm / SKU</th>
+                                            <th>Danh mục</th>
+                                            <th class="text-right">Đơn giá</th>
+                                            <th class="text-center" style="width: 140px;">Tồn chi nhánh</th>
+                                            <th>Phân bổ theo Size</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detailStockTableBody">
+                                        <!-- populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Branch Employees -->
+                        <div class="tab-pane fade" id="tab-branch-employees" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="filter-input-group" style="max-width: 320px; width: 100%;">
+                                    <i class="fa fa-search search-icon"></i>
+                                    <input type="text" id="detailEmployeeSearchInput" placeholder="Tìm theo tên, email, SĐT..." onkeyup="filterDetailEmployeeTable()">
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fa fa-users text-success mr-1"></i> Danh sách nhân sự làm việc tại chi nhánh
+                                </div>
+                            </div>
+                            <div class="table-responsive border rounded" style="max-height: 380px; overflow-y: auto;">
+                                <table class="table table-hover table-striped mb-0" id="detailEmployeesTable">
+                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 1;">
+                                        <tr>
+                                            <th style="width: 50px;">Ảnh</th>
+                                            <th>Nhân viên</th>
+                                            <th>Email</th>
+                                            <th>Hotline / SĐT</th>
+                                            <th class="text-center" style="width: 150px;">Trạng thái công việc</th>
+                                            <th class="text-center" style="width: 120px;">Tài khoản</th>
+                                            <th class="text-center" style="width: 150px;">Ngày tham gia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detailEmployeesTableBody">
+                                        <!-- populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Recent Orders -->
+                        <div class="tab-pane fade" id="tab-branch-orders" role="tabpanel">
+                            <div class="table-responsive border rounded" style="max-height: 380px; overflow-y: auto;">
+                                <table class="table table-hover table-striped mb-0">
+                                    <thead class="thead-light" style="position: sticky; top: 0; z-index: 1;">
+                                        <tr>
+                                            <th>Mã đơn</th>
+                                            <th>Thời gian</th>
+                                            <th>Khách hàng</th>
+                                            <th>Kênh bán</th>
+                                            <th class="text-right">Tổng tiền</th>
+                                            <th class="text-center">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detailOrdersTableBody">
+                                        <!-- populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Shop Information -->
+                        <div class="tab-pane fade" id="tab-branch-info" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="p-3 bg-light rounded border h-100">
+                                        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                                            <i class="fa fa-map-marker text-danger mr-1"></i> Địa chỉ & Liên hệ
+                                        </h6>
+                                        <p class="mb-2"><strong>Địa chỉ chi nhánh:</strong> <span id="detailInfoAddress">N/A</span></p>
+                                        <p class="mb-2"><strong>Hotline bán hàng:</strong> <span id="detailInfoPhone">N/A</span></p>
+                                        <p class="mb-2"><strong>Đường dẫn Slug:</strong> <span id="detailInfoSlug" class="badge badge-secondary">N/A</span></p>
+                                        <p class="mb-0"><strong>Mô tả chi nhánh:</strong> <span id="detailInfoDescription" class="text-muted">N/A</span></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="p-3 bg-light rounded border h-100">
+                                        <h6 class="font-weight-bold text-dark border-bottom pb-2 mb-3">
+                                            <i class="fa fa-user-circle text-primary mr-1"></i> Quản lý & Thời gian
+                                        </h6>
+                                        <p class="mb-2"><strong>Người quản lý:</strong> <span id="detailInfoManagerName">Chưa bổ nhiệm</span></p>
+                                        <p class="mb-2"><strong>Username Manager:</strong> <span id="detailInfoManagerUser">N/A</span></p>
+                                        <p class="mb-2"><strong>Email Manager:</strong> <span id="detailInfoManagerEmail">N/A</span></p>
+                                        <p class="mb-2"><strong>SĐT Manager:</strong> <span id="detailInfoManagerPhone">N/A</span></p>
+                                        <hr class="my-2">
+                                        <p class="mb-1 text-muted small"><strong>Ngày tạo:</strong> <span id="detailInfoCreatedAt">N/A</span></p>
+                                        <p class="mb-0 text-muted small"><strong>Cập nhật cuối:</strong> <span id="detailInfoUpdatedAt">N/A</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-outline-primary" id="btnDetailEdit" onclick="openEditFromDetail()">
+                        <i class="fa fa-pencil mr-1"></i> Chỉnh sửa chi nhánh
+                    </button>
+                    <button type="button" class="btn btn-outline-success" id="btnDetailAssign" onclick="openAssignFromDetail()">
+                        <i class="fa fa-user-plus mr-1"></i> Bổ nhiệm Quản lý
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Thêm / Chỉnh sửa Chi nhánh -->
     <div class="modal fade" id="shopModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -613,7 +905,7 @@
                             <div class="col-md-7">
                                 <div class="form-group">
                                     <label>Tên Chi nhánh <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="shop-name" placeholder="VD: StoreChain - Chi nhánh Thủ Đức" required maxlength="100">
+                                    <input type="text" class="form-control" id="shop-name" placeholder="VD: Male Fashion - Chi nhánh Thủ Đức" required maxlength="100">
                                 </div>
                             </div>
                             <div class="col-md-5">
@@ -765,9 +1057,9 @@
                 <div class="col-lg-3 col-md-6 col-sm-6">
                     <div class="footer__about">
                         <div class="footer__logo">
-                            <a href="/index.html"><img src="/img/footer-logo.png" alt="StoreChain"></a>
+                            <a href="#"><img src="/img/footer-logo.png" alt=""></a>
                         </div>
-                        <p>Hệ thống Quản trị StoreChain - Chuỗi cửa hàng thời trang nam hiện đại bậc nhất.</p>
+                        <p>Hệ thống Quản trị Male Fashion - Chuỗi cửa hàng thời trang nam hiện đại bậc nhất.</p>
                     </div>
                 </div>
                 <div class="col-lg-2 offset-lg-1 col-md-3 col-sm-6">
@@ -775,6 +1067,7 @@
                         <h6>Quản trị</h6>
                         <ul>
                             <li><a href="/admin-users.html">Quản lý Tài khoản</a></li>
+                            <li><a href="/admin-products.html">Quản lý Sản phẩm</a></li>
                             <li><a href="/admin-categories.html">Quản lý Danh mục</a></li>
                             <li><a href="/admin-shops.html">Quản lý Chi nhánh</a></li>
                             <li><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
@@ -804,7 +1097,7 @@
             <div class="row">
                 <div class="col-lg-12 text-center">
                     <div class="footer__copyright__text">
-                        <p>Bản quyền &copy; <script>document.write(new Date().getFullYear());</script> StoreChain Group 4. Tất cả các quyền được bảo lưu.</p>
+                        <p>Bản quyền &copy; <script>document.write(new Date().getFullYear());</script> Male Fashion Group 4. Tất cả các quyền được bảo lưu.</p>
                     </div>
                 </div>
             </div>
@@ -934,18 +1227,20 @@
                     return;
                 }
 
-                displayNameEl.innerHTML = `<i class="fa fa-user-circle text-danger mr-1"></i> Xin chào, <strong>${escapeHtml(user.fullName || user.username)}</strong>`;
-                roleIndicatorEl.className = 'badge badge-danger p-2';
-                roleIndicatorEl.innerHTML = `<i class="fa fa-shield"></i> ADMIN`;
+                displayNameEl.innerHTML = `<i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong>`;
+                if (roleIndicatorEl) {
+                    roleIndicatorEl.style.display = 'none';
+                }
 
                 authInfoEl.innerHTML = `
-                    <span class="text-white mr-3"><i class="fa fa-user-circle text-danger mr-1"></i> Xin chào, <strong>${escapeHtml(user.fullName || user.username)}</strong></span>
+                    <span class="text-white mr-3"><i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong></span>
                     <button class="btn btn-sm btn-outline-light" onclick="handleLogout()"><i class="fa fa-sign-out mr-1"></i> Đăng xuất</button>
                 `;
             } else {
                 displayNameEl.innerHTML = `<i class="fa fa-user-circle"></i> Chưa đăng nhập`;
-                roleIndicatorEl.className = 'badge badge-secondary p-2';
-                roleIndicatorEl.innerHTML = `<i class="fa fa-lock"></i> CHƯA ĐĂNG NHẬP`;
+                if (roleIndicatorEl) {
+                    roleIndicatorEl.style.display = 'none';
+                }
 
                 authInfoEl.innerHTML = `
                     <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
@@ -1073,6 +1368,12 @@
                 shopSelect.append(`<option value="${m.id}">${optText}</option>`);
                 assignSelect.append(`<option value="${m.id}">${optText}</option>`);
             });
+
+            // Cập nhật nice-select UI sau khi thêm options động
+            if ($.fn.niceSelect) {
+                shopSelect.niceSelect('update');
+                assignSelect.niceSelect('update');
+            }
         }
 
         // Load stats cards
@@ -1154,7 +1455,7 @@
             if (!pageData || !pageData.content || pageData.content.length === 0) {
                 tbody.html(`
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="9" class="empty-state">
                             <i class="fa fa-building-o"></i>
                             <h5>Không tìm thấy chi nhánh nào</h5>
                             <p>Hãy thêm chi nhánh mới hoặc thử điều chỉnh tiêu chí tìm kiếm.</p>
@@ -1195,12 +1496,32 @@
                     `;
                 }
 
+                const revText = formatVND(shop.currentMonthRevenue);
+                const orderCount = shop.currentMonthOrders || 0;
+                const stockCount = (shop.totalStock || 0).toLocaleString('vi-VN');
+
                 const tr = `
                     <tr>
                         <td class="font-weight-bold text-muted">#${shop.id}</td>
                         <td>
-                            <div class="font-weight-bold text-dark" style="font-size: 15px;">${escapeHtml(shop.name)}</div>
+                            <div>
+                                <a href="javascript:void(0)" class="shop-name-link font-weight-bold" onclick="openDetailModal(${shop.id})" title="Nhấn để xem chi tiết chi nhánh">
+                                    <i class="fa fa-building-o text-muted mr-1"></i>${escapeHtml(shop.name)}
+                                </a>
+                            </div>
                             <small class="text-muted">${escapeHtml(shop.description || 'Chưa có mô tả')}</small>
+                        </td>
+                        <td>
+                            <div class="badge-metric-rev mb-1">
+                                <i class="fa fa-line-chart mr-1"></i>${revText}
+                            </div>
+                            <small class="text-muted d-block"><i class="fa fa-check-circle-o text-success mr-1"></i>${orderCount} đơn hoàn tất</small>
+                        </td>
+                        <td>
+                            <div class="badge-metric-stock mb-1">
+                                <i class="fa fa-cubes mr-1"></i>${stockCount} SP
+                            </div>
+                            ${shop.totalProducts ? `<small class="text-muted d-block">${shop.totalProducts} mặt hàng</small>` : ''}
                         </td>
                         <td>
                             <i class="fa fa-map-marker text-danger mr-1"></i>
@@ -1212,6 +1533,9 @@
                         <td>${managerHtml}</td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">
+                            <button class="btn-action btn-view" onclick="openDetailModal(${shop.id})" title="Xem chi tiết chi nhánh">
+                                <i class="fa fa-eye"></i>
+                            </button>
                             <button class="btn-action btn-assign" onclick="openAssignModal(${shop.id}, '${escapeHtml(shop.name)}', ${shop.managerId || 0})" title="Bổ nhiệm / Thay đổi Quản lý">
                                 <i class="fa fa-user-plus"></i>
                             </button>
@@ -1311,6 +1635,11 @@
             $('#shopForm')[0].reset();
             $('#shop-status').val('active');
             $('#shop-manager').val('');
+            // Đồng bộ nice-select UI sau khi thay đổi giá trị select
+            if ($.fn.niceSelect) {
+                $('#shop-status').niceSelect('update');
+                $('#shop-manager').niceSelect('update');
+            }
             $('#shopModalTitle').html('<i class="fa fa-building mr-2"></i> Thêm Chi nhánh mới');
             $('#btn-submit-shop').text('Thêm chi nhánh');
             $('#shopModal').modal('show');
@@ -1329,6 +1658,11 @@
                     $('#shop-description').val(shop.description || '');
                     $('#shop-status').val(shop.status || 'active');
                     $('#shop-manager').val(shop.managerId ? String(shop.managerId) : '');
+                    // Đồng bộ nice-select UI sau khi thay đổi giá trị select
+                    if ($.fn.niceSelect) {
+                        $('#shop-status').niceSelect('update');
+                        $('#shop-manager').niceSelect('update');
+                    }
 
                     $('#shopModalTitle').html('<i class="fa fa-pencil mr-2"></i> Chỉnh sửa Chi nhánh #' + shop.id);
                     $('#btn-submit-shop').text('Cập nhật chi nhánh');
@@ -1349,7 +1683,7 @@
             const phone = $('#shop-phone').val().trim();
             const address = $('#shop-address').val().trim();
             const description = $('#shop-description').val().trim();
-            const status = $('#shop-status').val();
+            const status = $('#shop-status').val() || 'active';
             const managerVal = $('#shop-manager').val();
             const managerId = managerVal ? parseInt(managerVal, 10) : null;
 
@@ -1378,8 +1712,16 @@
                 headers: getAuthHeaders(),
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    showToast('Phiên đăng nhập hết hạn hoặc không có quyền ADMIN. Vui lòng đăng nhập lại.', 'danger');
+                    btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
+                    return null;
+                }
+                return res.json();
+            })
             .then(data => {
+                if (!data) return;
                 btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
                 if (data.success) {
                     showToast(data.message || (isEdit ? 'Cập nhật chi nhánh thành công!' : 'Tạo chi nhánh mới thành công!'), 'success');
@@ -1401,6 +1743,10 @@
             $('#assign-shop-id').val(shopId);
             $('#assign-shop-name').text(shopName);
             $('#assign-manager-select').val(currentManagerId ? String(currentManagerId) : '0');
+            // Đồng bộ nice-select UI
+            if ($.fn.niceSelect) {
+                $('#assign-manager-select').niceSelect('update');
+            }
             $('#assignManagerModal').modal('show');
         }
 
@@ -1472,6 +1818,353 @@
                 btn.prop('disabled', false).text('Xác nhận xóa');
                 showToast('Lỗi: ' + err.message, 'danger');
             });
+        }
+
+        // Format Currency Helper
+        function formatVND(amount) {
+            if (amount === null || amount === undefined) return '0 đ';
+            return Number(amount).toLocaleString('vi-VN') + ' đ';
+        }
+
+        // Branch Detail Handlers
+        let currentDetailShop = null;
+        let detailStockList = [];
+        let detailEmployeeList = [];
+
+        function openDetailModal(id) {
+            // Hiển thị trạng thái đang tải
+            $('#detailModalShopName').html('<i class="fa fa-spinner fa-spin mr-2"></i> Đang tải thông tin chi nhánh #' + id + '...');
+            $('#detailModalShopSubtitle').text('Đang lấy dữ liệu chi tiết...');
+            $('#detailModalStatusBadge').empty();
+            $('#detailKpiRevenue').html('<i class="fa fa-spinner fa-spin"></i>');
+            $('#detailKpiRevenueSub').text('Đang tải...');
+            $('#detailKpiStock').html('<i class="fa fa-spinner fa-spin"></i>');
+            $('#detailKpiStockSub').text('Đang tải...');
+            $('#detailKpiManager').text('Đang tải...');
+            $('#detailKpiManagerSub').text('');
+            $('#detailKpiTotalRev').text('0 đ');
+            $('#detailKpiTotalOrders').text('');
+            $('#detailStockTableBody').html('<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin fa-2x mb-2 d-block"></i><p>Đang tải tồn kho chi nhánh...</p></td></tr>');
+            $('#detailEmployeesTableBody').html('<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin fa-2x mb-2 d-block"></i><p>Đang tải danh sách nhân viên...</p></td></tr>');
+            $('#detailOrdersTableBody').html('<tr><td colspan="6" class="text-center py-4 text-muted"><i class="fa fa-spinner fa-spin fa-2x mb-2 d-block"></i><p>Đang tải đơn hàng gần đây...</p></td></tr>');
+
+            // Mở tab đầu tiên mặc định
+            $('#branchDetailTabs a[href="#tab-branch-stock"]').tab('show');
+            $('#shopDetailModal').modal('show');
+
+            fetch(`/api/admin/shops/${id}/detail`, {
+                headers: getAuthHeaders()
+            })
+            .then(res => {
+                if (res.status === 401 || res.status === 403) {
+                    showToast('Phiên làm việc hết hạn hoặc không có quyền ADMIN', 'danger');
+                    $('#shopDetailModal').modal('hide');
+                    return null;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (!data || !data.success || !data.data) {
+                    showToast(data ? data.message : 'Không tải được chi tiết chi nhánh', 'danger');
+                    $('#shopDetailModal').modal('hide');
+                    return;
+                }
+                const detail = data.data;
+                currentDetailShop = detail;
+                detailStockList = detail.products || [];
+                detailEmployeeList = detail.employees || [];
+
+                // Header
+                $('#detailModalShopName').text(detail.name);
+                $('#detailModalShopSubtitle').text(`Mã chi nhánh: #${detail.id} | Slug: ${detail.slug || 'N/A'}`);
+                const isActive = detail.status === 'active';
+                $('#detailModalStatusBadge').html(
+                    isActive
+                        ? '<span class="badge badge-success px-2 py-1"><i class="fa fa-check mr-1"></i> Đang hoạt động</span>'
+                        : '<span class="badge badge-warning px-2 py-1"><i class="fa fa-pause mr-1"></i> Tạm ngừng</span>'
+                );
+
+                // KPI 1: Doanh thu tháng hiện tại
+                const ym = new Date();
+                const currentMonthLabel = `Tháng ${ym.getMonth() + 1}/${ym.getFullYear()}`;
+                $('#detailKpiRevenue').text(formatVND(detail.currentMonthRevenue));
+                $('#detailKpiRevenueSub').html(`<i class="fa fa-calendar mr-1"></i>${currentMonthLabel} &bull; <strong>${detail.currentMonthOrders || 0}</strong> đơn hoàn tất`);
+
+                // KPI 2: Tổng số lượng hàng tồn
+                const totalStockFormatted = (detail.totalStock || 0).toLocaleString('vi-VN');
+                $('#detailKpiStock').text(totalStockFormatted + ' SP');
+                $('#detailKpiStockSub').html(`Tại kho &bull; <strong>${detail.totalProducts || 0}</strong> loại mặt hàng`);
+
+                // KPI 3: Quản lý
+                if (detail.managerId) {
+                    $('#detailKpiManager').text(detail.managerFullName || detail.managerUsername);
+                    $('#detailKpiManagerSub').text('SĐT: ' + (detail.managerPhone || 'Chưa có SĐT'));
+                } else {
+                    $('#detailKpiManager').html('<span class="text-warning font-italic">Chưa bổ nhiệm</span>');
+                    $('#detailKpiManagerSub').text('Nhấn nút bên dưới để bổ nhiệm');
+                }
+
+                // KPI 4: Lũy kế
+                $('#detailKpiTotalRev').text(formatVND(detail.totalRevenue));
+                $('#detailKpiTotalOrders').text(`Lũy kế toàn bộ ${detail.totalOrders || 0} đơn hàng`);
+
+                // Badges count on tabs
+                $('#detailBadgeStockCount').text(detailStockList.length);
+                $('#detailBadgeEmployeeCount').text(detailEmployeeList.length);
+                $('#detailBadgeOrderCount').text((detail.recentOrders || []).length);
+
+                // Tab 1: Stock table
+                renderDetailStockTable(detailStockList);
+
+                // Tab 2: Employee table
+                renderDetailEmployeeTable(detailEmployeeList);
+
+                // Tab 3: Recent orders table
+                renderDetailOrdersTable(detail.recentOrders || []);
+
+                // Tab 3: Info
+                $('#detailInfoAddress').text(detail.address || 'Chưa cập nhật địa chỉ');
+                $('#detailInfoPhone').text(detail.phone || 'Chưa cập nhật hotline');
+                $('#detailInfoSlug').text(detail.slug || 'N/A');
+                $('#detailInfoDescription').text(detail.description || 'Không có mô tả bổ sung.');
+
+                if (detail.managerId) {
+                    $('#detailInfoManagerName').text(detail.managerFullName || detail.managerUsername);
+                    $('#detailInfoManagerUser').text(detail.managerUsername);
+                    $('#detailInfoManagerEmail').text(detail.managerEmail || 'Chưa cập nhật email');
+                    $('#detailInfoManagerPhone').text(detail.managerPhone || 'Chưa cập nhật SĐT');
+                } else {
+                    $('#detailInfoManagerName').html('<span class="text-danger">Chưa có người quản lý</span>');
+                    $('#detailInfoManagerUser').text('N/A');
+                    $('#detailInfoManagerEmail').text('N/A');
+                    $('#detailInfoManagerPhone').text('N/A');
+                }
+
+                $('#detailInfoCreatedAt').text(detail.createdAt || 'N/A');
+                $('#detailInfoUpdatedAt').text(detail.updatedAt || 'N/A');
+            })
+            .catch(err => {
+                showToast('Lỗi tải chi tiết chi nhánh: ' + err.message, 'danger');
+                $('#shopDetailModal').modal('hide');
+            });
+        }
+
+        function renderDetailStockTable(items) {
+            const tbody = $('#detailStockTableBody');
+            tbody.empty();
+
+            if (!items || items.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fa fa-cubes fa-2x mb-2 d-block"></i>
+                            Không có sản phẩm nào có tồn kho tại chi nhánh này.
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            items.forEach(item => {
+                const imgUrl = item.imageUrl || '/img/product/product-1.jpg';
+                const stockVal = item.stock || 0;
+                let stockBadgeClass = 'badge-success';
+                let stockIcon = 'fa-check';
+                if (stockVal === 0) {
+                    stockBadgeClass = 'badge-danger';
+                    stockIcon = 'fa-times';
+                } else if (stockVal <= 10) {
+                    stockBadgeClass = 'badge-warning';
+                    stockIcon = 'fa-exclamation-triangle';
+                }
+
+                // Format size breakdown nicely (e.g. S:10, M:15 -> S: 10 | M: 15)
+                let sizeHtml = '<span class="text-muted font-italic">Không phân size</span>';
+                if (item.sizeStocks && item.sizeStocks.trim()) {
+                    const sizeParts = item.sizeStocks.split(',').map(s => s.trim()).filter(Boolean);
+                    if (sizeParts.length > 0) {
+                        sizeHtml = sizeParts.map(sp => {
+                            const [sz, qty] = sp.split(':');
+                            return `<span class="badge badge-light border mr-1 mb-1 font-weight-normal"><strong>${escapeHtml(sz || '')}:</strong> ${qty || 0}</span>`;
+                        }).join(' ');
+                    }
+                }
+
+                const row = `
+                    <tr>
+                        <td>
+                            <img src="${escapeHtml(imgUrl)}" alt="" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #eee;">
+                        </td>
+                        <td>
+                            <div class="font-weight-bold text-dark" style="font-size: 14px;">${escapeHtml(item.productName)}</div>
+                            <small class="text-muted"><i class="fa fa-barcode mr-1"></i>${escapeHtml(item.baseSku || 'SKU-' + item.productId)}</small>
+                        </td>
+                        <td>
+                            <span class="badge badge-light border">${escapeHtml(item.categoryName || 'Khác')}</span>
+                        </td>
+                        <td class="text-right font-weight-bold text-dark">
+                            ${formatVND(item.price)}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge ${stockBadgeClass} px-2 py-1" style="font-size: 13px;">
+                                <i class="fa ${stockIcon} mr-1"></i><strong>${stockVal}</strong> SP
+                            </span>
+                        </td>
+                        <td>${sizeHtml}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function filterDetailStockTable() {
+            const query = ($('#detailStockSearchInput').val() || '').toLowerCase().trim();
+            if (!query) {
+                renderDetailStockTable(detailStockList);
+                return;
+            }
+            const filtered = detailStockList.filter(item => {
+                const name = (item.productName || '').toLowerCase();
+                const sku = (item.baseSku || '').toLowerCase();
+                const cat = (item.categoryName || '').toLowerCase();
+                return name.includes(query) || sku.includes(query) || cat.includes(query);
+            });
+            renderDetailStockTable(filtered);
+        }
+
+        function renderDetailEmployeeTable(employees) {
+            const tbody = $('#detailEmployeesTableBody');
+            tbody.empty();
+
+            if (!employees || employees.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="fa fa-users fa-2x mb-2 d-block"></i>
+                            Chi nhánh này hiện chưa có nhân viên nào.
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            employees.forEach(emp => {
+                const initial = (emp.fullName || emp.username || 'E').charAt(0).toUpperCase();
+                let avatarHtml = emp.avatarUrl
+                    ? `<img src="${escapeHtml(emp.avatarUrl)}" alt="" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%;">`
+                    : `<div style="width: 36px; height: 36px; border-radius: 50%; background: #2b3a4a; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px;">${initial}</div>`;
+
+                const isEmployed = emp.employed !== false;
+                const workBadge = isEmployed
+                    ? '<span class="badge badge-success px-2 py-1"><i class="fa fa-check-circle mr-1"></i>Đang làm việc</span>'
+                    : '<span class="badge badge-secondary px-2 py-1"><i class="fa fa-user-times mr-1"></i>Đã nghỉ việc</span>';
+
+                const isActiveAccount = emp.status === 'active';
+                const accountBadge = isActiveAccount
+                    ? '<span class="badge badge-light border text-success"><i class="fa fa-circle mr-1" style="font-size: 9px;"></i>Hoạt động</span>'
+                    : '<span class="badge badge-light border text-danger"><i class="fa fa-ban mr-1"></i>Khóa</span>';
+
+                const row = `
+                    <tr>
+                        <td class="text-center">${avatarHtml}</td>
+                        <td>
+                            <div class="font-weight-bold text-dark" style="font-size: 14px;">${escapeHtml(emp.fullName || emp.username)}</div>
+                            <small class="text-muted"><i class="fa fa-user-o mr-1"></i>${escapeHtml(emp.username)}</small>
+                        </td>
+                        <td>
+                            <span>${escapeHtml(emp.email || 'Chưa có email')}</span>
+                        </td>
+                        <td>
+                            ${emp.phone ? `<strong><i class="fa fa-phone text-muted mr-1"></i>${escapeHtml(emp.phone)}</strong>` : '<span class="text-muted font-italic">Chưa có SĐT</span>'}
+                        </td>
+                        <td class="text-center">${workBadge}</td>
+                        <td class="text-center">${accountBadge}</td>
+                        <td class="text-center text-muted small">${escapeHtml(emp.createdAt || 'N/A')}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function filterDetailEmployeeTable() {
+            const query = ($('#detailEmployeeSearchInput').val() || '').toLowerCase().trim();
+            if (!query) {
+                renderDetailEmployeeTable(detailEmployeeList);
+                return;
+            }
+            const filtered = detailEmployeeList.filter(emp => {
+                const name = (emp.fullName || '').toLowerCase();
+                const user = (emp.username || '').toLowerCase();
+                const mail = (emp.email || '').toLowerCase();
+                const ph = (emp.phone || '').toLowerCase();
+                return name.includes(query) || user.includes(query) || mail.includes(query) || ph.includes(query);
+            });
+            renderDetailEmployeeTable(filtered);
+        }
+
+        function renderDetailOrdersTable(orders) {
+            const tbody = $('#detailOrdersTableBody');
+            tbody.empty();
+
+            if (!orders || orders.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fa fa-shopping-bag fa-2x mb-2 d-block"></i>
+                            Chi nhánh chưa có đơn hàng nào phát sinh.
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            orders.forEach(o => {
+                let badgeClass = 'badge-secondary';
+                const st = (o.status || '').toUpperCase();
+                if (st === 'DELIVERED' || st === 'RECEIVED') badgeClass = 'badge-success';
+                else if (st === 'SHIPPING' || st === 'PICKED_UP') badgeClass = 'badge-info';
+                else if (st === 'CONFIRMED' || st === 'NEW') badgeClass = 'badge-warning';
+                else if (st === 'CANCELLED' || st === 'RETURNED') badgeClass = 'badge-danger';
+
+                const orderTypeBadge = o.orderType === 'off'
+                    ? '<span class="badge badge-light border text-dark"><i class="fa fa-shopping-cart mr-1"></i>Tại quầy</span>'
+                    : '<span class="badge badge-light border text-primary"><i class="fa fa-globe mr-1"></i>Online</span>';
+
+                const row = `
+                    <tr>
+                        <td class="font-weight-bold text-dark">${escapeHtml(o.orderCode || '#' + o.orderId)}</td>
+                        <td class="text-muted small">${escapeHtml(o.createdAt || 'N/A')}</td>
+                        <td>
+                            <div class="font-weight-bold" style="font-size: 13px;">${escapeHtml(o.customerName || 'Khách lẻ')}</div>
+                            <small class="text-muted">${escapeHtml(o.customerPhone || '')}</small>
+                        </td>
+                        <td>${orderTypeBadge}</td>
+                        <td class="text-right font-weight-bold text-danger">${formatVND(o.grandTotal)}</td>
+                        <td class="text-center">
+                            <span class="badge ${badgeClass} px-2 py-1">${escapeHtml(o.statusLabel || o.status || 'N/A')}</span>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function openEditFromDetail() {
+            if (!currentDetailShop) return;
+            const shopId = currentDetailShop.id;
+            $('#shopDetailModal').modal('hide');
+            setTimeout(() => {
+                openEditModal(shopId);
+            }, 300);
+        }
+
+        function openAssignFromDetail() {
+            if (!currentDetailShop) return;
+            const shop = currentDetailShop;
+            $('#shopDetailModal').modal('hide');
+            setTimeout(() => {
+                openAssignModal(shop.id, shop.name, shop.managerId || 0);
+            }, 300);
         }
 
         // Initialize on DOM Ready
