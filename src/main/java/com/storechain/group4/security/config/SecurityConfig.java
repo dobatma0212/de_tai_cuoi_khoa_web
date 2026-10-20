@@ -71,6 +71,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/*.html",
+                                "/WEB-INF/views/**",
+                                "/decorator.jsp",
+                                "/decorator-simple.jsp",
+                                "/admin-decorator.jsp",
                                 "/css/**",
                                 "/js/**",
                                 "/img/**",
