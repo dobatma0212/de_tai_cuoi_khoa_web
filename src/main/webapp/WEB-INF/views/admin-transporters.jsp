@@ -1,30 +1,22 @@
-<!DOCTYPE html>
-<html lang="vi">
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true" %>
 
+<!DOCTYPE html>
+<html lang="zxx">
 <head>
-    <meta charset="UTF-8">
-    <meta name="description" content="Quản lý Danh mục sản phẩm - Male Fashion Admin">
-    <meta name="keywords" content="Male_Fashion, admin, category, management">
+<meta charset="UTF-8">
+    <meta name="description" content="Quản lý Đơn vị vận chuyển - Male Fashion Admin">
+    <meta name="keywords" content="Male_Fashion, admin, transporter, shipping">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Quản lý Danh mục | Male-Fashion Admin</title>
+    <title>Quản lý Vận chuyển | Male-Fashion Admin</title>
 
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    
 
-    <!-- Css Styles -->
-    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
-    <link rel="stylesheet" href="/css/magnific-popup.css" type="text/css">
-    <link rel="stylesheet" href="/css/nice-select.css" type="text/css">
-    <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/style.css" type="text/css">
-    <link rel="stylesheet" href="/css/admin.css" type="text/css">
+    
+
+    
 
     <style>
-        /* Card thống kê */
         .admin-stat-card {
             background: #ffffff;
             border-radius: 8px;
@@ -78,7 +70,6 @@
             font-weight: 600;
         }
 
-        /* Bộ lọc */
         .filter-panel {
             background: #ffffff;
             border-radius: 8px;
@@ -144,7 +135,6 @@
             box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
         }
 
-        /* Bảng dữ liệu */
         .admin-table-container {
             background: #ffffff;
             border-radius: 8px;
@@ -184,72 +174,40 @@
             background-color: #fcfcfc;
         }
 
-        /* Category item visual */
-        .cat-thumb {
-            width: 44px;
-            height: 44px;
-            border-radius: 6px;
-            object-fit: cover;
-            border: 1px solid #e9ecef;
-            background: #f8f9fa;
-        }
-
-        .cat-thumb-placeholder {
-            width: 44px;
-            height: 44px;
-            border-radius: 6px;
-            background: #f1f3f5;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-            font-size: 18px;
-        }
-
-        .cat-name-link {
+        .transporter-name-link {
             font-weight: 700;
             color: #111111;
             font-size: 15px;
             transition: color 0.2s;
         }
 
-        .cat-name-link:hover {
+        .transporter-name-link:hover {
             color: #e53637;
             text-decoration: none;
         }
 
-        .slug-badge {
-            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            background: #f1f3f5;
-            color: #495057;
-            padding: 3px 7px;
+        .fee-badge {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 12px;
-            display: inline-block;
-        }
-
-        .parent-badge {
-            background: #e9ecef;
-            color: #495057;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .parent-root-badge {
-            background: #e8f4fd;
-            color: #0288d1;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
+            display: inline-block;
+            white-space: nowrap;
         }
 
-        /* Status badges */
+        .contact-line {
+            font-size: 13px;
+            color: #555555;
+            margin: 0;
+        }
+
+        .contact-line i {
+            width: 16px;
+            color: #888888;
+        }
+
         .badge-status-active {
             background-color: #e8f5e9;
             color: #2e7d32;
@@ -282,7 +240,6 @@
             background-color: #ffcdd2;
         }
 
-        /* Action buttons */
         .btn-action {
             width: 32px;
             height: 32px;
@@ -317,7 +274,6 @@
             color: #ffffff;
         }
 
-        /* Nút chính */
         .btn-male-fashion {
             background: #111111;
             color: #ffffff;
@@ -340,7 +296,6 @@
             color: #ffffff;
         }
 
-        /* Phân trang */
         .pagination-container {
             padding: 16px 20px;
             display: flex;
@@ -379,7 +334,6 @@
             cursor: not-allowed;
         }
 
-        /* Toasts */
         #toast-container {
             position: fixed;
             top: 24px;
@@ -421,7 +375,6 @@
         .toast-message { font-size: 14px; font-weight: 600; color: #222222; flex-grow: 1; }
         .toast-close { cursor: pointer; color: #999; font-size: 16px; }
 
-        /* Modal styling */
         .modal-header {
             background: #111111;
             color: #ffffff;
@@ -474,25 +427,6 @@
             box-shadow: 0 0 0 2px rgba(229, 54, 55, 0.15);
         }
 
-        .img-preview-box {
-            width: 80px;
-            height: 80px;
-            border: 1px dashed #ccc;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8f9fa;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .img-preview-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
         .detail-row {
             display: flex;
             justify-content: space-between;
@@ -505,113 +439,40 @@
         .detail-value { font-weight: 700; color: #111111; text-align: right; }
     </style>
 </head>
-
 <body>
-    <!-- Page Preloder -->
-    <div id="preloder">
-        <div class="loader"></div>
-    </div>
 
-    <!-- Toast Notifications Container -->
-    <div id="toast-container"></div>
+    
 
-    <!-- Offcanvas Menu Begin -->
-    <div class="offcanvas-menu-overlay"></div>
-    <div class="offcanvas-menu-wrapper">
-        <div class="offcanvas__option">
-            <div class="offcanvas__links" id="mobile-auth-section">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-        <div id="mobile-menu-wrap"></div>
-        <div class="offcanvas__text">
-            <p>Hệ thống Quản lý Chuỗi Cửa hàng - Male Fashion</p>
-        </div>
-    </div>
-    <!-- Offcanvas Menu End -->
+    
 
-    <!-- Header Section Begin -->
-    <header class="header admin-header">
-        <div class="header__top">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-5 col-md-5 col-5">
-                        <div class="header__top__left">
-                            <p><i class="fa fa-sliders"></i> Bảng điều khiển Quản trị</p>
-                        </div>
-                    </div>
-                    <div class="col-lg-7 col-md-7 col-7">
-                        <div class="header__top__right d-flex justify-content-end align-items-center">
-                            <a href="/index.html" class="topbar-shop-link" title="Xem trang bán hàng">
-                                <i class="fa fa-external-link"></i> Xem Cửa hàng
-                            </a>
-                            <div class="header__top__links" id="auth-user-info">
-                                <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
-                                <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-2 col-md-3">
-                    <div class="header__logo admin-header-logo-wrap">
-                        <a href="/admin-categories.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
-                        <span class="admin-portal-tag">PORTAL</span>
-                    </div>
-                </div>
-                <div class="col-lg-10 col-md-9">
-                    <nav class="header__menu mobile-menu">
-                        <ul class="admin-nav-list">
-                            <li><a href="/admin-users.html"><i class="fa fa-users"></i> Người dùng</a></li>
-                            <li><a href="/admin-products.html"><i class="fa fa-cube"></i> Sản phẩm</a></li>
-                            <li class="active"><a href="/admin-categories.html"><i class="fa fa-tags"></i> Danh mục</a></li>
-                            <li><a href="/admin-shops.html"><i class="fa fa-building"></i> Chi nhánh</a></li>
-                            <li><a href="/admin-transporters.html"><i class="fa fa-truck"></i> Vận chuyển</a></li>
-                            <li><a href="/admin-promotions.html"><i class="fa fa-percent"></i> Khuyến mãi</a></li>
-                        </ul>
-                    </nav>
-                </div>
-            </div>
-            <div class="canvas__open"><i class="fa fa-bars"></i></div>
-        </div>
-    </header>
-    <!-- Header Section End -->
-
-    <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-option">
         <div class="container">
             <div class="row">
                 <div class="col-lg-12">
                     <div class="breadcrumb__text">
-                        <h4>Quản lý Danh mục (Category)</h4>
+                        <h4>Quản lý Đơn vị vận chuyển (Transporter)</h4>
                         <div class="breadcrumb__links">
-                            <a href="/admin-categories.html">Hệ thống</a>
-                            <span>Danh sách Danh mục sản phẩm</span>
+                            <a href="/admin-transporters.html">Hệ thống</a>
+                            <span>Danh sách nhà vận chuyển</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
-    <!-- Breadcrumb Section End -->
 
-    <!-- Main Content Section Begin -->
-    <section class="admin-category-section spad pt-4">
+    <section class="admin-transporter-section spad pt-4">
         <div class="container">
 
-            <!-- Thống kê tổng quan (Statistics Cards) -->
             <div class="row">
                 <div class="col-lg-3 col-md-6 col-sm-6">
                     <div class="admin-stat-card stat-primary">
                         <div>
                             <div class="stat-number" id="stat-total">0</div>
-                            <div class="stat-label">Tổng danh mục</div>
+                            <div class="stat-label">Tổng đơn vị</div>
                         </div>
                         <div class="stat-icon">
-                            <i class="fa fa-folder-open"></i>
+                            <i class="fa fa-truck"></i>
                         </div>
                     </div>
                 </div>
@@ -640,37 +501,26 @@
                 <div class="col-lg-3 col-md-6 col-sm-6">
                     <div class="admin-stat-card stat-info">
                         <div>
-                            <div class="stat-number" id="stat-roots">0</div>
-                            <div class="stat-label">Danh mục gốc</div>
+                            <div class="stat-number" id="stat-avg-fee" style="font-size: 22px;">0 ₫</div>
+                            <div class="stat-label">Phí cơ bản TB</div>
                         </div>
                         <div class="stat-icon">
-                            <i class="fa fa-sitemap"></i>
+                            <i class="fa fa-money"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Thanh tìm kiếm và Bộ lọc -->
             <div class="filter-panel">
                 <div class="row align-items-center">
-                    <!-- Ô tìm kiếm từ khóa -->
-                    <div class="col-lg-4 col-md-6 mb-3 mb-lg-0">
+                    <div class="col-lg-5 col-md-6 mb-3 mb-lg-0">
                         <div class="filter-input-group">
                             <i class="fa fa-search search-icon"></i>
-                            <input type="text" id="filter-keyword" placeholder="Tìm theo tên danh mục, slug...">
+                            <input type="text" id="filter-keyword" placeholder="Tìm theo tên, SĐT, email...">
                             <span class="clear-search" id="clear-search-btn" onclick="clearSearch()">&times;</span>
                         </div>
                     </div>
 
-                    <!-- Lọc theo danh mục cha -->
-                    <div class="col-lg-2 col-md-3 col-6 mb-3 mb-lg-0">
-                        <select class="filter-select" id="filter-parent" onchange="onFilterChange()">
-                            <option value="">-- Tất cả cấp bậc --</option>
-                            <option value="ROOT">Chỉ danh mục gốc</option>
-                        </select>
-                    </div>
-
-                    <!-- Lọc theo trạng thái -->
                     <div class="col-lg-2 col-md-3 col-6 mb-3 mb-lg-0">
                         <select class="filter-select" id="filter-status" onchange="onFilterChange()">
                             <option value="">-- Tất cả trạng thái --</option>
@@ -679,19 +529,18 @@
                         </select>
                     </div>
 
-                    <!-- Sắp xếp -->
-                    <div class="col-lg-2 col-md-6 col-6 mb-3 mb-lg-0">
+                    <div class="col-lg-3 col-md-6 col-6 mb-3 mb-lg-0">
                         <select class="filter-select" id="filter-sort" onchange="onFilterChange()">
-                            <option value="sortOrder-asc">Thứ tự tăng dần</option>
-                            <option value="sortOrder-desc">Thứ tự giảm dần</option>
                             <option value="id-desc">Mới nhất trước</option>
                             <option value="id-asc">Cũ nhất trước</option>
-                            <option value="name-asc">Tên danh mục A-Z</option>
+                            <option value="name-asc">Tên A-Z</option>
+                            <option value="name-desc">Tên Z-A</option>
+                            <option value="baseFee-asc">Phí thấp → cao</option>
+                            <option value="baseFee-desc">Phí cao → thấp</option>
                         </select>
                     </div>
 
-                    <!-- Nút Thêm mới -->
-                    <div class="col-lg-2 col-md-6 col-6 text-right">
+                    <div class="col-lg-2 col-md-6 col-12 text-right">
                         <button class="btn-male-fashion w-100" onclick="openCreateModal()">
                             <i class="fa fa-plus-circle mr-1"></i> Thêm mới
                         </button>
@@ -699,108 +548,82 @@
                 </div>
             </div>
 
-            <!-- Bảng danh mục sản phẩm -->
             <div class="admin-table-container">
                 <div class="table-responsive">
                     <table class="table admin-table text-nowrap">
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Ảnh</th>
-                                <th>Tên danh mục</th>
-                                <th>Slug</th>
-                                <th>Danh mục cha</th>
-                                <th>Thứ tự</th>
+                                <th>Tên đơn vị</th>
+                                <th>Liên hệ</th>
+                                <th>Phí cơ bản</th>
                                 <th>Trạng thái</th>
                                 <th>Ngày tạo</th>
                                 <th class="text-right">Thao tác</th>
                             </tr>
                         </thead>
-                        <tbody id="category-table-body">
+                        <tbody id="transporter-table-body">
                             <tr>
-                                <td colspan="9" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <i class="fa fa-spinner fa-spin fa-2x mb-3"></i>
-                                    <div>Đang tải danh sách danh mục...</div>
+                                    <div>Đang tải danh sách đơn vị vận chuyển...</div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Phân trang -->
                 <div class="pagination-container" id="pagination-container" style="display: none;">
                     <div class="pagination-info" id="pagination-info">
-                        Hiển thị 0 - 0 trong tổng số 0 danh mục
+                        Hiển thị 0 - 0 trong tổng số 0 đơn vị
                     </div>
-                    <div class="pagination-buttons" id="pagination-buttons">
-                        <!-- Nút trang được sinh động bởi JS -->
-                    </div>
+                    <div class="pagination-buttons" id="pagination-buttons"></div>
                 </div>
             </div>
 
         </div>
     </section>
-    <!-- Main Content Section End -->
 
-    <!-- Modal Thêm / Cập nhật Danh mục -->
-    <div class="modal fade" id="categoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="transporterModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="categoryModalTitle">Thêm Danh Mục Mới</h5>
+                    <h5 class="modal-title" id="transporterModalTitle">Thêm Đơn Vị Vận Chuyển</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <form id="categoryForm" onsubmit="saveCategory(event)">
+                <form id="transporterForm" onsubmit="saveTransporter(event)">
                     <div class="modal-body">
-                        <input type="hidden" id="cat-id">
+                        <input type="hidden" id="tr-id">
 
                         <div class="form-group">
-                            <label for="cat-name">Tên danh mục <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="cat-name" placeholder="VD: Áo thun nam, Quần jean, Sơ mi..." required oninput="handleNameInput(this.value)">
+                            <label for="tr-name">Tên đơn vị vận chuyển <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="tr-name" placeholder="VD: Giao Hàng Nhanh, Viettel Post..." maxlength="100" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="cat-slug">Đường dẫn Slug <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="cat-slug" placeholder="VD: ao-thun-nam" required>
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="regenerateSlug()" title="Tạo lại slug tự động">
-                                        <i class="fa fa-refresh"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <small class="form-text text-muted">Đường dẫn duy nhất (Unique), tự động sinh từ tên tiếng Việt không dấu.</small>
+                            <label for="tr-phone">Số điện thoại <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="tr-phone" placeholder="VD: 1900 636677" maxlength="15" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="cat-parent">Danh mục cha (Parent)</label>
-                            <select class="form-control" id="cat-parent">
-                                <option value="">-- Là danh mục gốc (NULL) --</option>
-                            </select>
-                            <small class="form-text text-muted">Để trống nếu muốn đây là danh mục gốc cao nhất.</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cat-image">URL Hình ảnh</label>
-                            <input type="text" class="form-control" id="cat-image" placeholder="VD: /img/categories/cat-1.jpg hoặc link https://..." oninput="handleImagePreview(this.value)">
-                            <div class="img-preview-box" id="img-preview-box">
-                                <i class="fa fa-image text-muted"></i>
-                            </div>
+                            <label for="tr-email">Email</label>
+                            <input type="email" class="form-control" id="tr-email" placeholder="VD: support@ghn.vn (không bắt buộc)" maxlength="100">
+                            <small class="form-text text-muted">Để trống nếu không có. Email phải là duy nhất nếu có.</small>
                         </div>
 
                         <div class="row">
                             <div class="col-6">
                                 <div class="form-group">
-                                    <label for="cat-sort">Thứ tự sắp xếp (Sort)</label>
-                                    <input type="number" class="form-control" id="cat-sort" value="0" min="0">
+                                    <label for="tr-base-fee">Phí cơ bản (VNĐ)</label>
+                                    <input type="number" class="form-control" id="tr-base-fee" value="0" min="0" step="0.01">
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="form-group">
-                                    <label for="cat-status">Trạng thái</label>
-                                    <select class="form-control" id="cat-status">
+                                    <label for="tr-status">Trạng thái</label>
+                                    <select class="form-control" id="tr-status">
                                         <option value="active">Đang hoạt động (active)</option>
                                         <option value="inactive">Tạm ngừng (inactive)</option>
                                     </select>
@@ -810,7 +633,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn-male-fashion" id="btn-save-category">
+                        <button type="submit" class="btn-male-fashion" id="btn-save-transporter">
                             <i class="fa fa-check mr-1"></i> Lưu thông tin
                         </button>
                     </div>
@@ -819,19 +642,16 @@
         </div>
     </div>
 
-    <!-- Modal Chi tiết Danh mục -->
-    <div class="modal fade" id="categoryDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="transporterDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa fa-info-circle mr-1"></i> Chi Tiết Danh Mục</h5>
+                    <h5 class="modal-title"><i class="fa fa-info-circle mr-1"></i> Chi Tiết Đơn Vị Vận Chuyển</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body" id="category-detail-content">
-                    <!-- Chi tiết nạp bởi JS -->
-                </div>
+                <div class="modal-body" id="transporter-detail-content"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                     <button type="button" class="btn btn-dark" id="btn-edit-from-detail">
@@ -842,21 +662,20 @@
         </div>
     </div>
 
-    <!-- Modal Xóa Danh mục -->
-    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="deleteTransporterModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title text-white"><i class="fa fa-exclamation-triangle mr-1"></i> Xác Nhận Xóa Danh Mục</h5>
+                    <h5 class="modal-title text-white"><i class="fa fa-exclamation-triangle mr-1"></i> Xác Nhận Xóa</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body text-center py-4">
                     <i class="fa fa-trash text-danger fa-4x mb-3"></i>
-                    <h5>Bạn có chắc chắn muốn xóa danh mục này?</h5>
-                    <p class="text-muted mt-2 mb-0">Danh mục: <strong id="delete-cat-name" class="text-dark">...</strong></p>
-                    <small class="text-danger d-block mt-2" id="delete-cat-warning">Lưu ý: Hành động này không thể hoàn tác!</small>
+                    <h5>Bạn có chắc chắn muốn xóa đơn vị vận chuyển này?</h5>
+                    <p class="text-muted mt-2 mb-0">Đơn vị: <strong id="delete-tr-name" class="text-dark">...</strong></p>
+                    <small class="text-danger d-block mt-2">Lưu ý: Hành động này không thể hoàn tác!</small>
                 </div>
                 <div class="modal-footer justify-content-center">
                     <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Hủy bỏ</button>
@@ -868,7 +687,6 @@
         </div>
     </div>
 
-    <!-- Modal Đăng nhập Nhanh -->
     <div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
@@ -882,7 +700,7 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Tên đăng nhập / Email</label>
-                            <input type="text" class="form-control" id="login-username" required placeholder="admin">
+                            <input type="text" class="form-control" id="login-username" required placeholder="admin hoặc manager">
                         </div>
                         <div class="form-group">
                             <label>Mật khẩu</label>
@@ -906,7 +724,6 @@
         </div>
     </div>
 
-    <!-- Js Plugins -->
     <script src="/js/jquery-3.3.1.min.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/jquery.nice-select.min.js"></script>
@@ -915,7 +732,6 @@
     <script src="/js/jquery.slicknav.js"></script>
     <script src="/js/main.js"></script>
 
-    <!-- Category Management Logic -->
     <script>
         let currentUser = null;
         let currentPage = 0;
@@ -923,22 +739,19 @@
         let totalPages = 0;
         let totalElements = 0;
         let searchTimeout = null;
-        let currentlyEditingCatId = null;
-        let deletingCatId = null;
-        let rootCategoriesList = [];
+        let currentlyEditingId = null;
+        let deletingId = null;
 
-        const API_BASE = '/api/admin/categories';
+        const API_BASE = '/api/admin/transporters';
         const AUTH_API = '/api/auth/login';
 
         $(document).ready(function () {
             checkAuth();
             setupSearchDebounce();
             loadStats();
-            loadRootCategoriesFilter();
-            loadCategories();
+            loadTransporters();
         });
 
-        // Auth Helpers
         function getToken() {
             const scRaw = localStorage.getItem('sc_auth');
             if (scRaw) {
@@ -952,7 +765,9 @@
 
         function getAuthHeaders() {
             const token = getToken();
-            return token ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+            return token
+                ? { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                : { 'Content-Type': 'application/json' };
         }
 
         function checkAuth() {
@@ -978,14 +793,15 @@
             if (currentUser && getToken()) {
                 const roleName = currentUser.role || (currentUser.roles && currentUser.roles[0]) || 'USER';
                 const isAdmin = roleName.includes('ADMIN');
+                const isManager = roleName.includes('MANAGER');
 
                 if (roleIndicator.length) {
                     roleIndicator.removeClass('badge-danger badge-primary badge-dark')
-                        .addClass(isAdmin ? 'badge-danger' : 'badge-dark')
-                        .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : roleName.replace('ROLE_', '')}`);
+                        .addClass(isAdmin ? 'badge-danger' : 'badge-primary')
+                        .html(`<i class="fa fa-shield"></i> ${isAdmin ? 'ADMIN' : (isManager ? 'MANAGER' : roleName)}`);
                 }
 
-                const authHtml = `
+                authContainer.html(`
                     <span class="text-white mr-3">
                         <i class="fa fa-user-circle text-danger mr-1"></i>
                         <strong>${currentUser.fullName || currentUser.username}</strong>
@@ -993,8 +809,7 @@
                     <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
                         <i class="fa fa-sign-out mr-1"></i> Đăng xuất
                     </button>
-                `;
-                authContainer.html(authHtml);
+                `);
             } else {
                 if (roleIndicator.length) {
                     roleIndicator.removeClass('badge-danger badge-primary').addClass('badge-dark')
@@ -1042,7 +857,7 @@
                     };
 
                     if (!userObj.role.includes('ADMIN')) {
-                        showToast('Tài khoản của bạn không có quyền truy cập trang Quản lý Danh mục (yêu cầu ADMIN)!', 'danger');
+                        showToast('Tài khoản của bạn không có quyền truy cập trang Quản lý Vận chuyển (yêu cầu ADMIN)!', 'danger');
                         return;
                     }
 
@@ -1055,7 +870,7 @@
                     updateAuthUI();
                     showToast('Đăng nhập thành công với vai trò ' + userObj.role, 'success');
                     loadStats();
-                    loadCategories();
+                    loadTransporters();
                 },
                 error: function (xhr) {
                     submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
@@ -1074,7 +889,21 @@
             window.location.href = '/index.html';
         }
 
-        // Stats loader
+        function formatCurrency(value) {
+            const num = Number(value || 0);
+            return new Intl.NumberFormat('vi-VN').format(num) + ' ₫';
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function loadStats() {
             $.ajax({
                 url: `${API_BASE}/stats`,
@@ -1082,58 +911,15 @@
                 headers: getAuthHeaders(),
                 success: function (res) {
                     if (res.data) {
-                        $('#stat-total').text(res.data.totalCategories || 0);
-                        $('#stat-active').text(res.data.activeCategories || 0);
-                        $('#stat-inactive').text(res.data.inactiveCategories || 0);
-                        $('#stat-roots').text(res.data.rootCategories || 0);
-                    }
-                },
-                error: function () {
-                    // Fallback from public if unauthenticated
-                }
-            });
-        }
-
-        // Load root categories into filters & parent selects
-        function loadRootCategoriesFilter() {
-            $.ajax({
-                url: `/api/public/categories/roots`,
-                type: 'GET',
-                success: function (res) {
-                    if (res.data) {
-                        rootCategoriesList = res.data;
-                        const filterParent = $('#filter-parent');
-                        filterParent.find('option:not(:first):not(:nth-child(2))').remove();
-
-                        res.data.forEach(cat => {
-                            filterParent.append(`<option value="${cat.id}">[Gốc] ${cat.name}</option>`);
-                        });
+                        $('#stat-total').text(res.data.totalTransporters || 0);
+                        $('#stat-active').text(res.data.activeTransporters || 0);
+                        $('#stat-inactive').text(res.data.inactiveTransporters || 0);
+                        $('#stat-avg-fee').text(formatCurrency(res.data.avgBaseFee));
                     }
                 }
             });
         }
 
-        function populateParentSelect(excludeId = null) {
-            const select = $('#cat-parent');
-            select.empty();
-            select.append('<option value="">-- Là danh mục gốc (NULL) --</option>');
-
-            $.ajax({
-                url: `/api/public/categories`,
-                type: 'GET',
-                success: function (res) {
-                    if (res.data) {
-                        res.data.forEach(cat => {
-                            if (excludeId && cat.id === excludeId) return;
-                            const prefix = cat.parentId ? '— ' : '';
-                            select.append(`<option value="${cat.id}">${prefix}${cat.name} (${cat.slug})</option>`);
-                        });
-                    }
-                }
-            });
-        }
-
-        // Search & Filter
         function setupSearchDebounce() {
             $('#filter-keyword').on('input', function () {
                 const val = $(this).val();
@@ -1145,7 +931,7 @@
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function () {
                     currentPage = 0;
-                    loadCategories();
+                    loadTransporters();
                 }, 400);
             });
         }
@@ -1154,20 +940,19 @@
             $('#filter-keyword').val('');
             $('#clear-search-btn').hide();
             currentPage = 0;
-            loadCategories();
+            loadTransporters();
         }
 
         function onFilterChange() {
             currentPage = 0;
-            loadCategories();
+            loadTransporters();
         }
 
-        // Data Loader
-        function loadCategories() {
-            const tbody = $('#category-table-body');
+        function loadTransporters() {
+            const tbody = $('#transporter-table-body');
             tbody.html(`
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">
+                    <td colspan="7" class="text-center py-5 text-muted">
                         <i class="fa fa-spinner fa-spin fa-2x mb-3 text-danger"></i>
                         <div>Đang tải dữ liệu...</div>
                     </td>
@@ -1176,18 +961,9 @@
 
             const keyword = $('#filter-keyword').val().trim();
             const status = $('#filter-status').val();
-            const parentFilter = $('#filter-parent').val();
             const sortVal = $('#filter-sort').val().split('-');
-            const sortBy = sortVal[0] || 'sortOrder';
-            const sortDir = sortVal[1] || 'asc';
-
-            let parentId = null;
-            let onlyRoots = null;
-            if (parentFilter === 'ROOT') {
-                onlyRoots = true;
-            } else if (parentFilter) {
-                parentId = parentFilter;
-            }
+            const sortBy = sortVal[0] || 'id';
+            const sortDir = sortVal[1] || 'desc';
 
             const params = {
                 page: currentPage,
@@ -1197,8 +973,6 @@
             };
             if (keyword) params.keyword = keyword;
             if (status) params.status = status;
-            if (parentId) params.parentId = parentId;
-            if (onlyRoots !== null) params.onlyRoots = onlyRoots;
 
             $.ajax({
                 url: API_BASE,
@@ -1212,17 +986,17 @@
                         totalPages = res.data.totalPages;
                         renderPagination();
                     } else {
-                        renderEmptyTable('Không có dữ liệu danh mục');
+                        renderEmptyTable('Không có dữ liệu đơn vị vận chuyển');
                     }
                 },
                 error: function (xhr) {
                     if (xhr.status === 401 || xhr.status === 403) {
                         tbody.html(`
                             <tr>
-                                <td colspan="9" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <i class="fa fa-lock fa-3x text-danger mb-3"></i>
                                     <h5>Yêu cầu quyền Quản trị viên (ADMIN)</h5>
-                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản Quản trị viên để quản lý danh mục.</p>
+                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản Quản trị viên để quản lý đơn vị vận chuyển.</p>
                                     <button class="btn btn-male-fashion" onclick="openLoginModal()">
                                         <i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay
                                     </button>
@@ -1231,57 +1005,54 @@
                         `);
                         $('#pagination-container').hide();
                     } else {
-                        renderEmptyTable('Đã xảy ra lỗi khi tải danh mục: ' + (xhr.responseJSON?.message || 'Lỗi server'));
+                        renderEmptyTable('Đã xảy ra lỗi khi tải dữ liệu: ' + (xhr.responseJSON?.message || 'Lỗi server'));
                     }
                 }
             });
         }
 
-        function renderTable(categories) {
-            const tbody = $('#category-table-body');
+        function renderTable(transporters) {
+            const tbody = $('#transporter-table-body');
             tbody.empty();
 
-            if (!categories || categories.length === 0) {
-                renderEmptyTable('Không tìm thấy danh mục nào phù hợp với bộ lọc');
+            if (!transporters || transporters.length === 0) {
+                renderEmptyTable('Không tìm thấy đơn vị vận chuyển nào phù hợp với bộ lọc');
                 return;
             }
 
-            categories.forEach(cat => {
-                const imgHtml = cat.imageUrl
-                    ? `<img src="${cat.imageUrl}" alt="${cat.name}" class="cat-thumb" onerror="this.onerror=null;this.src='/img/icon/heart.png';">`
-                    : `<span class="cat-thumb-placeholder"><i class="fa fa-folder"></i></span>`;
+            transporters.forEach(tr => {
+                const statusBadge = tr.status === 'active'
+                    ? `<span class="badge-status-active" onclick="toggleStatus(${tr.id}, 'inactive')" title="Bấm để chuyển sang tạm ngừng"><i class="fa fa-check-circle mr-1"></i> Hoạt động</span>`
+                    : `<span class="badge-status-inactive" onclick="toggleStatus(${tr.id}, 'active')" title="Bấm để kích hoạt lại"><i class="fa fa-ban mr-1"></i> Tạm ngừng</span>`;
 
-                const parentBadgeHtml = cat.parentId
-                    ? `<span class="parent-badge"><i class="fa fa-level-up"></i> ${cat.parentName || ('ID: ' + cat.parentId)}</span>`
-                    : `<span class="parent-root-badge"><i class="fa fa-star"></i> Danh mục gốc</span>`;
+                const emailHtml = tr.email
+                    ? `<p class="contact-line"><i class="fa fa-envelope"></i> ${escapeHtml(tr.email)}</p>`
+                    : `<p class="contact-line text-muted"><i class="fa fa-envelope"></i> Chưa có email</p>`;
 
-                const statusBadge = cat.status === 'active'
-                    ? `<span class="badge-status-active" onclick="toggleStatus(${cat.id}, 'inactive')" title="Bấm để chuyển sang tạm ngừng"><i class="fa fa-check-circle mr-1"></i> Hoạt động</span>`
-                    : `<span class="badge-status-inactive" onclick="toggleStatus(${cat.id}, 'active')" title="Bấm để kích hoạt lại"><i class="fa fa-ban mr-1"></i> Tạm ngừng</span>`;
-
+                const safeName = escapeHtml(tr.name);
                 const row = `
                     <tr>
-                        <td><strong>#${cat.id}</strong></td>
-                        <td>${imgHtml}</td>
+                        <td><strong>#${tr.id}</strong></td>
                         <td>
-                            <a href="javascript:void(0)" onclick="viewDetail(${cat.id})" class="cat-name-link">
-                                ${cat.name}
+                            <a href="javascript:void(0)" onclick="viewDetail(${tr.id})" class="transporter-name-link">
+                                ${safeName}
                             </a>
-                            ${cat.childrenCount > 0 ? `<small class="text-muted d-block"><i class="fa fa-code-fork mr-1"></i>${cat.childrenCount} danh mục con</small>` : ''}
                         </td>
-                        <td><span class="slug-badge">${cat.slug}</span></td>
-                        <td>${parentBadgeHtml}</td>
-                        <td><span class="badge badge-light px-2 py-1 font-weight-bold">${cat.sortOrder}</span></td>
+                        <td>
+                            <p class="contact-line mb-1"><i class="fa fa-phone"></i> ${escapeHtml(tr.phone)}</p>
+                            ${emailHtml}
+                        </td>
+                        <td><span class="fee-badge">${formatCurrency(tr.baseFee)}</span></td>
                         <td>${statusBadge}</td>
-                        <td><small class="text-muted">${cat.createdAt ? cat.createdAt.substring(0, 16) : 'N/A'}</small></td>
+                        <td><small class="text-muted">${tr.createdAt ? tr.createdAt.substring(0, 16) : 'N/A'}</small></td>
                         <td class="text-right">
-                            <button class="btn-action" onclick="viewDetail(${cat.id})" title="Xem chi tiết">
+                            <button class="btn-action" onclick="viewDetail(${tr.id})" title="Xem chi tiết">
                                 <i class="fa fa-eye"></i>
                             </button>
-                            <button class="btn-action btn-edit" onclick="openEditModal(${cat.id})" title="Chỉnh sửa">
+                            <button class="btn-action btn-edit" onclick="openEditModal(${tr.id})" title="Chỉnh sửa">
                                 <i class="fa fa-pencil"></i>
                             </button>
-                            <button class="btn-action btn-delete" onclick="confirmDelete(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', ${cat.childrenCount})" title="Xóa">
+                            <button class="btn-action btn-delete" data-id="${tr.id}" data-name="${safeName}" onclick="confirmDelete(this)" title="Xóa">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </td>
@@ -1294,10 +1065,10 @@
         }
 
         function renderEmptyTable(msg) {
-            $('#category-table-body').html(`
+            $('#transporter-table-body').html(`
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">
-                        <i class="fa fa-folder-open-o fa-3x mb-3 text-muted"></i>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fa fa-truck fa-3x mb-3 text-muted"></i>
                         <div>${msg}</div>
                     </td>
                 </tr>
@@ -1313,7 +1084,7 @@
 
             const from = currentPage * pageSize + 1;
             const to = Math.min((currentPage + 1) * pageSize, totalElements);
-            $('#pagination-info').text(`Hiển thị ${from} - ${to} trong tổng số ${totalElements} danh mục`);
+            $('#pagination-info').text(`Hiển thị ${from} - ${to} trong tổng số ${totalElements} đơn vị`);
 
             const buttonsContainer = $('#pagination-buttons');
             buttonsContainer.empty();
@@ -1346,120 +1117,81 @@
         function goToPage(page) {
             if (page >= 0 && page < totalPages) {
                 currentPage = page;
-                loadCategories();
+                loadTransporters();
             }
         }
 
-        // Slug helper & preview
-        function stringToSlug(str) {
-            str = str.replace(/^\s+|\s+$/g, '');
-            str = str.toLowerCase();
-            const from = "àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ·/_,:;";
-            const to   = "aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd------";
-            for (let i = 0, l = from.length; i < l; i++) {
-                str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-            }
-            str = str.replace(/[^a-z0-9 -]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-');
-            return str;
-        }
-
-        function handleNameInput(name) {
-            if (!currentlyEditingCatId) {
-                $('#cat-slug').val(stringToSlug(name));
-            }
-        }
-
-        function regenerateSlug() {
-            const name = $('#cat-name').val();
-            if (name) {
-                $('#cat-slug').val(stringToSlug(name));
-            }
-        }
-
-        function handleImagePreview(url) {
-            const box = $('#img-preview-box');
-            if (url && url.trim()) {
-                box.html(`<img src="${url.trim()}" onerror="this.onerror=null;this.parentElement.innerHTML='<i class=\\'fa fa-image text-danger\\'></i>';">`);
-            } else {
-                box.html('<i class="fa fa-image text-muted"></i>');
-            }
-        }
-
-        // Open Modals
         function openCreateModal() {
-            currentlyEditingCatId = null;
-            $('#categoryModalTitle').text('Thêm Danh Mục Mới');
-            $('#categoryForm')[0].reset();
-            $('#cat-id').val('');
-            $('#cat-sort').val('0');
-            $('#cat-status').val('active');
-            handleImagePreview('');
-            populateParentSelect();
-            $('#categoryModal').modal('show');
+            currentlyEditingId = null;
+            $('#transporterModalTitle').text('Thêm Đơn Vị Vận Chuyển');
+            $('#transporterForm')[0].reset();
+            $('#tr-id').val('');
+            $('#tr-base-fee').val('0');
+            $('#tr-status').val('active');
+            $('#transporterModal').modal('show');
         }
 
         function openEditModal(id) {
-            currentlyEditingCatId = id;
-            $('#categoryModalTitle').text('Chỉnh Sửa Danh Mục #' + id);
-            populateParentSelect(id);
+            currentlyEditingId = id;
+            $('#transporterModalTitle').text('Chỉnh Sửa Đơn Vị Vận Chuyển #' + id);
 
             $.ajax({
                 url: `${API_BASE}/${id}`,
                 type: 'GET',
                 headers: getAuthHeaders(),
                 success: function (res) {
-                    const cat = res.data;
-                    $('#cat-id').val(cat.id);
-                    $('#cat-name').val(cat.name);
-                    $('#cat-slug').val(cat.slug);
-                    $('#cat-parent').val(cat.parentId || '');
-                    $('#cat-image').val(cat.imageUrl || '');
-                    $('#cat-sort').val(cat.sortOrder || 0);
-                    $('#cat-status').val(cat.status || 'active');
-                    handleImagePreview(cat.imageUrl || '');
+                    const tr = res.data;
+                    $('#tr-id').val(tr.id);
+                    $('#tr-name').val(tr.name);
+                    $('#tr-phone').val(tr.phone);
+                    $('#tr-email').val(tr.email || '');
+                    $('#tr-base-fee').val(tr.baseFee != null ? tr.baseFee : 0);
+                    $('#tr-status').val(tr.status || 'active');
 
-                    $('#categoryDetailModal').modal('hide');
-                    $('#categoryModal').modal('show');
+                    $('#transporterDetailModal').modal('hide');
+                    $('#transporterModal').modal('show');
                 },
                 error: function (xhr) {
-                    showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết danh mục', 'danger');
+                    showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết đơn vị vận chuyển', 'danger');
                 }
             });
         }
 
-        // Save (Create or Update)
-        function saveCategory(e) {
+        function saveTransporter(e) {
             e.preventDefault();
 
-            const name = $('#cat-name').val().trim();
-            const slug = $('#cat-slug').val().trim();
-            const parentIdVal = $('#cat-parent').val();
-            const parentId = parentIdVal ? parseInt(parentIdVal) : null;
-            const imageUrl = $('#cat-image').val().trim();
-            const sortOrder = parseInt($('#cat-sort').val()) || 0;
-            const status = $('#cat-status').val();
+            const name = $('#tr-name').val().trim();
+            const phone = $('#tr-phone').val().trim();
+            const email = $('#tr-email').val().trim();
+            const baseFee = parseFloat($('#tr-base-fee').val());
+            const status = $('#tr-status').val();
 
             if (!name) {
-                showToast('Vui lòng nhập tên danh mục!', 'warning');
+                showToast('Vui lòng nhập tên đơn vị vận chuyển!', 'warning');
+                return;
+            }
+            if (!phone) {
+                showToast('Vui lòng nhập số điện thoại!', 'warning');
+                return;
+            }
+            if (isNaN(baseFee) || baseFee < 0) {
+                showToast('Phí cơ bản không hợp lệ!', 'warning');
                 return;
             }
 
             const payload = {
                 name: name,
-                slug: slug || stringToSlug(name),
-                parentId: parentId,
-                imageUrl: imageUrl || null,
-                sortOrder: sortOrder,
+                phone: phone,
+                email: email || null,
+                baseFee: baseFee,
                 status: status
             };
 
-            const submitBtn = $('#btn-save-category');
+            const submitBtn = $('#btn-save-transporter');
             submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang lưu...');
 
-            const isEdit = !!currentlyEditingCatId;
-            const url = isEdit ? `${API_BASE}/${currentlyEditingCatId}` : API_BASE;
+            const isEdit = !!currentlyEditingId;
+            const url = isEdit ? `${API_BASE}/${currentlyEditingId}` : API_BASE;
             const method = isEdit ? 'PUT' : 'POST';
 
             $.ajax({
@@ -1470,11 +1202,10 @@
                 data: JSON.stringify(payload),
                 success: function (res) {
                     submitBtn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu thông tin');
-                    $('#categoryModal').modal('hide');
-                    showToast(res.message || (isEdit ? 'Cập nhật danh mục thành công!' : 'Thêm mới danh mục thành công!'), 'success');
+                    $('#transporterModal').modal('hide');
+                    showToast(res.message || (isEdit ? 'Cập nhật thành công!' : 'Thêm mới thành công!'), 'success');
                     loadStats();
-                    loadRootCategoriesFilter();
-                    loadCategories();
+                    loadTransporters();
                 },
                 error: function (xhr) {
                     submitBtn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu thông tin');
@@ -1483,16 +1214,15 @@
             });
         }
 
-        // Toggle status
         function toggleStatus(id, newStatus) {
             $.ajax({
                 url: `${API_BASE}/${id}/status?status=${newStatus}`,
                 type: 'PATCH',
                 headers: getAuthHeaders(),
-                success: function (res) {
+                success: function () {
                     showToast(`Đã chuyển trạng thái sang ${newStatus === 'active' ? 'Hoạt động' : 'Tạm ngừng'}!`, 'success');
                     loadStats();
-                    loadCategories();
+                    loadTransporters();
                 },
                 error: function (xhr) {
                     showToast(xhr.responseJSON?.message || 'Không thể đổi trạng thái', 'danger');
@@ -1500,100 +1230,89 @@
             });
         }
 
-        // View detail
         function viewDetail(id) {
             $.ajax({
                 url: `${API_BASE}/${id}`,
                 type: 'GET',
                 headers: getAuthHeaders(),
                 success: function (res) {
-                    const cat = res.data;
-                    const content = $('#category-detail-content');
-                    content.html(`
+                    const tr = res.data;
+                    $('#transporter-detail-content').html(`
                         <div class="text-center mb-4">
-                            ${cat.imageUrl
-                                ? `<img src="${cat.imageUrl}" style="width: 90px; height: 90px; border-radius: 8px; object-fit: cover; border: 1px solid #ddd;" onerror="this.onerror=null;this.src='/img/icon/heart.png';">`
-                                : `<div style="width: 90px; height: 90px; border-radius: 8px; background: #f1f3f5; display: inline-flex; align-items: center; justify-content: center; font-size: 32px; color: #999;"><i class="fa fa-folder"></i></div>`
-                            }
-                            <h4 class="mt-2 font-weight-bold">${cat.name}</h4>
-                            <span class="slug-badge">${cat.slug}</span>
+                            <div style="width: 90px; height: 90px; border-radius: 8px; background: #ffeaea; display: inline-flex; align-items: center; justify-content: center; font-size: 36px; color: #e53637;">
+                                <i class="fa fa-truck"></i>
+                            </div>
+                            <h4 class="mt-2 font-weight-bold">${escapeHtml(tr.name)}</h4>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Mã danh mục (ID):</span>
-                            <span class="detail-value">#${cat.id}</span>
+                            <span class="detail-label">Mã đơn vị (ID):</span>
+                            <span class="detail-value">#${tr.id}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Danh mục cha:</span>
-                            <span class="detail-value">${cat.parentName ? cat.parentName + ' (#' + cat.parentId + ')' : '<span class="text-primary">Danh mục gốc (None)</span>'}</span>
+                            <span class="detail-label">Số điện thoại:</span>
+                            <span class="detail-value">${escapeHtml(tr.phone)}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Số danh mục con:</span>
-                            <span class="detail-value">${cat.childrenCount} danh mục con</span>
+                            <span class="detail-label">Email:</span>
+                            <span class="detail-value">${tr.email ? escapeHtml(tr.email) : '<span class="text-muted">Chưa có</span>'}</span>
                         </div>
                         <div class="detail-row">
-                            <span class="detail-label">Thứ tự sắp xếp:</span>
-                            <span class="detail-value">${cat.sortOrder}</span>
+                            <span class="detail-label">Phí cơ bản:</span>
+                            <span class="detail-value">${formatCurrency(tr.baseFee)}</span>
                         </div>
                         <div class="detail-row">
                             <span class="detail-label">Trạng thái:</span>
-                            <span class="detail-value">${cat.status === 'active' ? '<span class="badge badge-success">Đang hoạt động</span>' : '<span class="badge badge-secondary">Tạm ngừng</span>'}</span>
+                            <span class="detail-value">${tr.status === 'active' ? '<span class="badge badge-success">Đang hoạt động</span>' : '<span class="badge badge-secondary">Tạm ngừng</span>'}</span>
                         </div>
                         <div class="detail-row">
                             <span class="detail-label">Ngày khởi tạo:</span>
-                            <span class="detail-value">${cat.createdAt || 'N/A'}</span>
+                            <span class="detail-value">${tr.createdAt || 'N/A'}</span>
                         </div>
                     `);
 
                     $('#btn-edit-from-detail').off('click').on('click', function () {
-                        openEditModal(cat.id);
+                        openEditModal(tr.id);
                     });
 
-                    $('#categoryDetailModal').modal('show');
+                    $('#transporterDetailModal').modal('show');
                 },
                 error: function (xhr) {
-                    showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết danh mục', 'danger');
+                    showToast(xhr.responseJSON?.message || 'Không thể tải chi tiết', 'danger');
                 }
             });
         }
 
-        // Delete
-        function confirmDelete(id, name, childrenCount) {
-            deletingCatId = id;
-            $('#delete-cat-name').text(name + ' (#' + id + ')');
-            if (childrenCount > 0) {
-                $('#delete-cat-warning').html(`<strong>CẢNH BÁO:</strong> Danh mục này đang chứa <strong>${childrenCount} danh mục con</strong>. Hệ thống sẽ chặn xóa để bảo đảm toàn vẹn dữ liệu.`);
-            } else {
-                $('#delete-cat-warning').text('Lưu ý: Hành động này không thể hoàn tác!');
-            }
-            $('#deleteCategoryModal').modal('show');
+        function confirmDelete(btn) {
+            deletingId = parseInt($(btn).data('id'));
+            const name = $(btn).data('name');
+            $('#delete-tr-name').text(name + ' (#' + deletingId + ')');
+            $('#deleteTransporterModal').modal('show');
         }
 
         function executeDelete() {
-            if (!deletingCatId) return;
+            if (!deletingId) return;
 
             const btn = $('#btn-confirm-delete');
             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang xóa...');
 
             $.ajax({
-                url: `${API_BASE}/${deletingCatId}`,
+                url: `${API_BASE}/${deletingId}`,
                 type: 'DELETE',
                 headers: getAuthHeaders(),
                 success: function (res) {
                     btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
-                    $('#deleteCategoryModal').modal('hide');
-                    showToast(res.message || 'Xóa danh mục thành công!', 'success');
+                    $('#deleteTransporterModal').modal('hide');
+                    showToast(res.message || 'Xóa đơn vị vận chuyển thành công!', 'success');
                     loadStats();
-                    loadRootCategoriesFilter();
-                    loadCategories();
+                    loadTransporters();
                 },
                 error: function (xhr) {
                     btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
-                    showToast(xhr.responseJSON?.message || 'Không thể xóa danh mục!', 'danger');
+                    showToast(xhr.responseJSON?.message || 'Không thể xóa đơn vị vận chuyển!', 'danger');
                 }
             });
         }
 
-        // Toast notifications
         function showToast(message, type = 'info') {
             const container = $('#toast-container');
             const icon = type === 'success' ? 'fa-check-circle' :
@@ -1618,5 +1337,4 @@
         }
     </script>
 </body>
-
 </html>
