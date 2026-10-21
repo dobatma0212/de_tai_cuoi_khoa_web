@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Giỏ hàng độc lập | StoreCart</title>
+  <link rel="stylesheet" href="cart.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="index.html"><span class="brand-mark">S</span> StoreCart</a><div class="top-note">Giỏ hàng demo độc lập · Có thể tích hợp vào StoreChain</div><a class="continue" href="#products">Tiếp tục mua sắm <span>↗</span></a></header>
+  <main class="wrap">
+    <div class="eyebrow">SHOPPING / CART</div><div class="heading-row"><div><h1>Giỏ hàng của bạn</h1><p class="muted">Kiểm tra sản phẩm và số lượng trước khi thanh toán.</p></div><div class="cart-count"><span id="headerCount">0</span> sản phẩm</div></div>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <section class="layout">
+      <div class="panel cart-panel"><div class="panel-head"><h2>Sản phẩm đã chọn</h2><button id="clearCart" class="text-btn">Xóa tất cả</button></div><div id="cartItems"></div><div id="emptyState" class="empty hidden"><div class="empty-icon">🛒</div><h3>Giỏ hàng đang trống</h3><p>Thêm một vài sản phẩm để bắt đầu.</p><a class="primary-btn inline-btn" href="#products">Khám phá sản phẩm</a></div><div class="panel-foot"><span class="secure-dot"></span> Giá và tồn kho sẽ được xác minh lại khi tích hợp backend. </div></div>
+      <aside class="panel summary"><h2>Tóm tắt đơn hàng</h2><div class="summary-line"><span>Tạm tính</span><strong id="subtotal">0 ₫</strong></div><div class="summary-line"><span>Phí vận chuyển</span><strong id="shipping">Miễn phí</strong></div><div class="coupon-title">Mã giảm giá</div><form id="couponForm" class="coupon-form"><input id="couponInput" aria-label="Mã giảm giá" placeholder="Nhập mã, ví dụ SAVE10"><button type="submit">Áp dụng</button></form><div id="couponMessage" class="coupon-message"></div><div class="summary-line discount-line"><span>Giảm giá</span><strong id="discount">− 0 ₫</strong></div><div class="rule"></div><div class="summary-line total-line"><span>Tổng cộng</span><strong id="total">0 ₫</strong></div><p class="tax-note">Đã bao gồm thuế nếu có. Phí giao hàng cuối cùng xác định khi thanh toán.</p><button id="checkoutBtn" class="primary-btn">Tiến hành thanh toán <span>→</span></button><div class="payment-note"><span>▣</span> Thanh toán an toàn · COD / cổng thanh toán khi được tích hợp</div></aside>
+    </section>
+    <section id="products" class="catalog"><div class="catalog-head"><div><div class="eyebrow">GỢI Ý CHO BẠN</div><h2>Thêm vào giỏ hàng</h2></div><span class="muted">Dữ liệu mẫu để chạy độc lập</span></div><div id="productGrid" class="product-grid"></div></section>
+    <footer>StoreCart module · HTML, CSS và JavaScript thuần · Demo lưu dữ liệu trong trình duyệt</footer>
+  </main>
+  <script src="cart.js"></script>
+</body></html>

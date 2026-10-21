@@ -1,0 +1,557 @@
+package com.storechain.group4.service.impl;
+
+import com.storechain.group4.dto.EmployeeStatsDto;
+import com.storechain.group4.dto.ProductResponseDto;
+import com.storechain.group4.dto.ShopResponseDto;
+import com.storechain.group4.model.BranchStock;
+import com.storechain.group4.model.EmployeeWorkday;
+import com.storechain.group4.model.Order;
+import com.storechain.group4.model.Product;
+import com.storechain.group4.model.Shop;
+import com.storechain.group4.model.ShopCategory;
+import com.storechain.group4.model.User;
+import com.storechain.group4.repository.BranchStockRepository;
+import com.storechain.group4.repository.EmployeeWorkdayRepository;
+import com.storechain.group4.repository.OrderItemRepository;
+import com.storechain.group4.repository.OrderRepository;
+import com.storechain.group4.repository.ProductRepository;
+import com.storechain.group4.repository.ShopCategoryRepository;
+import com.storechain.group4.repository.UserRepository;
+import com.storechain.group4.service.EmployeeService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class EmployeeServiceImpl implements EmployeeService {
+
+    private final UserRepository userRepository;
+    private final ShopCategoryRepository shopCategoryRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final BranchStockRepository branchStockRepository;
+    private final EmployeeWorkdayRepository workdayRepository;
+    private final com.storechain.group4.repository.TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.RoleRepository roleRepository;
+    private final com.storechain.group4.service.support.ProductMapper productMapper;
+
+    @Value("${app.employee.commission-rate:0.02}")
+    private BigDecimal commissionRate;
+
+    /** Số phút đơn đã xác nhận chuyển sang Đang giao (mặc định 2 phút) */
+    @Value("${app.order.shipping-delay-minutes:2}")
+    private long shippingDelayMinutes;
+
+    /** Số phút đơn Đang giao chuyển sang Đã giao (mặc định 5 phút) */
+    @Value("${app.order.deliver-delay-minutes:5}")
+    private long deliverDelayMinutes;
+
+    private static final String DEFAULT_CATEGORY_CLOTHING = "Bộ áo quần";
+    private static final String DEFAULT_CATEGORY_ACCESSORY = "Phụ kiện";
+
+    // ============ Chi nhánh của nhân viên ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopResponseDto getMyShop(Long employeeId) {
+        return toShopDto(findMyShop(employeeId));
+    }
+
+    /** Nhân viên làm việc ở chi nhánh được gán trong cột users.shop_id */
+    private Shop findMyShop(Long employeeId) {
+        User user = userRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nhân viên."));
+        Shop shop = user.getShop();
+        if (shop == null) {
+            throw new IllegalArgumentException(
+                    "Bạn chưa được phân công vào chi nhánh nào. Vui lòng liên hệ quản trị viên.");
+        }
+        return shop;
+    }
+
+
+    /** Chi nhánh chưa có danh mục thì tạo sẵn 2 danh mục mặc định (như manager) */
+    private void ensureDefaultCategories(Shop shop) {
+        if (shopCategoryRepository.countByShopId(shop.getId()) > 0) {
+            return;
+        }
+        shopCategoryRepository.save(ShopCategory.builder()
+                .shop(shop).name(DEFAULT_CATEGORY_CLOTHING).sortOrder(0).build());
+        shopCategoryRepository.save(ShopCategory.builder()
+                .shop(shop).name(DEFAULT_CATEGORY_ACCESSORY).sortOrder(1).build());
+    }
+
+    // ============ Sản phẩm của chi nhánh ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponseDto> getMyProducts(Long employeeId, Long categoryId) {
+        Shop shop = findMyShop(employeeId);
+        ensureDefaultCategories(shop);
+        return findActiveProducts(categoryId, shop).stream()
+                .map(p -> productMapper.toDto(p, shop.getId())).toList();
+    }
+
+    /**
+     * Sản phẩm đang mở bán của TOÀN hệ thống (đồng bộ với phần admin);
+     * có categoryId thì lấy danh mục của chi nhánh rồi lọc theo TÊN danh mục
+     * (danh mục là dữ liệu theo từng shop, giống cách admin gộp trùng tên).
+     */
+    private List<Product> findActiveProducts(Long categoryId, Shop shop) {
+        if (categoryId == null || categoryId <= 0) {
+            return productRepository.findByStatusOrderByCreatedAtDesc("active");
+        }
+        ShopCategory category = shopCategoryRepository.findByIdAndShopId(categoryId, shop.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục trong chi nhánh của bạn."));
+        String name = category.getName().trim().toLowerCase();
+        return productRepository.findByStatusOrderByCreatedAtDesc("active").stream()
+                .filter(p -> p.getCategory() != null
+                        && p.getCategory().getName() != null
+                        && p.getCategory().getName().trim().toLowerCase().equals(name))
+                .toList();
+    }
+
+
+
+    // ============ Đơn hàng của chi nhánh (như manager) ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.storechain.group4.dto.OrderDto> getMyOrders(Long employeeId, String status) {
+        Shop shop = findMyShop(employeeId);
+        autoAdvanceStaleOrders();
+        List<Order> orders = (status == null || status.isBlank())
+                ? orderRepository.findByShopIdOrderByCreatedAtDesc(shop.getId())
+                : orderRepository.findByShopIdAndStatusOrderByCreatedAtDesc(shop.getId(), status);
+        return orders.stream().map(this::toOrderDto).toList();
+    }
+
+    /**
+     * Nhân viên chỉ được (giống manager):
+     * - CONFIRMED: xác nhận đơn NEW (dùng đơn vị vận chuyển khách đã chọn khi đặt hàng).
+     *   Đơn được gắn handledBy là nhân viên xác nhận -> giao thành công sẽ tính hoa hồng.
+     * - CANCELLED: hủy đơn NEW/CONFIRMED/SHIPPING (bắt buộc lý do), hoàn tồn kho.
+     * - RETURNED: đánh dấu trả hàng - hoàn tiền cho đơn đã giao/khách đã nhận.
+     */
+    @Override
+    @Transactional
+    public com.storechain.group4.dto.OrderDto updateOrderStatus(Long employeeId, Long orderId, String status,
+                                                                Long transporterId, String reason) {
+        Shop shop = findMyShop(employeeId);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng."));
+        if (!order.getShop().getId().equals(shop.getId())) {
+            throw new IllegalArgumentException("Đơn hàng này không thuộc chi nhánh bạn đang làm việc.");
+        }
+        String current = order.getStatus();
+        switch (status == null ? "" : status) {
+            case Order.STATUS_CONFIRMED -> {
+                if (!Order.STATUS_NEW.equals(current)) {
+                    throw new IllegalArgumentException("Chỉ đơn ở trạng thái mới mới có thể xác nhận.");
+                }
+                // Đơn thanh toán online chỉ được xác nhận sau khi cổng đã thu tiền thành công
+                if ((Order.PAYMENT_VNPAY.equals(order.getPaymentMethod()) || Order.PAYMENT_MOMO.equals(order.getPaymentMethod()))
+                        && !Order.PAY_STATUS_PAID.equals(order.getPaymentStatus())) {
+                    throw new IllegalArgumentException("Đơn này thanh toán online và khách chưa thanh toán thành công, chưa thể xác nhận.");
+                }
+                // Đơn vị vận chuyển do khách chọn lúc đặt hàng đã lưu trên đơn — giữ nguyên,
+                // chỉ tự điền khi đơn cũ chưa có (fallback theo transporterId gửi lên)
+                if (order.getTransporter() == null && transporterId != null) {
+                    var transporter = transporterRepository.findById(transporterId)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn vị vận chuyển."));
+                    order.setTransporter(transporter);
+                }
+                if (order.getTransporter() == null) {
+                    throw new IllegalArgumentException("Đơn hàng chưa có đơn vị vận chuyển để xác nhận.");
+                }
+                if (order.getShippingFee() == null || order.getShippingFee().compareTo(BigDecimal.ZERO) <= 0) {
+                    order.setShippingFee(order.getTransporter().getBaseFee() == null
+                            ? BigDecimal.ZERO : order.getTransporter().getBaseFee());
+                    order.setGrandTotal(order.getTotalAmount()
+                            .add(order.getShippingFee())
+                            .subtract(order.getDiscountAmount() == null ? BigDecimal.ZERO : order.getDiscountAmount()));
+                }
+                order.setStatus(Order.STATUS_CONFIRMED);
+                // Gắn nhân viên phụ trách đơn -> cơ sở tính hoa hồng khi đơn hoàn tất
+                if (order.getHandledBy() == null) {
+                    order.setHandledBy(userRepository.findById(employeeId)
+                            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nhân viên.")));
+                }
+            }
+            case Order.STATUS_CANCELLED -> {
+                if (!List.of(Order.STATUS_NEW, Order.STATUS_CONFIRMED, Order.STATUS_SHIPPING).contains(current)) {
+                    throw new IllegalArgumentException("Không thể hủy đơn ở trạng thái hiện tại.");
+                }
+                if (reason == null || reason.isBlank()) {
+                    throw new IllegalArgumentException("Vui lòng nhập lý do hủy đơn (VD: tồn kho chi nhánh đã hết).");
+                }
+                order.setCancelReason(reason.trim());
+                order.setStatus(Order.STATUS_CANCELLED);
+                restockOrder(order);
+            }
+            case Order.STATUS_RETURNED -> {
+                if (!List.of(Order.STATUS_SHIPPING, Order.STATUS_DELIVERED,
+                        Order.STATUS_RECEIVED, Order.STATUS_RETURN_REQUESTED).contains(current)) {
+                    throw new IllegalArgumentException("Chỉ đơn đang giao/đã giao/đã nhận/yêu cầu trả hàng mới duyệt trả được.");
+                }
+                if (reason != null && !reason.isBlank()) {
+                    order.setCancelReason(reason.trim());
+                }
+                order.setStatus(Order.STATUS_RETURNED);
+                restockOrder(order);
+            }
+            default -> throw new IllegalArgumentException(
+                    "Bạn chỉ có thể xác nhận, hủy (kèm lý do) hoặc đánh dấu trả hàng cho đơn.");
+        }
+        return toOrderDto(orderRepository.save(order));
+    }
+
+    /**
+     * Tạo đơn hàng offline (bán tại quầy): nhân viên chỉ chọn sản phẩm + số lượng + size.
+     * Giá và tên sản phẩm lấy từ sản phẩm của chi nhánh (không cho nhập tay),
+     * kiểm tra và trừ tồn kho chi nhánh, đơn hoàn tất ngay (DELIVERED) —
+     * gắn handledBy là nhân viên nhập để tính hoa hồng như đơn online đã giao.
+     */
+    @Override
+    @Transactional
+    public com.storechain.group4.dto.OrderDto createOfflineOrder(Long employeeId,
+                                                                 com.storechain.group4.dto.OfflineOrderRequest request) {
+        Shop shop = findMyShop(employeeId);
+        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm.");
+        }
+
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nhân viên."));
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<com.storechain.group4.model.OrderItem> items = new java.util.ArrayList<>();
+        List<BranchStock> stocksToUpdate = new java.util.ArrayList<>();
+        for (var reqItem : request.getItems()) {
+            if (reqItem.getProductId() == null) {
+                throw new IllegalArgumentException("Vui lòng chọn đầy đủ sản phẩm cho từng dòng trong đơn.");
+            }
+            int quantity = reqItem.getQuantity() == null ? 0 : reqItem.getQuantity();
+            if (quantity < 1) {
+                throw new IllegalArgumentException("Số lượng mỗi sản phẩm phải ít nhất là 1.");
+            }
+            Product product = productRepository.findById(reqItem.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm trong đơn."));
+            if (!"active".equals(product.getStatus())) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" đã ngừng bán hoặc đang là bản nháp.");
+            }
+            if (!product.getShop().getId().equals(shop.getId())) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" không thuộc chi nhánh bạn đang làm việc.");
+            }
+            // Kiểm tra size: nếu sản phẩm có danh sách size thì phải chọn đúng size có sẵn
+            List<String> validSizes = product.getSizes() == null || product.getSizes().isBlank() ? List.of()
+                    : Arrays.stream(product.getSizes().split(",")).map(String::trim)
+                    .filter(s -> !s.isEmpty()).toList();
+            String size = reqItem.getSize() == null || reqItem.getSize().isBlank() ? null : reqItem.getSize().trim();
+            if (!validSizes.isEmpty() && (size == null || !validSizes.contains(size))) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" phải chọn size thuộc danh sách: " + String.join(", ", validSizes) + ".");
+            }
+
+            // Kiểm tra tồn kho chi nhánh (nguồn chính khi bán tại quầy)
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(product.getId(), shop.getId())
+                    .orElse(null);
+            int available = bs == null ? 0 : Math.max(0, bs.getStock());
+            if (available < quantity) {
+                throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                        + "\" chỉ còn " + available + " cái tại chi nhánh.");
+            }
+            bs.setStock(available - quantity);
+            stocksToUpdate.add(bs);
+
+            BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
+            totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(quantity)));
+            items.add(com.storechain.group4.model.OrderItem.builder()
+                    .product(product)
+                    .productName(product.getName())
+                    .imageUrl(product.getImageUrl())
+                    .price(price)
+                    .quantity(quantity)
+                    .size(size)
+                    .color(product.getColor())
+                    .build());
+        }
+
+        Order order = Order.builder()
+                .orderCode(generateOfflineOrderCode())
+                .user(findOrCreateWalkInUser())
+                .shop(shop)
+                .status(Order.STATUS_DELIVERED) // bán tại quầy: hoàn tất ngay -> tính hoa hồng
+                .orderType(Order.TYPE_OFFLINE)
+                .totalAmount(totalAmount)
+                .shippingFee(BigDecimal.ZERO)
+                .discountAmount(BigDecimal.ZERO)
+                .grandTotal(totalAmount)
+                .handledBy(employee)
+                .receiverName(request.getCustomerName() == null || request.getCustomerName().isBlank()
+                        ? null : request.getCustomerName().trim())
+                .receiverPhone(request.getCustomerPhone() == null || request.getCustomerPhone().isBlank()
+                        ? null : request.getCustomerPhone().trim())
+                .receiverAddress(shop.getAddress())
+                .note(request.getNote() == null || request.getNote().isBlank() ? null : request.getNote().trim())
+                .build();
+        // FK nằm ở phía OrderItem (owning side) nên phải set order cho từng dòng
+        items.forEach(oi -> oi.setOrder(order));
+        order.getItems().addAll(items);
+
+        Order saved = orderRepository.save(order);
+        // Trừ tồn kho chi nhánh sau khi tạo đơn thành công
+        branchStockRepository.saveAll(stocksToUpdate);
+        return toOrderDto(saved);
+    }
+
+    /** Mã đơn offline: OFF-<millis>-<4 ký tự> */
+    private String generateOfflineOrderCode() {
+        return "OFF-" + System.currentTimeMillis() + "-"
+                + java.util.UUID.randomUUID().toString().substring(0, 4).toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Đơn offline của khách vãng lai không có tài khoản, nhưng orders.user_id là NOT NULL
+     * nên gắn vào một tài khoản hệ thống "Khách vãng lai" (tạo mới nếu chưa có).
+     */
+    private User findOrCreateWalkInUser() {
+        return userRepository.findByUsername(WALK_IN_USERNAME)
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .role(roleRepository.findByName(com.storechain.group4.model.RoleType.ROLE_USER)
+                                .orElseGet(() -> roleRepository.save(new com.storechain.group4.model.Role(
+                                        com.storechain.group4.model.RoleType.ROLE_USER, "Khách vãng lai"))))
+                        .username(WALK_IN_USERNAME)
+                        .email("walkin@storechain.local")
+                        .password(java.util.UUID.randomUUID().toString())
+                        .fullName("Khách vãng lai")
+                        .status("active")
+                        .build()));
+    }
+
+    private static final String WALK_IN_USERNAME = "khachvanglai";
+
+    /** Hoàn lại tồn kho các sản phẩm của đơn bị hủy/trả về chi nhánh */    private void restockOrder(Order order) {
+        for (var oi : orderItemRepository.findByOrderId(order.getId())) {
+            if (oi.getProduct() == null) continue;
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(oi.getProduct().getId(), order.getShop().getId())
+                    .orElse(BranchStock.builder().product(oi.getProduct())
+                            .shop(order.getShop()).stock(0).build());
+            bs.setStock(bs.getStock() + oi.getQuantity());
+            branchStockRepository.save(bs);
+        }
+    }
+
+    /** Đẩy mốc giao hàng tự động như manager: xác nhận quá 10s -> đang giao -> đã giao */
+    private void autoAdvanceStaleOrders() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Order> toSave = new java.util.ArrayList<>();
+        orderRepository.findByStatus(Order.STATUS_CONFIRMED).stream()
+                .filter(o -> o.getUpdatedAt() != null
+                        && o.getUpdatedAt().plusMinutes(shippingDelayMinutes).isBefore(now))
+                .peek(o -> o.setStatus(Order.STATUS_SHIPPING))
+                .forEach(toSave::add);
+        orderRepository.findByStatus(Order.STATUS_SHIPPING).stream()
+                .filter(o -> o.getUpdatedAt() != null
+                        && o.getUpdatedAt().plusMinutes(deliverDelayMinutes).isBefore(now))
+                .peek(o -> o.setStatus(Order.STATUS_DELIVERED))
+                .forEach(toSave::add);
+        if (!toSave.isEmpty()) {
+            orderRepository.saveAll(toSave);
+        }
+    }
+
+    private com.storechain.group4.dto.OrderDto toOrderDto(Order o) {
+        List<com.storechain.group4.dto.OrderDto.ItemDto> items = orderItemRepository.findByOrderId(o.getId())
+                .stream().map(oi -> com.storechain.group4.dto.OrderDto.ItemDto.builder()
+                        .productId(oi.getProduct() != null ? oi.getProduct().getId() : null)
+                        .productName(oi.getProductName())
+                        .imageUrl(oi.getImageUrl())
+                        .price(oi.getPrice())
+                        .quantity(oi.getQuantity())
+                        .size(oi.getSize())
+                        .color(oi.getColor())
+                        .subtotal(oi.getPrice().multiply(BigDecimal.valueOf(oi.getQuantity())))
+                        .build())
+                .toList();
+        return com.storechain.group4.dto.OrderDto.builder()
+                .id(o.getId())
+                .orderCode(o.getOrderCode())
+                .orderType(Order.TYPE_OFFLINE.equals(o.getOrderType()) ? Order.TYPE_OFFLINE : Order.TYPE_ONLINE)
+                .shopId(o.getShop().getId())
+                .shopName(o.getShop().getName())
+                .userId(o.getUser() != null ? o.getUser().getId() : null)
+                // Đơn offline: khách vãng lai, tên khách thật lưu ở receiverName
+                .customerName(Order.TYPE_OFFLINE.equals(o.getOrderType())
+                        ? (o.getReceiverName() != null && !o.getReceiverName().isBlank()
+                                ? o.getReceiverName() : "Khách vãng lai")
+                        : o.getUser().getFullName())
+                .status(o.getStatus())
+                .statusLabel(statusLabel(o.getStatus()))
+                .totalAmount(o.getTotalAmount())
+                .shippingFee(o.getShippingFee())
+                .discountAmount(o.getDiscountAmount())
+                .grandTotal(o.getGrandTotal())
+                .promoName(o.getPromoName())
+                .transporterName(o.getTransporter() != null ? o.getTransporter().getName() : null)
+                .transporterId(o.getTransporter() != null ? o.getTransporter().getId() : null)
+                .cancelReason(o.getCancelReason())
+                .receiverName(o.getReceiverName())
+                .receiverPhone(o.getReceiverPhone())
+                .receiverAddress(o.getReceiverAddress())
+                .note(o.getNote())
+                .createdAt(o.getCreatedAt())
+                .items(items)
+                .build();
+    }
+
+    private String statusLabel(String status) {
+        return switch (status == null ? "" : status) {
+            case Order.STATUS_NEW -> "Đơn hàng mới";
+            case Order.STATUS_CONFIRMED -> "Đã xác nhận";
+            case Order.STATUS_PICKED_UP -> "Đã lấy hàng";
+            case Order.STATUS_SHIPPING -> "Đang giao";
+            case Order.STATUS_DELIVERED -> "Đã giao";
+            case Order.STATUS_RECEIVED -> "Đã nhận hàng";
+            case Order.STATUS_CANCELLED -> "Hủy";
+            case Order.STATUS_RETURNED -> "Trả hàng - hoàn tiền";
+            case Order.STATUS_RETURN_REQUESTED -> "Yêu cầu trả hàng";
+            default -> status;
+        };
+    }
+
+    // ============ Chấm công (tính công) ============
+
+    @Override
+    @Transactional
+    public EmployeeStatsDto checkIn(Long employeeId) {
+        User user = userRepository.findById(employeeId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản nhân viên."));
+        LocalDate today = LocalDate.now();
+        if (workdayRepository.findByUserIdAndWorkDate(employeeId, today).isPresent()) {
+            throw new IllegalArgumentException("Hôm nay bạn đã chấm công rồi.");
+        }
+        workdayRepository.save(EmployeeWorkday.builder()
+                .user(user)
+                .workDate(today)
+                .checkInAt(LocalDateTime.now())
+                .build());
+        return getMyStats(employeeId, null);
+    }
+
+    // ============ Hoa hồng & thống kê theo tháng ============
+
+    @Override
+    @Transactional(readOnly = true)
+    public EmployeeStatsDto getMyStats(Long employeeId, String month) {
+        YearMonth ym = parseMonth(month);
+        LocalDate start = ym.atDay(1);
+        LocalDate end = ym.atEndOfMonth();
+
+        long workDays = workdayRepository.countByUserIdAndWorkDateBetween(employeeId, start, end);
+        List<LocalDate> workDates = workdayRepository
+                .findByUserIdAndWorkDateBetweenOrderByWorkDateDesc(employeeId, start, end)
+                .stream().map(EmployeeWorkday::getWorkDate).toList();
+
+        // Sao kê: TẤT CẢ đơn do nhân viên phụ trách trong tháng (mọi trạng thái)
+        List<OrderCommissionHelper> handled = orderRepository.findByHandledByIdOrderByCreatedAtDesc(employeeId)
+                .stream()
+                .filter(o -> o.getCreatedAt() != null
+                        && !o.getCreatedAt().toLocalDate().isBefore(start)
+                        && !o.getCreatedAt().toLocalDate().isAfter(end))
+                .map(o -> new OrderCommissionHelper(o.getId(), o.getOrderCode(), o.getStatus(),
+                        o.getGrandTotal() == null ? BigDecimal.ZERO : o.getGrandTotal(),
+                        o.getCreatedAt()))
+                .toList();
+        // Đơn "đã bán được": đã giao / khách đã nhận — đơn hủy hoặc trả không tính hoa hồng
+        List<OrderCommissionHelper> sold = handled.stream()
+                .filter(h -> Order.STATUS_DELIVERED.equals(h.status())
+                        || Order.STATUS_RECEIVED.equals(h.status()))
+                .toList();
+
+        BigDecimal totalSales = sold.stream()
+                .map(OrderCommissionHelper::grandTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal commission = totalSales.multiply(commissionRate)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        return EmployeeStatsDto.builder()
+                .month(ym.toString())
+                .workDays(workDays)
+                .ordersSold(sold.size())
+                .totalSales(totalSales)
+                .commissionRate(commissionRate)
+                .commission(commission)
+                .orders(sold.stream().map(this::toOrderCommission).toList())
+                .handledOrders(handled.stream().map(this::toOrderCommission).toList())
+                .workDates(workDates)
+                .build();
+    }
+
+    private YearMonth parseMonth(String month) {
+        if (month == null || month.isBlank()) {
+            return YearMonth.now();
+        }
+        try {
+            return YearMonth.parse(month.trim());
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Tháng không hợp lệ, dùng định dạng yyyy-MM (VD: 2026-09).");
+        }
+    }
+
+    private EmployeeStatsDto.OrderCommission toOrderCommission(OrderCommissionHelper h) {
+        return EmployeeStatsDto.OrderCommission.builder()
+                .orderId(h.orderId())
+                .orderCode(h.orderCode())
+                .status(h.status())
+                .grandTotal(h.grandTotal())
+                .createdAt(h.createdAt())
+                .build();
+    }
+
+    /** Bản ghi nội bộ để tính tổng doanh số của nhân viên */
+    private record OrderCommissionHelper(Long orderId, String orderCode, String status,
+                                         BigDecimal grandTotal, LocalDateTime createdAt) {
+    }
+
+    // ============ Mapper ============
+
+    private ShopResponseDto toShopDto(Shop shop) {
+        return ShopResponseDto.builder()
+                .id(shop.getId())
+                .name(shop.getName())
+                .slug(shop.getSlug())
+                .address(shop.getAddress())
+                .phone(shop.getPhone())
+                .description(shop.getDescription())
+                .logoUrl(shop.getLogoUrl())
+                .bannerUrl(shop.getBannerUrl())
+                .status(shop.getStatus())
+                .createdAt(shop.getCreatedAt())
+                .updatedAt(shop.getUpdatedAt())
+                .managerId(shop.getManager() != null ? shop.getManager().getId() : null)
+                .managerUsername(shop.getManager() != null ? shop.getManager().getUsername() : null)
+                .managerFullName(shop.getManager() != null ? shop.getManager().getFullName() : null)
+                .build();
+    }
+
+}

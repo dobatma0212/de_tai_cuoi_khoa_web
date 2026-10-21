@@ -84,6 +84,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Cloudinary: lưu trữ ảnh/video trên cloud -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
