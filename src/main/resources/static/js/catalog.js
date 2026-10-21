@@ -49,7 +49,14 @@
         var kw = params.get("keyword");
         if (kw) {
             state.keyword = kw.trim();
+            $("catalogSearch").value = state.keyword;
         }
+        if (SORT_LABELS[params.get("sort") || ""] !== undefined) {
+            state.sort = params.get("sort") || "";
+        }
+        var catParam = parseInt(params.get("categoryId"), 10);
+        if (catParam > 0) state.categoryId = catParam;
+        paintSortTabs();
         loadCategories();
         bindEvents();
         // Nạp danh sách đã thích trước để tô đúng màu trái tim ở lần hiển thị đầu
@@ -64,9 +71,23 @@
             loadProducts();
         });
 
-        $("catalogSort").addEventListener("change", function () {
-            state.sort = this.value;
+        // Tầng 2: chọn kiểu sắp xếp
+        $("sortTabs").addEventListener("click", function (e) {
+            var tab = e.target.closest(".sort-tab");
+            if (!tab) return;
+            state.sort = tab.getAttribute("data-sort") || "";
             state.page = 0;
+            paintSortTabs();
+            loadProducts();
+        });
+
+        // Tầng 1: chọn danh mục
+        $("categoryBar").addEventListener("click", function (e) {
+            var item = e.target.closest(".cat-item");
+            if (!item) return;
+            state.categoryId = parseInt(item.getAttribute("data-cat"), 10) || 0;
+            state.page = 0;
+            renderCategoryBar();
             loadProducts();
         });
 
@@ -131,43 +152,38 @@
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 categories = data.data || [];
-                renderCategoryCards();
+                renderCategoryBar();
             })
-            .catch(function () { categories = []; });
+            .catch(function () { categories = []; renderCategoryBar(); });
     }
 
-    /** Khi mới vào shop: hiển thị các danh mục, ảnh = sản phẩm đại diện của danh mục */
-    function renderCategoryCards() {
-        var grid = $("categoryCardGrid");
-        var showingCards = state.categoryId === 0 && !state.keyword;
-        grid.style.display = showingCards ? "" : "none";
-        if (!showingCards) return;
-        if (!categories.length) {
-            grid.innerHTML = '<div class="col-12"><p class="text-muted">Chưa có danh mục nào.</p></div>';
-            return;
-        }
-        grid.innerHTML = categories.map(function (c) {
-            var img = c.imageUrl || "/img/product/product-1.jpg";
-            return '<div class="col-lg-4 col-md-6 col-sm-6">' +
-                '<div class="product__item catalog-cat-card" data-cat="' + c.id + '" style="cursor:pointer;">' +
-                '<div class="product__item__pic set-bg" data-setbg="' + escapeHtml(img) + '"></div>' +
-                '<div class="product__item__text">' +
-                "<h6>" + escapeHtml(c.name) + "</h6>" +
-                '<span class="text-muted" style="font-size:12px;">' + c.totalProducts + " sản phẩm</span>" +
-                "</div></div></div>";
+    /** Dải danh mục luôn hiển thị; mục "Tất cả" đặt đầu, ảnh = sản phẩm đại diện của danh mục */
+    function renderCategoryBar() {
+        var bar = $("categoryBar");
+        var total = categories.reduce(function (sum, x) { return sum + (x.totalProducts || 0); }, 0);
+        var items = [{ id: 0, name: "Tất cả", imageUrl: "", totalProducts: total }].concat(categories);
+        bar.innerHTML = items.map(function (cat) {
+            var active = cat.id === state.categoryId;
+            var img = cat.imageUrl ? ' style="background-image:url(\'' + escapeHtml(cat.imageUrl) + '\')"' : "";
+            return '<div class="cat-item' + (active ? " active" : "") + '" role="tab" aria-selected="' + active +
+                '" data-cat="' + cat.id + '">' +
+                '<div class="cat-item__img"' + img + "></div>" +
+                "<div><div class=\"cat-item__name\">" + escapeHtml(cat.name) + "</div>" +
+                '<div class="cat-item__count">' + (cat.totalProducts || 0) + " sản phẩm</div></div></div>";
         }).join("");
-        grid.querySelectorAll(".set-bg").forEach(function (el) {
-            var bg = el.getAttribute("data-setbg");
-            if (bg) el.style.backgroundImage = "url(" + bg + ")";
+    }
+
+    var SORT_LABELS = {
+        "": "Mới nhất", bestseller: "Bán chạy", rating: "Đánh giá cao", favorite: "Yêu thích nhất",
+        priceAsc: "Giá thấp → cao", priceDesc: "Giá cao → thấp", name: "Tên A → Z"
+    };
+
+    function paintSortTabs() {
+        Array.prototype.forEach.call(document.querySelectorAll("#sortTabs .sort-tab"), function (t) {
+            var on = (t.getAttribute("data-sort") || "") === state.sort;
+            t.classList.toggle("active", on);
+            t.setAttribute("aria-selected", on);
         });
-        grid.onclick = function (e) {
-            var card = e.target.closest(".catalog-cat-card");
-            if (!card) return;
-            state.categoryId = parseInt(card.getAttribute("data-cat"), 10);
-            state.page = 0;
-            renderCategoryCards();
-            loadProducts();
-        };
     }
 
     // ============ Sản phẩm ============
@@ -184,25 +200,17 @@
         params.append("page", state.page);
         params.append("pageSize", state.pageSize);
 
-        var showingCards = state.categoryId === 0 && !state.keyword;
+        // Tiêu đề: danh mục đang xem + kiểu sắp xếp, kèm nút xóa từ khóa tìm kiếm nếu có
+        var cat = categories.find(function (x) { return x.id === state.categoryId; });
+        var base = state.categoryId ? (cat ? cat.name : "Sản phẩm") : "Tất cả sản phẩm";
         var title = $("catalogCategoryTitle");
-        if (showingCards) {
-            title.style.display = "none";
-            $("catalogGrid").innerHTML = "";
-            $("catalogCount").textContent = "Khám phá theo danh mục";
-            renderCategoryCards();
-            return;
-        }
-        // Tiêu đề danh mục đang xem + nút quay lại
-        var cat = categories.find(function (c) { return c.id === state.categoryId; });
-        title.style.display = "";
-        title.innerHTML = state.categoryId
-            ? escapeHtml(cat ? cat.name : "Sản phẩm") +
-              ' <button type="button" class="btn btn-link btn-sm" id="catalogBackAll" style="padding:0 8px;">← Tất cả danh mục</button>'
-            : (state.keyword ? 'Kết quả cho "' + escapeHtml(state.keyword) + '"' : "Tất cả sản phẩm");
-        var back = $("catalogBackAll");
-        if (back) back.onclick = function () {
-            state.categoryId = 0;
+        title.innerHTML = escapeHtml(base) + ' <small class="text-muted font-weight-normal">· ' +
+            escapeHtml(SORT_LABELS[state.sort] || "Mới nhất") + "</small>" +
+            (state.keyword ? ' <span class="badge badge-light">"' + escapeHtml(state.keyword) +
+                '" <a href="#" id="catalogClearKeyword">✕</a></span>' : "");
+        var clear = $("catalogClearKeyword");
+        if (clear) clear.onclick = function (e) {
+            e.preventDefault();
             state.keyword = "";
             $("catalogSearch").value = "";
             state.page = 0;

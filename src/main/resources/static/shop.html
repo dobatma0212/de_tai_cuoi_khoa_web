@@ -23,6 +23,23 @@
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
     <link rel="stylesheet" href="/css/auth.css" type="text/css">
+    <style>
+        .shop-block{margin-bottom:24px}
+        .shop-block__title{font-weight:700;margin-bottom:12px;font-size:16px;text-transform:uppercase;letter-spacing:.5px}
+        .cat-bar{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:thin}
+        .cat-item{flex:0 0 auto;display:flex;align-items:center;gap:10px;min-width:170px;padding:8px 14px 8px 8px;
+            border:2px solid #e5e5e5;border-radius:40px;background:#fff;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+        .cat-item:hover{border-color:#111}
+        .cat-item.active{border-color:#e53637;box-shadow:0 2px 10px rgba(229,54,55,.2)}
+        .cat-item__img{width:44px;height:44px;border-radius:50%;background:#f3f2ee center/cover no-repeat;flex:0 0 44px}
+        .cat-item__name{font-weight:600;font-size:14px;line-height:1.2;color:#111}
+        .cat-item__count{font-size:12px;color:#777}
+        .sort-tabs{display:flex;flex-wrap:wrap;gap:8px}
+        .sort-tab{border:1px solid #d9d9d9;background:#fff;color:#333;border-radius:20px;padding:7px 16px;font-size:14px;
+            font-weight:600;cursor:pointer;transition:all .15s}
+        .sort-tab:hover{border-color:#111}
+        .sort-tab.active{background:#111;border-color:#111;color:#fff}
+    </style>
 </head>
 
 <body>
@@ -156,6 +173,12 @@
     <!-- Shop Section Begin -->
     <section class="shop spad">
         <div class="container">
+            <!-- Tầng 1: Danh mục (riêng, luôn hiển thị) -->
+            <div class="shop-block">
+                <h5 class="shop-block__title">Danh mục</h5>
+                <div id="categoryBar" class="cat-bar" role="tablist" aria-label="Danh mục sản phẩm"></div>
+            </div>
+
             <div class="row">
                 <div class="col-lg-3">
                     <div class="shop__sidebar">
@@ -245,32 +268,24 @@
                     </div>
                 </div>
                 <div class="col-lg-9">
-                    <div class="shop__product__option">
-                        <div class="row">
-                            <div class="col-lg-6 col-md-6 col-sm-6">
-                                <div class="shop__product__option__left">
-                                    <p id="catalogCount">Đang tải sản phẩm...</p>
-                                </div>
-                            </div>
-                            <div class="col-lg-6 col-md-6 col-sm-6">
-                                <div class="shop__product__option__right">
-                                    <p>Sắp xếp theo:</p>
-                                    <select id="catalogSort">
-                                        <option value="">Mới nhất</option>
-                                        <option value="priceAsc">Giá thấp → cao</option>
-                                        <option value="priceDesc">Giá cao → thấp</option>
-                                        <option value="name">Tên A → Z</option>
-                                        <option value="bestseller">Bán chạy nhất</option>
-                                        <option value="rating">Đánh giá cao nhất</option>
-                                        <option value="favorite">Yêu thích nhiều nhất</option>
-                                    </select>
-                                </div>
-                            </div>
+                    <!-- Tầng 2: Lựa chọn sắp xếp -->
+                    <div class="shop-block">
+                        <h5 class="shop-block__title">Sắp xếp theo</h5>
+                        <div id="sortTabs" class="sort-tabs" role="tablist" aria-label="Kiểu sắp xếp">
+                            <button type="button" class="sort-tab active" data-sort="">Mới nhất</button>
+                            <button type="button" class="sort-tab" data-sort="bestseller">Bán chạy</button>
+                            <button type="button" class="sort-tab" data-sort="rating">Đánh giá cao</button>
+                            <button type="button" class="sort-tab" data-sort="favorite">Yêu thích nhất</button>
+                            <button type="button" class="sort-tab" data-sort="priceAsc">Giá thấp → cao</button>
+                            <button type="button" class="sort-tab" data-sort="priceDesc">Giá cao → thấp</button>
+                            <button type="button" class="sort-tab" data-sort="name">Tên A → Z</button>
                         </div>
                     </div>
-                    <h5 id="catalogCategoryTitle" style="display:none;"></h5>
-                    <div class="row" id="categoryCardGrid">
-                        <!-- Thẻ danh mục (ảnh = sản phẩm đại diện), render động bằng /js/catalog.js -->
+
+                    <!-- Tầng 3: Sản phẩm đã sắp xếp -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                        <h5 id="catalogCategoryTitle" class="mb-0 font-weight-bold">Tất cả sản phẩm</h5>
+                        <p id="catalogCount" class="mb-0 text-muted">Đang tải sản phẩm...</p>
                     </div>
                     <div class="row" id="catalogGrid">
                         <!-- Sản phẩm được render động bằng /js/catalog.js (danh mục toàn hãng) -->

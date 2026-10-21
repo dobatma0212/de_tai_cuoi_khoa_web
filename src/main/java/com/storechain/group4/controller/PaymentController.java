@@ -48,6 +48,39 @@ public class PaymentController {
         }
     }
 
+    // ==================== MoMo giả lập (payment.momo.mock=true) ====================
+
+    @GetMapping("/api/user/payments/momo-mock/info")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> mockInfo(
+            @RequestParam String ref,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            return ResponseEntity.ok(ApiResponse.success("OK", paymentService.mockMomoInfo(currentUser.getId(), ref)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/api/user/payments/momo-mock/confirm")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> mockConfirm(
+            @RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        try {
+            String ref = body.get("paymentRef") == null ? null : String.valueOf(body.get("paymentRef"));
+            int resultCode;
+            try {
+                resultCode = Integer.parseInt(String.valueOf(body.get("resultCode")));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Mã kết quả không hợp lệ.");
+            }
+            String payType = body.get("payType") == null ? null : String.valueOf(body.get("payType"));
+            return ResponseEntity.ok(ApiResponse.success("OK",
+                    paymentService.confirmMockMomo(currentUser.getId(), ref, resultCode, payType)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     // ==================== VNPAY ====================
 
     /** Trình duyệt được VNPAY chuyển về sau khi thanh toán */

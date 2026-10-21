@@ -77,6 +77,9 @@ public class PaymentService {
     private String momoSecretKey;
     @Value("${payment.momo.endpoint:https://test-payment.momo.vn/v2/gateway/api/create}")
     private String momoEndpoint;
+    /** true: dùng cổng MoMo giả lập nội bộ (momo-mock.html), không gọi MoMo thật và không cần khóa */
+    @Value("${payment.momo.mock:false}")
+    private boolean momoMock;
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -95,7 +98,7 @@ public class PaymentService {
             throw new IllegalArgumentException(
                     "Cổng VNPAY chưa được cấu hình (payment.vnpay.tmn-code / payment.vnpay.hash-secret). Vui lòng chọn COD hoặc cổng khác.");
         }
-        if (Order.PAYMENT_MOMO.equals(method) && (momoPartnerCode.isBlank()
+        if (Order.PAYMENT_MOMO.equals(method) && !momoMock && (momoPartnerCode.isBlank()
                 || momoAccessKey.isBlank() || momoSecretKey.isBlank())) {
             throw new IllegalArgumentException(
                     "Cổng MOMO chưa được cấu hình (payment.momo.*). Vui lòng chọn COD hoặc cổng khác.");
@@ -253,6 +256,10 @@ public class PaymentService {
     // ============ MoMo ============
 
     private String createMomoPayUrl(String ref, BigDecimal amount) {
+        if (momoMock) {
+            // Địa chỉ tương đối: chạy đúng cả trên localhost lẫn ngrok
+            return "/momo-mock.html?ref=" + URLEncoder.encode(ref, StandardCharsets.UTF_8);
+        }
         String amountStr = amount.toBigInteger().toString();
         String orderInfo = "Thanh toan don hang " + ref;
         String redirectUrl = baseUrl + "/api/public/payments/momo-return";
@@ -309,10 +316,15 @@ public class PaymentService {
 
     /** Kiểm tra chữ ký callback MoMo (redirect và IPN dùng chung) */
     public boolean verifyMomo(Map<String, String> p) {
-        if (momoSecretKey.isBlank()) return false;
+        if (effMomoSecretKey().isBlank()) return false;
         String received = p.get("signature");
         if (received == null || received.isBlank()) return false;
-        String raw = "accessKey=" + momoAccessKey
+        return hmac("HmacSHA256", effMomoSecretKey(), momoSignatureRaw(p)).equalsIgnoreCase(received);
+    }
+
+    /** Chuỗi gốc để ký/kiểm chữ ký kết quả thanh toán MoMo (các trường theo thứ tự chữ cái) */
+    private String momoSignatureRaw(Map<String, String> p) {
+        return "accessKey=" + effMomoAccessKey()
                 + "&amount=" + nz(p.get("amount"))
                 + "&extraData=" + nz(p.get("extraData"))
                 + "&message=" + nz(p.get("message"))
@@ -325,7 +337,19 @@ public class PaymentService {
                 + "&responseTime=" + nz(p.get("responseTime"))
                 + "&resultCode=" + nz(p.get("resultCode"))
                 + "&transId=" + nz(p.get("transId"));
-        return hmac("HmacSHA256", momoSecretKey, raw).equalsIgnoreCase(received);
+    }
+
+    // Ở chế độ mock mà chưa điền khóa thật thì dùng khóa nội bộ để vẫn ký và kiểm chữ ký được
+    private String effMomoAccessKey() {
+        return momoMock && momoAccessKey.isBlank() ? "MOCK_ACCESS_KEY" : momoAccessKey;
+    }
+
+    private String effMomoSecretKey() {
+        return momoMock && momoSecretKey.isBlank() ? "MOCK_SECRET_KEY" : momoSecretKey;
+    }
+
+    private String effMomoPartnerCode() {
+        return momoMock && momoPartnerCode.isBlank() ? "MOCK_MOMO" : momoPartnerCode;
     }
 
     public boolean isMomoSuccess(Map<String, String> p) {
@@ -338,6 +362,99 @@ public class PaymentService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // ============ MoMo giả lập ============
+
+    public boolean isMomoMock() {
+        return momoMock;
+    }
+
+    /** Thông tin hiển thị trên trang MoMo giả: số tiền và các đơn của lần thanh toán */
+    @Transactional(readOnly = true)
+    public Map<String, Object> mockMomoInfo(Long userId, String paymentRef) {
+        List<Order> orders = loadMockOrders(userId, paymentRef);
+        BigDecimal amount = orders.stream().map(Order::getGrandTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("paymentRef", paymentRef);
+        data.put("amount", amount);
+        data.put("orderCodes", orders.stream().map(Order::getOrderCode).toList());
+        data.put("paid", orders.stream().allMatch(o -> Order.PAY_STATUS_PAID.equals(o.getPaymentStatus())));
+        return data;
+    }
+
+    /**
+     * Trang MoMo giả báo kết quả (resultCode theo quy ước MoMo: 0 = thành công; 1001 không đủ tiền;
+     * 1003 giao dịch bị hủy; 1005 hết hạn; 1006 người dùng từ chối). Server dựng bộ tham số có chữ ký
+     * giống MoMo thật: vừa áp kết quả ngay (vai trò IPN), vừa trả URL return để trình duyệt đi qua
+     * đúng đường kiểm chữ ký của /momo-return.
+     */
+    @Transactional
+    public Map<String, Object> confirmMockMomo(Long userId, String paymentRef, int resultCode, String payType) {
+        List<Order> orders = loadMockOrders(userId, paymentRef);
+        BigDecimal amount = orders.stream().map(Order::getGrandTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        boolean success = resultCode == 0;
+        String message = switch (resultCode) {
+            case 0 -> "Giao dịch thành công.";
+            case 1001 -> "Giao dịch thất bại do tài khoản không đủ tiền.";
+            case 1003 -> "Giao dịch đã bị hủy.";
+            case 1005 -> "Giao dịch đã hết hạn.";
+            case 1006 -> "Giao dịch bị từ chối bởi người dùng.";
+            default -> "Giao dịch thất bại.";
+        };
+        long now = System.currentTimeMillis();
+        String transId = success ? String.valueOf(now) : "0";
+
+        Map<String, String> p = new LinkedHashMap<>();
+        p.put("partnerCode", effMomoPartnerCode());
+        p.put("orderId", paymentRef);
+        p.put("requestId", paymentRef);
+        p.put("amount", amount.toBigInteger().toString());
+        p.put("orderInfo", "Thanh toan don hang " + paymentRef);
+        p.put("orderType", "momo_wallet");
+        p.put("transId", transId);
+        p.put("resultCode", String.valueOf(resultCode));
+        p.put("message", message);
+        p.put("payType", payType == null || payType.isBlank() ? "webApp" : payType);
+        p.put("responseTime", String.valueOf(now));
+        p.put("extraData", "");
+        p.put("signature", hmac("HmacSHA256", effMomoSecretKey(), momoSignatureRaw(p)));
+
+        applyPaymentResult(paymentRef, success, amount);
+
+        List<String> parts = new ArrayList<>();
+        p.forEach((k, v) -> parts.add(k + "=" + URLEncoder.encode(v, StandardCharsets.UTF_8)));
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("success", success);
+        data.put("resultCode", resultCode);
+        data.put("message", message);
+        data.put("transId", transId);
+        data.put("amount", amount);
+        data.put("orderCodes", orders.stream().map(Order::getOrderCode).toList());
+        data.put("responseTime", now);
+        data.put("redirectUrl", "/api/public/payments/momo-return?" + String.join("&", parts));
+        return data;
+    }
+
+    /** Chỉ cho thao tác khi bật mock, đơn thuộc về chính người dùng và là đơn MoMo */
+    private List<Order> loadMockOrders(Long userId, String paymentRef) {
+        if (!momoMock) {
+            throw new IllegalArgumentException("Cổng MoMo giả lập đang tắt.");
+        }
+        List<Order> orders = paymentRef == null ? List.of() : orderRepository.findByPaymentRef(paymentRef.trim());
+        if (orders.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy giao dịch.");
+        }
+        for (Order o : orders) {
+            if (!o.getUser().getId().equals(userId)) {
+                throw new IllegalArgumentException("Đây không phải giao dịch của bạn.");
+            }
+            if (!Order.PAYMENT_MOMO.equals(o.getPaymentMethod())) {
+                throw new IllegalArgumentException("Giao dịch này không phải MoMo.");
+            }
+        }
+        return orders;
     }
 
     // ============ Hết hạn thanh toán ============
