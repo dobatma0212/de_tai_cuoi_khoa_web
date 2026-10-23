@@ -59,6 +59,9 @@ public class StorefrontServiceImpl implements StorefrontService {
     @org.springframework.beans.factory.annotation.Value("${app.order.deliver-delay-minutes:5}")
     private long deliverDelayMinutes;
 
+    /** Số ký tự tối thiểu của bình luận đánh giá */
+    private static final int MIN_REVIEW_COMMENT_LENGTH = 50;
+
     private final ProductRepository productRepository;
     private final ProductReviewRepository reviewRepository;
     private final ReviewMediaRepository reviewMediaRepository;
@@ -71,6 +74,9 @@ public class StorefrontServiceImpl implements StorefrontService {
     private final UserRepository userRepository;
     private final BranchStockRepository branchStockRepository;
     private final ShopRepository shopRepository;
+    private final com.storechain.group4.service.PaymentService paymentService;
+    private final com.storechain.group4.service.PromotionCalculator promotionCalculator;
+    private final com.storechain.group4.repository.PromotionUsageRepository promotionUsageRepository;
 
     // ============ Chi tiết sản phẩm ============
 
@@ -102,6 +108,18 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Điểm đánh giá phải từ 1 đến 5 sao.");
         }
+        String trimmed = comment == null ? "" : comment.trim();
+        if (trimmed.length() < MIN_REVIEW_COMMENT_LENGTH) {
+            throw new IllegalArgumentException("Bình luận phải có ít nhất " + MIN_REVIEW_COMMENT_LENGTH
+                    + " ký tự (hiện có " + trimmed.length() + ").");
+        }
+        // Chỉ người đã mua và đã nhận sản phẩm (đơn Đã giao / Đã nhận hàng) mới được đánh giá
+        if (orderItemRepository.countPurchasedByUser(userId, productId) == 0) {
+            throw new IllegalArgumentException("Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua và nhận hàng.");
+        }
+        if (reviewRepository.existsByProductIdAndUserId(productId, userId)) {
+            throw new IllegalArgumentException("Bạn đã đánh giá sản phẩm này rồi.");
+        }
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
         User user = userRepository.findById(userId)
@@ -110,7 +128,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .product(product)
                 .user(user)
                 .rating(rating)
-                .comment(comment == null ? "" : comment.trim())
+                .comment(trimmed)
                 .build());
         if (media != null) {
             for (ReviewDto.MediaDto m : media) {
@@ -240,6 +258,15 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .stream().findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Bạn chưa có địa chỉ nhận hàng. Hãy thêm địa chỉ ở trang Hồ sơ cá nhân."));
+        String paymentMethod = normalizePaymentMethod(request.getPaymentMethod());
+        paymentService.assertConfigured(paymentMethod);
+        // Các đơn tách từ một lần đặt dùng chung một mã thanh toán online
+        String paymentRef = paymentService.isOnline(paymentMethod) ? paymentService.generatePaymentRef() : null;
+        BigDecimal cartTotal = cartItems.stream()
+                .map(ci -> ci.getProduct().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Voucher toàn hệ thống chỉ áp một lần cho đơn đầu tiên khi giỏ bị tách nhiều chi nhánh
+        boolean[] globalVoucherUsed = {false};
         Transporter transporter = null;
         if (request.getTransporterId() != null && request.getTransporterId() > 0) {
             transporter = transporterRepository.findById(request.getTransporterId())
@@ -259,7 +286,8 @@ public class StorefrontServiceImpl implements StorefrontService {
         List<OrderDto> created = new ArrayList<>();
         for (Map.Entry<Long, List<CartItem>> entry : byShop.entrySet()) {
             created.add(createOrderForShop(userId, assignedShops.get(entry.getKey()),
-                    entry.getValue(), address, transporter, request));
+                    entry.getValue(), address, transporter, request,
+                    paymentMethod, paymentRef, cartTotal, globalVoucherUsed));
         }
         cartItemRepository.deleteByUserId(userId);
         return created;
@@ -320,9 +348,22 @@ public class StorefrontServiceImpl implements StorefrontService {
         return p;
     }
 
+    private String normalizePaymentMethod(String method) {
+        if (method == null || method.isBlank()) {
+            return Order.PAYMENT_COD;
+        }
+        String m = method.trim().toUpperCase(java.util.Locale.ROOT);
+        if (List.of(Order.PAYMENT_COD, Order.PAYMENT_VNPAY, Order.PAYMENT_MOMO).contains(m)) {
+            return m;
+        }
+        throw new IllegalArgumentException("Phương thức thanh toán không hợp lệ. Chọn COD, VNPAY hoặc MOMO.");
+    }
+
     private OrderDto createOrderForShop(Long userId, Shop shop, List<CartItem> items,
                                         ShippingAddress address, Transporter transporter,
-                                        OrderCreateRequest request) {
+                                        OrderCreateRequest request,
+                                        String paymentMethod, String paymentRef,
+                                        BigDecimal cartTotal, boolean[] globalVoucherUsed) {
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CartItem ci : items) {
             totalAmount = totalAmount.add(ci.getProduct().getPrice()
@@ -336,28 +377,58 @@ public class StorefrontServiceImpl implements StorefrontService {
         // Áp khuyến mãi của chi nhánh (nếu nhập mã hợp lệ); mã của admin (toàn server) được xử lý ở PromotionService
         BigDecimal discount = BigDecimal.ZERO;
         Promotion promo = null;
+        String promoName = null;
         if (request.getPromoCode() != null && !request.getPromoCode().isBlank()) {
+            String code = request.getPromoCode().trim();
             promo = promotionRepository
-                    .findActiveByShopIdAndCodeIgnoreCase(shop.getId(), request.getPromoCode().trim())
+                    .findActiveByShopIdAndCodeIgnoreCase(shop.getId(), code)
                     .orElse(null);
-            if (promo == null) {
-                throw new IllegalArgumentException("Mã khuyến mãi \"" + request.getPromoCode()
-                        + "\" không tồn tại hoặc đã hết hiệu lực.");
-            }
-            LocalDateTime now = LocalDateTime.now();
-            if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
-                throw new IllegalArgumentException("Khuyến mãi \"" + promo.getName() + "\" đã hết hạn.");
-            }
-            if (promo.getMinOrderValue() != null && totalAmount.compareTo(promo.getMinOrderValue()) < 0) {
-                throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderValue()
-                        + "₫ để áp dụng khuyến mãi \"" + promo.getName() + "\".");
-            }
-            if (Promotion.TYPE_PERCENT.equals(promo.getPromoType())) {
-                discount = totalAmount.multiply(promo.getDiscountValue())
-                        .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
-                if (discount.compareTo(totalAmount) > 0) discount = totalAmount;
+            if (promo != null) {
+                LocalDateTime now = LocalDateTime.now();
+                if (promo.getEndDate() != null && now.isAfter(promo.getEndDate())) {
+                    throw new IllegalArgumentException("Khuyến mãi \"" + promo.getName() + "\" đã hết hạn.");
+                }
+                if (promo.getMinOrderValue() != null && totalAmount.compareTo(promo.getMinOrderValue()) < 0) {
+                    throw new IllegalArgumentException("Đơn tối thiểu " + promo.getMinOrderValue()
+                            + "₫ để áp dụng khuyến mãi \"" + promo.getName() + "\".");
+                }
+                if (Promotion.TYPE_PERCENT.equals(promo.getPromoType())) {
+                    discount = totalAmount.multiply(promo.getDiscountValue())
+                            .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+                    if (discount.compareTo(totalAmount) > 0) discount = totalAmount;
+                } else {
+                    discount = promo.getDiscountValue().min(shippingFee);
+                }
+                promoName = promo.getName();
             } else {
-                discount = promo.getDiscountValue().min(shippingFee);
+                // Không phải mã của chi nhánh -> thử voucher toàn hệ thống (admin) mà khách chọn ở giỏ hàng
+                Promotion global = promotionRepository.findByCodeIgnoreCaseAndShopIsNull(code).orElse(null);
+                if (global == null) {
+                    throw new IllegalArgumentException("Mã khuyến mãi \"" + request.getPromoCode()
+                            + "\" không tồn tại hoặc đã hết hiệu lực.");
+                }
+                if (!globalVoucherUsed[0]) {
+                    // Khóa dòng khuyến mãi để hai người cùng dùng mã cuối cùng không vượt giới hạn lượt dùng
+                    global = promotionRepository.findByIdForUpdate(global.getId())
+                            .orElseThrow(() -> new IllegalArgumentException("Không thể áp dụng voucher, vui lòng thử lại."));
+                    long usedByUser = promotionUsageRepository.countByPromotionIdAndUserId(global.getId(), userId);
+                    String error = promotionCalculator.validateVoucher(global, cartTotal, usedByUser);
+                    if (error != null) {
+                        throw new IllegalArgumentException(error);
+                    }
+                    if (promotionRepository.incrementUsedCount(global.getId()) == 0) {
+                        throw new IllegalArgumentException("Voucher đã hết lượt sử dụng.");
+                    }
+                    discount = promotionCalculator.calculateDiscount(global, cartTotal).min(totalAmount);
+                    promotionUsageRepository.save(com.storechain.group4.model.PromotionUsage.builder()
+                            .promotion(global)
+                            .userId(userId)
+                            .discountAmount(discount)
+                            .orderTotal(cartTotal)
+                            .build());
+                    promoName = global.getName();
+                    globalVoucherUsed[0] = true;
+                }
             }
         }
 
@@ -372,12 +443,16 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .shippingFee(shippingFee)
                 .discountAmount(discount)
                 .grandTotal(grandTotal)
-                .promoName(promo != null ? promo.getName() : null)
+                .promoName(promoName)
                 .transporter(transporter)
                 .receiverName(address.getReceiverName())
                 .receiverPhone(address.getReceiverPhone())
                 .receiverAddress(joinAddress(address))
                 .note(request.getNote())
+                .paymentMethod(paymentMethod)
+                .paymentStatus(paymentService.isOnline(paymentMethod)
+                        ? Order.PAY_STATUS_PENDING : Order.PAY_STATUS_UNPAID)
+                .paymentRef(paymentRef)
                 .build());
 
         for (CartItem ci : items) {
@@ -610,6 +685,9 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .receiverPhone(o.getReceiverPhone())
                 .receiverAddress(o.getReceiverAddress())
                 .note(o.getNote())
+                .paymentMethod(o.getPaymentMethod())
+                .paymentStatus(o.getPaymentStatus())
+                .paymentRef(o.getPaymentRef())
                 .createdAt(o.getCreatedAt())
                 .items(items)
                 .build();

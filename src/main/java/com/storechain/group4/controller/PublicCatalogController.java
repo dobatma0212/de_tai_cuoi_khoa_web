@@ -42,6 +42,17 @@ public class PublicCatalogController {
                         size, color, sort, page, Math.min(pageSize, 50))));
     }
 
+    /** Top 20 sản phẩm trang chủ: type = new | bestseller | toprated | favorite, phân trang trong 20 sản phẩm */
+    @GetMapping("/top")
+    public ResponseEntity<ApiResponse<ProductPageDto>> topProducts(
+            @RequestParam(defaultValue = "new") String type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "8") int pageSize) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Lấy danh sách sản phẩm thành công",
+                catalogService.topProducts(type, page, pageSize)));
+    }
+
     @GetMapping("/suggest")
     public ResponseEntity<ApiResponse<List<ProductResponseDto>>> suggestProducts(
             @RequestParam String keyword) {

@@ -51,6 +51,12 @@ public class ProductResponseDto {
     private Double avgRating;
     private Long reviewCount;
 
+    /** Số lượng đã bán (không tính đơn hủy/trả hàng) */
+    private Long soldCount;
+
+    /** Số lượt yêu thích */
+    private Long favoriteCount;
+
     /** Nhãn website */
     private boolean isNew;
     private boolean isBestSeller;

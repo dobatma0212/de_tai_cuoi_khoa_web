@@ -39,6 +39,12 @@ public class OrderDto {
     private String receiverPhone;
     private String receiverAddress;
     private String note;
+    /** COD / VNPAY / MOMO */
+    private String paymentMethod;
+    /** UNPAID / PENDING / PAID / FAILED */
+    private String paymentStatus;
+    /** Mã giao dịch dùng chung cho các đơn tách từ một lần thanh toán online */
+    private String paymentRef;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

@@ -16,4 +16,7 @@ public class OrderCreateRequest {
     private Long transporterId;
 
     private String note;
+
+    /** Phương thức thanh toán: COD (mặc định) / VNPAY / MOMO */
+    private String paymentMethod;
 }

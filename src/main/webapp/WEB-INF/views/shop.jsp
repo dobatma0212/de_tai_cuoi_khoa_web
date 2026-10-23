@@ -140,6 +140,9 @@
                                         <option value="priceAsc">Giá thấp → cao</option>
                                         <option value="priceDesc">Giá cao → thấp</option>
                                         <option value="name">Tên A → Z</option>
+                                        <option value="bestseller">Bán chạy nhất</option>
+                                        <option value="rating">Đánh giá cao nhất</option>
+                                        <option value="favorite">Yêu thích nhiều nhất</option>
                                     </select>
                                 </div>
                             </div>
@@ -186,6 +189,8 @@
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/cart-api.js"></script>
+    <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/catalog.js"></script>
 </body>
 </html>

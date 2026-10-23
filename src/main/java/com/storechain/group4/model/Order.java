@@ -40,6 +40,8 @@ public class Order {
     // Trạng thái thanh toán
     public static final String PAY_STATUS_UNPAID = "UNPAID";   // COD: chờ thu tiền khi giao hàng
     public static final String PAY_STATUS_PENDING = "PENDING"; // Đang chờ cổng thanh toán xác nhận
+    public static final String PAY_STATUS_PAID = "PAID";       // Cổng thanh toán đã xác nhận thu tiền
+    public static final String PAY_STATUS_FAILED = "FAILED";   // Thanh toán thất bại / bị hủy tại cổng
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

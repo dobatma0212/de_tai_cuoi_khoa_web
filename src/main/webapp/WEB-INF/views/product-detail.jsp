@@ -226,6 +226,9 @@
                         <button type="button" id="pdBuyBtn" class="buy-btn">
                             <i class="fa fa-shopping-cart"></i> Mua hàng
                         </button>
+                        <button type="button" id="pdFavBtn" class="btn btn-outline-danger ml-2" aria-pressed="false">
+                            <i class="fa fa-heart-o"></i> <span id="pdFavText">Yêu thích</span>
+                        </button>
                         <hr>
                         <h6 class="font-weight-bold">Mô tả sản phẩm</h6>
                         <p id="pdDescription" class="text-muted"></p>
@@ -247,8 +250,9 @@
                 <div id="reviewFormBox" style="display:none;" class="address-card mb-4">
                     <h6 class="font-weight-bold mb-2">Viết đánh giá của bạn</h6>
                     <div class="mb-2" id="starPicker"></div>
-                    <textarea id="reviewComment" class="form-control mb-2" rows="3"
-                              maxlength="2000" placeholder="Nhận xét của bạn về sản phẩm..."></textarea>
+                    <textarea id="reviewComment" class="form-control mb-1" rows="3"
+                              maxlength="2000" placeholder="Nhận xét của bạn về sản phẩm (tối thiểu 50 ký tự)..."></textarea>
+                    <small id="reviewCounter" class="d-block mb-2 text-muted">0/50 ký tự tối thiểu</small>
                     <div class="row align-items-center">
                         <div class="col-md-7">
                             <label class="profile-info-label">Kèm ảnh/video minh họa (tùy chọn)</label>
@@ -263,8 +267,15 @@
                 <div id="reviewLoginHint" class="alert alert-light" style="display:none;">
                     <a href="/login.html">Đăng nhập</a> để viết đánh giá sản phẩm.
                 </div>
+                <div id="reviewNotAllowedHint" class="alert alert-light" style="display:none;"></div>
 
                 <div id="reviewList"></div>
+            </div>
+
+            <!-- Sản phẩm đã xem gần đây -->
+            <div id="pdRecentBox" class="pd-card" style="display:none;">
+                <h5 class="font-weight-bold mb-3">Sản phẩm bạn đã xem gần đây</h5>
+                <div class="row" id="pdRecentGrid"></div>
             </div>
         </div>
     </section>
@@ -280,6 +291,8 @@
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/cart-api.js"></script>
+    <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/product-detail.js"></script>
 </body>
 </html>

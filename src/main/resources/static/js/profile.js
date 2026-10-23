@@ -93,6 +93,8 @@
         $("btnCancelAddress").addEventListener("click", hideAddressForm);
 
         initShopSubTabs();
+        initActivityTabs();
+        openTabFromUrl();
     });
 
     // ============ Tab điều hướng ============
@@ -106,9 +108,82 @@
                 });
                 btn.classList.add("active");
                 $(btn.getAttribute("data-tab")).classList.add("active");
-                if (btn.getAttribute("data-tab") === "tabUserOrders") loadUserOrders();
+                var tabId = btn.getAttribute("data-tab");
+                if (tabId === "tabUserOrders") loadUserOrders();
+                if (tabId === "tabFavorites") loadFavoriteTab();
+                if (tabId === "tabViewed") loadViewedTab();
             });
         });
+    }
+
+    // ============ Yêu thích / Đã xem ============
+
+    function initActivityTabs() {
+        // Bỏ tim ở tab yêu thích thì tải lại danh sách để thẻ biến mất
+        ScShop.bindCards($("favGrid"), function (id, nowFav) { if (!nowFav) loadFavoriteTab(); });
+        ScShop.bindCards($("viewedGrid"));
+        $("btnClearViewed").addEventListener("click", function () {
+            if (!confirm("Xóa toàn bộ lịch sử sản phẩm đã xem?")) return;
+            ScShop.authFetch("/api/user/recently-viewed", { method: "DELETE" })
+                .then(loadViewedTab)
+                .catch(function (err) { alert(err.message); });
+        });
+    }
+
+    function renderProductGrid(gridId, list, emptyText) {
+        var grid = $(gridId);
+        if (!list || !list.length) {
+            grid.innerHTML = '<div class="col-12"><p class="text-muted">' + emptyText + "</p></div>";
+            return;
+        }
+        grid.innerHTML = list.map(function (p) {
+            return ScShop.cardHtml(p, "col-lg-4 col-md-6 col-sm-6");
+        }).join("");
+        ScShop.applyBackgrounds(grid);
+    }
+
+    function loadFavoriteTab() {
+        ScShop.loadFavIds().then(function () {
+            return ScShop.authFetch("/api/user/favorites");
+        }).then(function (list) {
+            renderProductGrid("favGrid", list, "Bạn chưa thích sản phẩm nào. Bấm biểu tượng trái tim ở sản phẩm để lưu lại.");
+        }).catch(function (err) {
+            $("favGrid").innerHTML = '<div class="col-12"><p class="text-danger">' + escapeHtml(err.message) + "</p></div>";
+        });
+    }
+
+    function loadViewedTab() {
+        ScShop.loadFavIds().then(function () {
+            return ScShop.authFetch("/api/user/recently-viewed?limit=24");
+        }).then(function (list) {
+            renderProductGrid("viewedGrid", list, "Bạn chưa xem sản phẩm nào.");
+        }).catch(function (err) {
+            $("viewedGrid").innerHTML = '<div class="col-12"><p class="text-danger">' + escapeHtml(err.message) + "</p></div>";
+        });
+    }
+
+    /** Mở tab theo ?tab=orders|favorites|viewed|address và báo kết quả thanh toán (?payment=success|failed) */
+    function openTabFromUrl() {
+        var params = new URLSearchParams(window.location.search);
+        var map = { orders: "tabUserOrders", favorites: "tabFavorites", viewed: "tabViewed", address: "tabAddress" };
+        var tab = map[params.get("tab")];
+        if (tab) {
+            var btn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
+            if (btn) btn.click();
+        }
+        var pay = params.get("payment");
+        if (pay) {
+            var ref = params.get("ref");
+            var reason = params.get("reason");
+            var el = $("userOrderAlert");
+            if (pay === "success") {
+                showAlert(el, "Thanh toán thành công! Chi nhánh sẽ xác nhận đơn của bạn sớm.", "success");
+            } else {
+                showAlert(el, reason === "invalid_signature"
+                    ? "Không xác thực được kết quả thanh toán. Nếu bạn đã bị trừ tiền, vui lòng liên hệ cửa hàng."
+                    : "Thanh toán chưa hoàn tất. Bạn có thể bấm \"Thanh toán lại\" ở đơn hàng bên dưới.", "danger");
+            }
+        }
     }
 
     // ============ Thông tin cá nhân ============
@@ -631,6 +706,7 @@
                 escapeHtml(o.statusLabel || o.status) + "</span>" +
                 '<div><small class="text-muted">Khách: ' + escapeHtml(o.customerName || "") +
                 " — " + escapeHtml(o.receiverPhone || "") + "</small></div>" +
+                ScShop.paymentHtml(o) +
                 '<div><small class="text-muted">' + escapeHtml(o.receiverAddress || "") + "</small></div>" +
                 (o.transporterName ? '<div><small class="text-muted">VC: ' + escapeHtml(o.transporterName) +
                     " (" + formatVnd(o.shippingFee) + ")</small></div>" : "") +
@@ -914,9 +990,43 @@
         });
     }
 
+    var userOrdersCache = [];
+    var userOrderFilter = "ALL";
+    var USER_ORDER_FILTERS = [
+        ["ALL", "Tất cả"], ["NEW", "Đơn hàng mới"], ["CONFIRMED", "Đã xác nhận"], ["SHIPPING", "Đang giao"],
+        ["DELIVERED", "Đã giao"], ["CANCELLED", "Đã hủy"], ["RETURN", "Trả hàng - hoàn tiền"]
+    ];
+
+    function orderMatchesFilter(o, f) {
+        if (f === "ALL") return true;
+        if (f === "SHIPPING") return o.status === "SHIPPING" || o.status === "PICKED_UP";
+        if (f === "DELIVERED") return o.status === "DELIVERED" || o.status === "RECEIVED";
+        if (f === "RETURN") return o.status === "RETURNED" || o.status === "RETURN_REQUESTED";
+        return o.status === f;
+    }
+
+    function renderUserOrderStatusBar() {
+        var bar = $("userOrderStatusBar");
+        bar.innerHTML = USER_ORDER_FILTERS.map(function (f) {
+            var count = userOrdersCache.filter(function (o) { return orderMatchesFilter(o, f[0]); }).length;
+            var active = f[0] === userOrderFilter;
+            return '<button type="button" class="btn btn-sm mr-1 mb-1 ' + (active ? "btn-store" : "btn-outline-secondary") +
+                '" data-order-filter="' + f[0] + '">' + f[1] + " (" + count + ")</button>";
+        }).join("");
+        bar.onclick = function (e) {
+            var b = e.target.closest("button[data-order-filter]");
+            if (!b) return;
+            userOrderFilter = b.getAttribute("data-order-filter");
+            renderUserOrderStatusBar();
+            renderUserOrders(userOrdersCache.filter(function (o) { return orderMatchesFilter(o, userOrderFilter); }));
+        };
+    }
+
     function loadUserOrders() {
         userApi("GET", "/orders").then(function (res) {
-            renderUserOrders(res.data || []);
+            userOrdersCache = res.data || [];
+            renderUserOrderStatusBar();
+            renderUserOrders(userOrdersCache.filter(function (o) { return orderMatchesFilter(o, userOrderFilter); }));
         }).catch(function (err) {
             $("userOrderList").innerHTML = '<p class="text-muted">' + escapeHtml(err.message) + "</p>";
         });
@@ -925,14 +1035,19 @@
     function renderUserOrders(list) {
         var container = $("userOrderList");
         if (!list.length) {
-            container.innerHTML = '<p class="text-muted">Bạn chưa có đơn hàng nào.</p>';
+            container.innerHTML = '<p class="text-muted">' + (userOrdersCache.length
+                ? "Không có đơn hàng nào ở trạng thái này." : "Bạn chưa có đơn hàng nào.") + "</p>";
             return;
         }
         container.innerHTML = list.map(function (o) {
+            var canReview = o.status === "DELIVERED" || o.status === "RECEIVED";
             var items = (o.items || []).map(function (it) {
                 return "<li>" + escapeHtml(it.productName) +
                     (it.size ? " (size " + escapeHtml(it.size) + ")" : "") +
-                    " x" + it.quantity + " — " + formatVnd(it.subtotal) + "</li>";
+                    " x" + it.quantity + " — " + formatVnd(it.subtotal) +
+                    (canReview && it.productId
+                        ? ' <a href="/product-detail.html?productId=' + it.productId + '">Đánh giá</a>' : "") +
+                    "</li>";
             }).join("");
             var actions = "";
             if (["NEW", "CONFIRMED", "SHIPPING"].indexOf(o.status) !== -1) {
@@ -946,6 +1061,10 @@
             } else if (o.status === "RETURN_REQUESTED") {
                 actions = '<small class="text-muted">Đang chờ chi nhánh duyệt trả hàng - hoàn tiền...</small>';
             }
+            if (ScShop.canRetryPayment(o)) {
+                actions = '<button type="button" class="btn btn-sm btn-store mr-2" data-pay-ref="' +
+                    escapeHtml(o.paymentRef) + '">Thanh toán lại</button>' + actions;
+            }
             return '<div class="address-card">' +
                 '<div class="d-flex justify-content-between flex-wrap">' +
                 "<div><b>" + escapeHtml(o.orderCode) + "</b> " +
@@ -953,6 +1072,7 @@
                 '<div><small class="text-muted">' + escapeHtml(o.shopName || "") + " — " +
                 escapeHtml(o.createdAt || "") + "</small></div>" +
                 (o.transporterName ? '<div><small class="text-muted">VC: ' + escapeHtml(o.transporterName) + "</small></div>" : "") +
+                ScShop.paymentHtml(o) +
                 (o.cancelReason ? '<div><small class="text-danger">' + escapeHtml(o.cancelReason) + "</small></div>" : "") +
                 '<ul class="mt-2 mb-0 text-muted" style="font-size:13px;">' + items + "</ul></div>" +
                 '<div class="text-right"><b style="color:#e53637;">' + formatVnd(o.grandTotal) + "</b>" +
@@ -963,7 +1083,9 @@
         container.onclick = function (e) {
             var btn = e.target.closest("button");
             if (!btn) return;
-            if (btn.getAttribute("data-cancel") !== null) {
+            if (btn.getAttribute("data-pay-ref") !== null) {
+                ScShop.startPayment(btn.getAttribute("data-pay-ref")).catch(function (err) { alert(err.message); });
+            } else if (btn.getAttribute("data-cancel") !== null) {
                 var id = btn.getAttribute("data-cancel");
                 var reason = prompt("Lý do bạn muốn hủy đơn này:");
                 if (reason === null) return;

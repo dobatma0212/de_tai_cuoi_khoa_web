@@ -27,6 +27,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     boolean existsByOrderCode(String orderCode);
 
+    /** Các đơn cùng một lần thanh toán online */
+    List<Order> findByPaymentRef(String paymentRef);
+
+    /** Đơn thanh toán online chưa được cổng xác nhận (dùng để hết hạn tự hủy) */
+    List<Order> findByPaymentStatusAndStatusAndCreatedAtBefore(String paymentStatus, String status, LocalDateTime before);
+
     /** Doanh thu tháng của chi nhánh (các đơn đã giao/nhận hoặc đã thanh toán thành công) */
     @Query("SELECT COALESCE(SUM(o.grandTotal), 0) FROM Order o WHERE o.shop.id = :shopId " +
            "AND (o.status IN ('DELIVERED', 'RECEIVED') OR (o.paymentStatus = 'PAID' AND o.status NOT IN ('CANCELLED', 'RETURNED'))) " +

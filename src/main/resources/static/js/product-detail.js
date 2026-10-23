@@ -61,17 +61,60 @@
         loadProduct();
         loadReviews();
         setupReviewForm();
+        setupFavorite();
+        trackViewAndShowRecent();
         updateCartBadge();
     });
+
+    // ============ Yêu thích ============
+
+    function setupFavorite() {
+        var btn = $("pdFavBtn");
+        if (!btn) return;
+        function paint() {
+            var on = ScShop.isFav(productId);
+            btn.classList.toggle("btn-danger", on);
+            btn.classList.toggle("btn-outline-danger", !on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+            btn.querySelector("i").className = on ? "fa fa-heart" : "fa fa-heart-o";
+            $("pdFavText").textContent = on ? "Đã yêu thích" : "Yêu thích";
+        }
+        ScShop.loadFavIds().then(paint);
+        btn.addEventListener("click", function () {
+            ScShop.toggleFav(productId).then(paint).catch(function (err) {
+                if (err && err.message !== "Chưa đăng nhập") alert(err.message);
+            });
+        });
+    }
+
+    // ============ Sản phẩm đã xem ============
+
+    /** Ghi nhận lượt xem rồi hiển thị các sản phẩm đã xem khác (không gồm sản phẩm này) */
+    function trackViewAndShowRecent() {
+        if (!isLoggedIn()) return;
+        var grid = $("pdRecentGrid");
+        ScShop.bindCards(grid);
+        ScShop.authFetch("/api/user/recently-viewed/" + productId, { method: "POST" })
+            .catch(function () { })
+            .then(function () { return ScShop.authFetch("/api/user/recently-viewed?limit=9"); })
+            .then(function (list) {
+                var others = (list || []).filter(function (p) { return p.id !== productId; }).slice(0, 4);
+                if (!others.length) return;
+                grid.innerHTML = others.map(function (p) {
+                    return ScShop.cardHtml(p, "col-lg-3 col-md-4 col-sm-6");
+                }).join("");
+                ScShop.applyBackgrounds(grid);
+                $("pdRecentBox").style.display = "block";
+            }).catch(function () { });
+    }
 
     /** Hiển thị số sản phẩm trong giỏ lên icon giỏ hàng ở header */
     function updateCartBadge() {
         if (!isLoggedIn()) return;
-        fetch("/api/user/cart/count", {
-            headers: { "Authorization": "Bearer " + getToken() }
-        }).then(function (r) { return r.json(); }).then(function (d) {
-            var span = document.querySelector('a[href="./shopping-cart.html"] span');
-            if (span && d.data !== undefined) span.textContent = d.data;
+        if (!window.StoreChainCartAPI) return;
+        window.StoreChainCartAPI.count().then(function (count) {
+            var spans = document.querySelectorAll('a[href="./shopping-cart.html"] span, a[href="/shopping-cart.html"] span');
+            Array.prototype.forEach.call(spans, function (span) { span.textContent = count == null ? 0 : count; });
         }).catch(function () { });
     }
 
@@ -174,23 +217,15 @@
             return;
         }
         var qty = Math.max(1, parseInt($("pdQuantity").value, 10) || 1);
-        fetch("/api/user/cart", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + getToken()
-            },
-            body: JSON.stringify({
-                productId: productId,
-                size: selectedSize,
-                color: selectedColor,
-                quantity: qty
-            })
-        }).then(function (r) { return r.json(); }).then(function (data) {
-            if (data.success === false) throw new Error(data.message);
+        if (!window.StoreChainCartAPI) {
+            alert("Module giỏ hàng chưa được tải. Vui lòng tải lại trang.");
+            return;
+        }
+        window.StoreChainCartAPI.add(productId, qty, selectedSize, selectedColor).then(function () {
             alert("Đã thêm vào giỏ hàng: " + product.name +
                 (selectedSize ? " (size " + selectedSize + ")" : "") +
                 (selectedColor ? " - màu " + selectedColor : "") + " x" + qty);
+            updateCartBadge();
         }).catch(function (err) {
             alert(err.message || "Không thể thêm vào giỏ hàng.");
         });
@@ -198,12 +233,45 @@
 
     // ============ Đánh giá ============
 
+    var MIN_COMMENT = 50;
+
+    /** Chỉ hiện form cho người đã mua + nhận hàng và chưa đánh giá (server vẫn kiểm tra lại khi gửi) */
     function setupReviewForm() {
         if (!isLoggedIn()) {
             $("reviewLoginHint").style.display = "block";
             return;
         }
+        ScShop.authFetch("/api/user/products/" + productId + "/review-eligibility").then(function (e) {
+            if (e && e.canReview) {
+                showReviewForm();
+            } else {
+                showReviewNotice(e && e.alreadyReviewed
+                    ? "Bạn đã đánh giá sản phẩm này rồi."
+                    : "Chỉ khách đã mua và nhận sản phẩm này mới có thể viết đánh giá.");
+            }
+        }).catch(function () {
+            showReviewNotice("Không kiểm tra được quyền đánh giá, vui lòng tải lại trang.");
+        });
+    }
+
+    function showReviewNotice(text) {
+        $("reviewFormBox").style.display = "none";
+        var hint = $("reviewNotAllowedHint");
+        hint.textContent = text;
+        hint.style.display = "block";
+    }
+
+    function showReviewForm() {
         $("reviewFormBox").style.display = "block";
+        var commentEl = $("reviewComment");
+        function updateCounter() {
+            var len = commentEl.value.trim().length;
+            var counter = $("reviewCounter");
+            counter.textContent = len + "/" + MIN_COMMENT + " ký tự tối thiểu";
+            counter.className = "d-block mb-2 " + (len >= MIN_COMMENT ? "text-success" : "text-muted");
+        }
+        commentEl.addEventListener("input", updateCounter);
+        updateCounter();
         // 5 ngôi sao chọn điểm
         var picker = $("starPicker");
         for (var i = 1; i <= 5; i++) {
@@ -226,6 +294,11 @@
         alertEl.style.display = "none";
         if (!pickedRating) {
             alert("Vui lòng chọn số sao đánh giá.");
+            return;
+        }
+        var commentLen = $("reviewComment").value.trim().length;
+        if (commentLen < MIN_COMMENT) {
+            alert("Bình luận phải có ít nhất " + MIN_COMMENT + " ký tự (hiện có " + commentLen + ").");
             return;
         }
         var files = $("reviewFiles").files;
@@ -255,6 +328,7 @@
                 Array.prototype.forEach.call($("starPicker").querySelectorAll(".star-pick"), function (s) {
                     s.classList.remove("on");
                 });
+                showReviewNotice("Bạn đã đánh giá sản phẩm này. Cảm ơn bạn!");
                 loadReviews();
                 loadProduct(); // cập nhật điểm trung bình
             }).catch(function (err) {

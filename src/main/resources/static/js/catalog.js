@@ -43,6 +43,7 @@
     var categories = [];
 
     document.addEventListener("DOMContentLoaded", function () {
+        updateCartBadge();
         // Đọc từ khóa từ URL (nếu có, ví dụ từ ô tìm kiếm header)
         var params = new URLSearchParams(window.location.search);
         var kw = params.get("keyword");
@@ -51,7 +52,8 @@
         }
         loadCategories();
         bindEvents();
-        loadProducts();
+        // Nạp danh sách đã thích trước để tô đúng màu trái tim ở lần hiển thị đầu
+        ScShop.loadFavIds().then(loadProducts);
     });
 
     function bindEvents() {
@@ -68,19 +70,8 @@
             loadProducts();
         });
 
-        $("catalogGrid").addEventListener("click", function (e) {
-            var addBtn = e.target.closest(".catalog-add-cart");
-            if (addBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                addToCart(parseInt(addBtn.getAttribute("data-id"), 10));
-                return;
-            }
-            var card = e.target.closest(".catalog-card");
-            if (card) {
-                window.location.href = "/product-detail.html?productId=" + card.getAttribute("data-id");
-            }
-        });
+        // Tim yêu thích, thêm giỏ, mở chi tiết: dùng chung với trang chủ
+        ScShop.bindCards($("catalogGrid"));
 
         $("catalogPagination").addEventListener("click", function (e) {
             var btn = e.target.closest("button.catalog-page-btn");
@@ -246,30 +237,9 @@
         }
 
         $("catalogGrid").innerHTML = list.map(function (p) {
-            var inStock = (p.stock || 0) > 0;
-            return '<div class="col-lg-4 col-md-6 col-sm-6">' +
-                '<div class="product__item catalog-card" data-id="' + p.id + '" style="cursor:pointer;">' +
-                '<div class="product__item__pic set-bg" data-setbg="' +
-                escapeHtml(p.imageUrl || "/img/product/product-1.jpg") + '">' +
-                (!inStock ? '<span class="label">Hết hàng</span>' : "") +
-                "</div>" +
-                '<div class="product__item__text">' +
-                "<h6>" + escapeHtml(p.name) + "</h6>" +
-                (inStock
-                    ? '<a href="#" class="add-cart catalog-add-cart" data-id="' + p.id + '">+ Thêm vào giỏ</a>'
-                    : '<span class="text-muted" style="font-size:12px;">Tạm hết hàng</span>') +
-                '<div class="rating"><h5>' + formatVnd(p.price) + "</h5></div>" +
-                '<small class="text-muted d-block">' + escapeHtml(p.categoryName || "") +
-                (p.color ? " — " + escapeHtml(p.color) : "") +
-                (inStock ? " — Còn " + p.stock : "") + "</small>" +
-                "</div></div></div>";
+            return ScShop.cardHtml(p, "col-lg-4 col-md-6 col-sm-6");
         }).join("");
-
-        // set-bg dùng data-setbg
-        document.querySelectorAll("#catalogGrid .set-bg").forEach(function (el) {
-            var bg = el.getAttribute("data-setbg");
-            if (bg) el.style.backgroundImage = "url(" + bg + ")";
-        });
+        ScShop.applyBackgrounds($("catalogGrid"));
 
         renderPagination(pageData);
     }
@@ -305,6 +275,14 @@
         container.innerHTML = html;
     }
 
+    function updateCartBadge() {
+        if (!getToken() || !window.StoreChainCartAPI) return;
+        window.StoreChainCartAPI.count().then(function (count) {
+            var spans = document.querySelectorAll('a[href="./shopping-cart.html"] span, a[href="/shopping-cart.html"] span');
+            Array.prototype.forEach.call(spans, function (span) { span.textContent = count == null ? 0 : count; });
+        }).catch(function () {});
+    }
+
     // ============ Thêm vào giỏ hàng ============
 
     function addToCart(productId) {
@@ -313,18 +291,15 @@
             window.location.href = "/login.html";
             return;
         }
-        fetch("/api/user/cart", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
-            },
-            body: JSON.stringify({ productId: productId, quantity: 1 })
-        }).then(function (r) { return r.json(); }).then(function (data) {
-            if (data.success === false) throw new Error(data.message || "Không thể thêm vào giỏ hàng.");
+        if (!window.StoreChainCartAPI) {
+            alert("Module giỏ hàng chưa được tải. Vui lòng tải lại trang.");
+            return;
+        }
+        window.StoreChainCartAPI.add(productId, 1, "", "").then(function () {
             alert("Đã thêm sản phẩm vào giỏ hàng!");
+            updateCartBadge();
         }).catch(function (err) {
-            alert(err.message);
+            alert(err.message || "Không thể thêm vào giỏ hàng.");
         });
     }
 })();

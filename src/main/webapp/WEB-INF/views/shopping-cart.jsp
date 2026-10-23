@@ -204,6 +204,18 @@
                                 <div id="cart-coupon-msg" class="mt-2" style="font-size: 13px; font-weight: 600;"></div>
                             </div>
 
+                            <div class="mb-3" id="paymentMethodBox">
+                                <b>Phương thức thanh toán:</b>
+                                <div class="mt-2">
+                                    <label class="d-block mb-1"><input type="radio" name="paymentMethod" value="COD" checked>
+                                        Thanh toán khi nhận hàng (COD)</label>
+                                    <label class="d-block mb-1"><input type="radio" name="paymentMethod" value="VNPAY">
+                                        VNPAY (thẻ ATM / QR / ngân hàng)</label>
+                                    <label class="d-block mb-1"><input type="radio" name="paymentMethod" value="MOMO">
+                                        Ví MoMo</label>
+                                </div>
+                            </div>
+
                             <div class="summary-row"><span>Tạm tính</span><span id="sumSubtotal">0₫</span></div>
                             <div class="summary-row"><span>Phí vận chuyển</span><span id="sumShipping">0₫</span></div>
                             <div class="summary-row"><span>Khuyến mãi</span><span id="sumDiscount" style="color:#28a745;">-0₫</span></div>
@@ -232,6 +244,8 @@
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/cart-api.js"></script>
+    <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/cart.js"></script>
     <script>
         let appliedCoupon = null;

@@ -51,7 +51,7 @@
 
         $("btnClearCart").addEventListener("click", function () {
             if (!confirm("Xóa toàn bộ sản phẩm trong giỏ hàng?")) return;
-            api("DELETE", "/cart").then(function () {
+            window.StoreChainCartAPI.clear().then(function () {
                 loadCart();
             }).catch(function (err) { alert(err.message); });
         });
@@ -81,8 +81,8 @@
     // ============ Giỏ hàng ============
 
     function loadCart() {
-        api("GET", "/cart").then(function (res) {
-            cartItems = res.data || [];
+        window.StoreChainCartAPI.get().then(function (items) {
+            cartItems = Array.isArray(items) ? items : [];
             renderCart();
             updateSummary();
         }).catch(function (err) { alert(err.message); });
@@ -127,18 +127,18 @@
                 itemId = parseInt(btn.getAttribute("data-inc"), 10);
                 item = cartItems.find(function (x) { return x.id === itemId; });
                 qty = item.quantity + 1;
-                api("PATCH", "/cart/" + itemId, { quantity: qty })
+                window.StoreChainCartAPI.update(itemId, qty)
                     .then(function () { loadCart(); })
                     .catch(function (err) { alert(err.message); });
             } else if (btn.getAttribute("data-dec") !== null) {
                 itemId = parseInt(btn.getAttribute("data-dec"), 10);
                 item = cartItems.find(function (x) { return x.id === itemId; });
                 if (item.quantity <= 1) return;
-                api("PATCH", "/cart/" + itemId, { quantity: item.quantity - 1 })
+                window.StoreChainCartAPI.update(itemId, item.quantity - 1)
                     .then(function () { loadCart(); })
                     .catch(function (err) { alert(err.message); });
             } else if (btn.getAttribute("data-del") !== null) {
-                api("DELETE", "/cart/" + btn.getAttribute("data-del"))
+                window.StoreChainCartAPI.remove(btn.getAttribute("data-del"))
                     .then(function () { loadCart(); updateSummary(); })
                     .catch(function (err) { alert(err.message); });
             }
@@ -239,10 +239,13 @@
         // Mã giảm giá đang chọn ở dropdown voucher (server tự validate theo chi nhánh xử lý đơn)
         var couponSelect = document.getElementById("cart-coupon-select");
         var promoCode = couponSelect && couponSelect.value ? couponSelect.value.trim().toUpperCase() : null;
+        var methodEl = document.querySelector('input[name="paymentMethod"]:checked');
+        var paymentMethod = methodEl ? methodEl.value : "COD";
         var payload = {
             transporterId: selectedTransporterId,
             note: $("orderNote").value.trim(),
-            promoCode: promoCode
+            promoCode: promoCode,
+            paymentMethod: paymentMethod
         };
         api("POST", "/orders", payload).then(function (res) {
             var orders = res.data || [];
@@ -262,6 +265,16 @@
             alertEl.style.display = "block";
             loadCart();
             loadMyOrders();
+            // Thanh toán online: chuyển sang cổng ngay sau khi tạo đơn (các đơn tách cùng một paymentRef).
+            // Nếu lỗi thì đơn vẫn còn, khách bấm "Thanh toán lại" ở danh sách đơn.
+            if (paymentMethod !== "COD" && orders.length && orders[0].paymentRef && window.ScShop) {
+                alertEl.innerHTML += "<br><b>Đang chuyển tới cổng thanh toán " + paymentMethod + "...</b>";
+                ScShop.startPayment(orders[0].paymentRef).catch(function (err) {
+                    alertEl.className = "alert auth-alert alert-warning mt-2";
+                    alertEl.innerHTML = "Đơn đã được tạo nhưng chưa mở được cổng thanh toán: " +
+                        escapeHtml(err.message) + '<br>Bạn có thể bấm "Thanh toán lại" ở mục Đơn hàng của tôi.';
+                });
+            }
         }).catch(function (err) {
             alertEl.className = "alert auth-alert alert-danger mt-2";
             alertEl.textContent = err.message;
@@ -307,6 +320,10 @@
                 actions = '<button type="button" class="btn btn-sm btn-link btn-link-danger" ' +
                     'data-customer-return="' + o.id + '">Yêu cầu trả hàng</button>';
             }
+            if (window.ScShop && ScShop.canRetryPayment(o)) {
+                actions = '<button type="button" class="btn btn-sm btn-store mr-2" data-customer-pay="' +
+                    escapeHtml(o.paymentRef) + '">Thanh toán lại</button>' + actions;
+            }
             return '<div class="cart-item" style="align-items:flex-start;">' +
                 "<div style='flex:1;'>" +
                 "<b>" + escapeHtml(o.orderCode) + "</b> " +
@@ -314,6 +331,7 @@
                 escapeHtml(o.statusLabel || o.status) + "</span>" +
                 '<div><small class="text-muted">' + escapeHtml(o.shopName || "") + " — " +
                 escapeHtml(o.createdAt || "") + "</small></div>" +
+                (window.ScShop ? ScShop.paymentHtml(o) : "") +
                 '<ul class="text-muted mb-0 mt-1" style="font-size:13px;">' + items + "</ul>" +
                 (o.cancelReason ? '<small class="text-danger">Lý do hủy/trả: ' + escapeHtml(o.cancelReason) + "</small>" : "") +
                 actions +
@@ -327,7 +345,9 @@
         container.onclick = function (e) {
             var btn = e.target.closest("button");
             if (!btn) return;
-            if (btn.getAttribute("data-customer-cancel") !== null) {
+            if (btn.getAttribute("data-customer-pay") !== null) {
+                ScShop.startPayment(btn.getAttribute("data-customer-pay")).catch(function (err) { alert(err.message); });
+            } else if (btn.getAttribute("data-customer-cancel") !== null) {
                 var id = btn.getAttribute("data-customer-cancel");
                 var reason = prompt("Lý do bạn muốn hủy đơn này:");
                 if (reason === null) return;

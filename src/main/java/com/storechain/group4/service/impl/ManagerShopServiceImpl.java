@@ -203,6 +203,11 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                 if (!Order.STATUS_NEW.equals(current)) {
                     throw new IllegalArgumentException("Chỉ đơn ở trạng thái mới mới có thể xác nhận.");
                 }
+                // Đơn thanh toán online chỉ được xác nhận sau khi cổng đã thu tiền thành công
+                if ((Order.PAYMENT_VNPAY.equals(order.getPaymentMethod()) || Order.PAYMENT_MOMO.equals(order.getPaymentMethod()))
+                        && !Order.PAY_STATUS_PAID.equals(order.getPaymentStatus())) {
+                    throw new IllegalArgumentException("Đơn này thanh toán online và khách chưa thanh toán thành công, chưa thể xác nhận.");
+                }
                 // Đơn vị vận chuyển do khách chọn lúc đặt hàng đã lưu trên đơn — giữ nguyên,
                 // chỉ tự điền khi đơn cũ chưa có (fallback theo transporterId gửi lên)
                 if (order.getTransporter() == null && transporterId != null) {

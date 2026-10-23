@@ -483,6 +483,8 @@
                                 <button type="button" class="tab-btn" data-tab="tabShop" id="tabShopBtn" style="display:none;">Quản lý chi nhánh</button>
                                 <button type="button" class="tab-btn" data-tab="tabEmployee" id="tabEmployeeBtn" style="display:none;">Nhân viên chi nhánh</button>
                                 <button type="button" class="tab-btn" data-tab="tabUserOrders">Đơn hàng của tôi</button>
+                                <button type="button" class="tab-btn" data-tab="tabFavorites">Sản phẩm yêu thích</button>
+                                <button type="button" class="tab-btn" data-tab="tabViewed">Sản phẩm đã xem</button>
                                 <button type="button" class="tab-btn" data-tab="tabAddress">Địa chỉ nhận hàng</button>
                             </div>
 
@@ -951,7 +953,23 @@
                                 <p class="text-muted">Theo dõi đơn hàng: khi đơn <b>Đã giao</b> tới nơi, bấm
                                     "Đã nhận được hàng" để xác nhận; có thể hủy đơn trước khi nhận, hoặc yêu cầu
                                     trả hàng - hoàn tiền nếu hàng có vấn đề (chi nhánh sẽ duyệt).</p>
+                                <div id="userOrderStatusBar" class="mb-3"></div>
                                 <div id="userOrderList"></div>
+                            </div>
+
+                            <!-- Tab: Sản phẩm yêu thích -->
+                            <div id="tabFavorites" class="profile-tab-content">
+                                <h5 class="font-weight-bold mb-3">Sản phẩm yêu thích</h5>
+                                <div class="row" id="favGrid"></div>
+                            </div>
+
+                            <!-- Tab: Sản phẩm đã xem -->
+                            <div id="tabViewed" class="profile-tab-content">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="font-weight-bold mb-0">Sản phẩm đã xem gần đây</h5>
+                                    <button type="button" id="btnClearViewed" class="btn btn-sm btn-outline-secondary">Xóa lịch sử</button>
+                                </div>
+                                <div class="row" id="viewedGrid"></div>
                             </div>
 
                             <!-- Tab: Địa chỉ nhận hàng -->
@@ -1025,6 +1043,7 @@
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/profile.js"></script>
     <script src="/js/employee.js"></script>
     <script src="/js/manager-employees.js"></script>

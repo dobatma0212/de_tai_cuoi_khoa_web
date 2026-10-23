@@ -29,4 +29,13 @@ public interface CatalogService {
 
     /** Chi tiết một sản phẩm của catalog (chuyển tiếp sang chi tiết sản phẩm) */
     ProductResponseDto getProduct(Long productId);
+
+    /**
+     * Top 20 sản phẩm theo tiêu chí, có phân trang trong phạm vi 20 sản phẩm đó.
+     * type: new (mới nhất), bestseller (bán chạy), toprated (đánh giá cao), favorite (yêu thích nhiều).
+     */
+    ProductPageDto topProducts(String type, int page, int pageSize);
+
+    /** Chuyển danh sách sản phẩm thành thẻ sản phẩm (kèm tồn kho, đánh giá, lượt bán, lượt thích) */
+    List<ProductResponseDto> toCards(List<com.storechain.group4.model.Product> products);
 }

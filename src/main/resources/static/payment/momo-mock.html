@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MoMo (mô phỏng) - Thanh toán</title>
+    <style>
+        :root{--momo:#a50064;--momo-dark:#8a0053;--ok:#1e9e5a;--err:#d93025}
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:linear-gradient(160deg,#f9e3ef,#f3d0e3);
+            min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;color:#222}
+        .card{width:100%;max-width:440px;background:#fff;border-radius:18px;box-shadow:0 10px 34px rgba(165,0,100,.22);overflow:hidden}
+        .head{background:var(--momo);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px}
+        .logo{width:38px;height:38px;border-radius:10px;background:#fff;color:var(--momo);font-weight:800;
+            display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 38px}
+        .head h1{font-size:17px;margin:0}.head small{opacity:.85}
+        .timer{margin-left:auto;text-align:right;font-size:12px;opacity:.95}
+        .timer b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+        .banner{background:#fff3cd;color:#664d03;font-size:12.5px;padding:7px 20px;border-bottom:1px solid #ffe69c}
+        .body{padding:20px}
+        .summary{background:#fdf2f8;border:1px solid #f6d3e6;border-radius:12px;padding:12px 14px;margin-bottom:16px}
+        .row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:13.5px}
+        .row span:first-child{color:#777}.row span:last-child{text-align:right;word-break:break-all;font-weight:600}
+        .amount{font-size:28px;font-weight:800;color:var(--momo);text-align:center;margin:6px 0 2px}
+        .tabs{display:flex;border-bottom:2px solid #eee;margin-bottom:16px}
+        .tab{flex:1;background:none;border:0;padding:11px 4px;font-size:14px;font-weight:700;color:#888;cursor:pointer;
+            border-bottom:3px solid transparent;margin-bottom:-2px}
+        .tab.active{color:var(--momo);border-bottom-color:var(--momo)}
+        .btn{display:block;width:100%;border:0;border-radius:10px;padding:13px;font-size:15.5px;font-weight:700;cursor:pointer;margin-top:10px}
+        .btn-pay{background:var(--momo);color:#fff}.btn-pay:hover{background:var(--momo-dark)}
+        .btn-ghost{background:#fff;color:#555;border:1px solid #ddd}
+        .btn:disabled{opacity:.55;cursor:not-allowed}
+        label.f{display:block;font-size:13px;color:#666;margin:6px 0 4px}
+        input.f{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:12px;font-size:17px;letter-spacing:1px}
+        input.f:focus{outline:0;border-color:var(--momo)}
+        .hint{font-size:12px;color:#8a6d00;background:#fff8e1;border-radius:8px;padding:8px 10px;margin-top:10px}
+        .err{color:var(--err);font-size:13px;margin-top:6px;min-height:18px}
+        .qrbox{text-align:center}
+        .qrbox canvas{border:1px solid #eee;border-radius:12px;padding:10px;background:#fff}
+        .qrbox p{font-size:13px;color:#666;margin:8px 0 0}
+        .center{text-align:center}
+        .spin{width:54px;height:54px;border:5px solid #f3d0e3;border-top-color:var(--momo);border-radius:50%;
+            animation:sp 0.9s linear infinite;margin:26px auto 14px}
+        @keyframes sp{to{transform:rotate(360deg)}}
+        .icon{width:70px;height:70px;border-radius:50%;margin:8px auto 12px;display:flex;align-items:center;
+            justify-content:center;font-size:38px;color:#fff}
+        .icon.ok{background:var(--ok)}.icon.fail{background:var(--err)}
+        .res-title{font-size:20px;font-weight:800;margin:0 0 4px}
+        .res-msg{color:#666;font-size:14px;margin:0 0 14px}
+        .balance{background:#f6f6f6;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:6px}
+        .hidden{display:none!important}
+        .demo-box{margin-top:14px;border-top:1px dashed #ddd;padding-top:10px;font-size:12px;color:#777}
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="head">
+        <div class="logo">M</div>
+        <div><h1>Ví MoMo</h1><small>Cổng thanh toán</small></div>
+        <div class="timer" id="timerBox"><span>Hết hạn sau</span><b id="timer">10:00</b></div>
+    </div>
+    <div class="banner">⚠ Trang <b>MÔ PHỎNG</b> phục vụ demo: không phải MoMo thật, không trừ tiền.</div>
+    <div class="body">
+        <div id="loading" class="center"><div class="spin"></div>Đang tải giao dịch...</div>
+
+        <!-- Thông tin đơn: hiện ở các bước trước khi có kết quả -->
+        <div id="summary" class="summary hidden">
+            <div class="row"><span>Nhà cung cấp</span><span>StoreChain</span></div>
+            <div class="row"><span>Đơn hàng</span><span id="sOrders"></span></div>
+            <div class="row"><span>Mã giao dịch</span><span id="sRef"></span></div>
+            <div class="amount" id="sAmount"></div>
+        </div>
+
+        <!-- Bước 1: chọn cách thanh toán -->
+        <section id="stepChoose" class="hidden">
+            <div class="tabs">
+                <button class="tab active" data-tab="qr" type="button">Quét mã QR</button>
+                <button class="tab" data-tab="wallet" type="button">Ví MoMo</button>
+            </div>
+            <div id="tabQr" class="qrbox">
+                <canvas id="qr" width="200" height="200"></canvas>
+                <p>Mở app MoMo → chọn <b>Quét mã</b> → quét mã bên trên</p>
+                <p style="font-size:11.5px;color:#aaa">(Mã QR chỉ mang tính minh họa)</p>
+                <button class="btn btn-pay" id="btnScanned" type="button">Giả lập: đã quét mã bằng điện thoại</button>
+            </div>
+            <div id="tabWallet" class="hidden">
+                <label class="f" for="phone">Số điện thoại đăng ký ví MoMo</label>
+                <input class="f" id="phone" type="tel" inputmode="numeric" maxlength="10" placeholder="09xxxxxxxx" autocomplete="off">
+                <div class="err" id="phoneErr"></div>
+                <button class="btn btn-pay" id="btnPhone" type="button">Tiếp tục</button>
+                <div class="hint">Demo: số điện thoại bất kỳ 10 số bắt đầu bằng 0. Số kết thúc bằng <b>0000</b> sẽ mô phỏng <b>số dư không đủ</b>.</div>
+            </div>
+            <button class="btn btn-ghost" id="btnCancelChoose" type="button">Hủy giao dịch</button>
+        </section>
+
+        <!-- Bước 2: OTP -->
+        <section id="stepOtp" class="hidden">
+            <p style="margin:0 0 6px">Mã xác thực (OTP) đã được gửi tới <b id="otpPhone"></b></p>
+            <label class="f" for="otp">Nhập mã OTP 6 số</label>
+            <input class="f" id="otp" type="text" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="off">
+            <div class="err" id="otpErr"></div>
+            <button class="btn btn-pay" id="btnOtp" type="button">Xác nhận OTP</button>
+            <button class="btn btn-ghost" id="btnResend" type="button" disabled>Gửi lại mã (30s)</button>
+            <div class="hint">Mã OTP demo: <b>123456</b>. Nhập sai 3 lần giao dịch sẽ bị hủy.</div>
+        </section>
+
+        <!-- Bước 3: xác nhận trên ví -->
+        <section id="stepConfirm" class="hidden">
+            <div class="balance">Nguồn tiền: <b>Ví MoMo</b> <span id="cPhone"></span><br>Số dư khả dụng: <b id="cBalance"></b></div>
+            <div class="row"><span>Phí giao dịch</span><span>0₫</span></div>
+            <div class="row"><span>Tổng thanh toán</span><span id="cTotal"></span></div>
+            <button class="btn btn-pay" id="btnConfirm" type="button">Xác nhận thanh toán</button>
+            <button class="btn btn-ghost" id="btnReject" type="button">Từ chối</button>
+        </section>
+
+        <!-- Đang xử lý -->
+        <section id="stepProcessing" class="center hidden">
+            <div class="spin"></div>
+            <p>Đang xử lý giao dịch, vui lòng không đóng trang...</p>
+        </section>
+
+        <!-- Kết quả -->
+        <section id="stepResult" class="center hidden">
+            <div class="icon" id="resIcon"></div>
+            <h2 class="res-title" id="resTitle"></h2>
+            <p class="res-msg" id="resMsg"></p>
+            <div style="text-align:left">
+                <div class="row"><span>Mã giao dịch MoMo</span><span id="rTrans"></span></div>
+                <div class="row"><span>Mã thanh toán</span><span id="rRef"></span></div>
+                <div class="row"><span>Đơn hàng</span><span id="rOrders"></span></div>
+                <div class="row"><span>Số tiền</span><span id="rAmount"></span></div>
+                <div class="row"><span>Thời gian</span><span id="rTime"></span></div>
+                <div class="row"><span>Mã kết quả</span><span id="rCode"></span></div>
+            </div>
+            <button class="btn btn-pay" id="btnBack" type="button">Quay lại cửa hàng</button>
+            <button class="btn btn-ghost hidden" id="btnRetry" type="button">Thử thanh toán lại</button>
+            <p style="font-size:12px;color:#999" id="autoBack"></p>
+        </section>
+
+        <div id="fatal" class="hidden center">
+            <p id="fatalMsg" style="color:var(--err)"></p>
+            <a class="btn btn-ghost" style="text-decoration:none" href="/profile.html?tab=orders">Về đơn hàng của tôi</a>
+        </div>
+    </div>
+</div>
+
+<script src="/js/auth.js"></script>
+<script src="/js/sc-shop-ui.js"></script>
+<script>
+(function () {
+    "use strict";
+    var DEMO_OTP = "123456";
+    var DEMO_BALANCE = 20000000;
+    var EXPIRE_SECONDS = 600;
+
+    var $ = function (id) { return document.getElementById(id); };
+    var ref = new URLSearchParams(window.location.search).get("ref");
+    var info = null, payType = "qr", phone = "", balance = DEMO_BALANCE;
+    var otpTries = 0, timerId = null, resendId = null, backId = null, remaining = EXPIRE_SECONDS, finished = false;
+    var STEPS = ["stepChoose", "stepOtp", "stepConfirm", "stepProcessing", "stepResult"];
+
+    function show(step) {
+        STEPS.forEach(function (s) { $(s).classList.toggle("hidden", s !== step); });
+        // Thông tin đơn chỉ hiện ở các bước trước khi có kết quả
+        $("summary").classList.toggle("hidden", step === "stepResult");
+    }
+
+    function fatal(text) {
+        ["loading", "summary"].concat(STEPS).forEach(function (id) { $(id).classList.add("hidden"); });
+        $("timerBox").classList.add("hidden");
+        $("fatal").classList.remove("hidden");
+        $("fatalMsg").textContent = text;
+    }
+
+    function fmtTime(ms) {
+        var d = new Date(ms);
+        function p(n) { return String(n).padStart(2, "0"); }
+        return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()) + " " +
+            p(d.getDate()) + "/" + p(d.getMonth() + 1) + "/" + d.getFullYear();
+    }
+
+    // ---------- đồng hồ hết hạn ----------
+    function startTimer() {
+        function tick() {
+            var m = Math.floor(remaining / 60), s = remaining % 60;
+            $("timer").textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+            if (remaining <= 0) { clearInterval(timerId); if (!finished) submit(1005); return; }
+            remaining--;
+        }
+        tick();
+        timerId = setInterval(tick, 1000);
+    }
+
+    // ---------- mã QR minh họa (xác định theo mã giao dịch, không quét được) ----------
+    function drawFakeQr(seedText) {
+        var canvas = $("qr"), ctx = canvas.getContext("2d"), N = 29, cell = Math.floor(canvas.width / N);
+        var h = 2166136261;
+        for (var i = 0; i < seedText.length; i++) { h ^= seedText.charCodeAt(i); h = Math.imul(h, 16777619); }
+        function rnd() { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 1000) / 1000; }
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function finder(x, y) {
+            ctx.fillStyle = "#222"; ctx.fillRect(x * cell, y * cell, 7 * cell, 7 * cell);
+            ctx.fillStyle = "#fff"; ctx.fillRect((x + 1) * cell, (y + 1) * cell, 5 * cell, 5 * cell);
+            ctx.fillStyle = "#222"; ctx.fillRect((x + 2) * cell, (y + 2) * cell, 3 * cell, 3 * cell);
+        }
+        function inFinder(x, y) {
+            return (x < 8 && y < 8) || (x >= N - 8 && y < 8) || (x < 8 && y >= N - 8);
+        }
+        ctx.fillStyle = "#222";
+        for (var y = 0; y < N; y++) for (var x = 0; x < N; x++) {
+            if (!inFinder(x, y) && rnd() > 0.52) ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+        finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+        // logo MoMo ở giữa
+        var c = canvas.width / 2;
+        ctx.fillStyle = "#fff"; ctx.fillRect(c - 22, c - 22, 44, 44);
+        ctx.fillStyle = "#a50064"; ctx.fillRect(c - 18, c - 18, 36, 36);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("M", c, c + 1);
+    }
+
+    // ---------- các bước ----------
+    function goConfirm() {
+        $("cPhone").textContent = phone ? "(" + phone.replace(/^(\d{3})\d{4}(\d{3})$/, "$1 •••• $2") + ")" : "";
+        $("cBalance").textContent = ScShop.vnd(balance);
+        $("cTotal").textContent = ScShop.vnd(info.amount);
+        show("stepConfirm");
+    }
+
+    function startOtp() {
+        otpTries = 0;
+        $("otp").value = ""; $("otpErr").textContent = "";
+        $("otpPhone").textContent = phone.replace(/^(\d{3})\d{4}(\d{3})$/, "$1 •••• $2");
+        show("stepOtp");
+        $("otp").focus();
+        var left = 30, btn = $("btnResend");
+        btn.disabled = true;
+        clearInterval(resendId);
+        resendId = setInterval(function () {
+            left--;
+            if (left <= 0) { clearInterval(resendId); btn.disabled = false; btn.textContent = "Gửi lại mã"; }
+            else btn.textContent = "Gửi lại mã (" + left + "s)";
+        }, 1000);
+        btn.textContent = "Gửi lại mã (30s)";
+    }
+
+    // Gửi kết quả cho server rồi hiện màn hình kết quả
+    function submit(resultCode) {
+        if (finished) return;
+        finished = true;
+        clearInterval(timerId); clearInterval(resendId);
+        show("stepProcessing");
+        var started = Date.now();
+        ScShop.authFetch("/api/user/payments/momo-mock/confirm", {
+            method: "POST",
+            body: JSON.stringify({ paymentRef: ref, resultCode: resultCode, payType: payType === "qr" ? "qr" : "webApp" })
+        }).then(function (data) {
+            // Giữ màn hình "đang xử lý" tối thiểu ~1.8s cho giống thật
+            var wait = Math.max(0, 1800 - (Date.now() - started));
+            setTimeout(function () { showResult(data); }, wait);
+        }).catch(function (err) {
+            finished = false;
+            show("stepChoose");
+            alert(err.message);
+        });
+    }
+
+    function showResult(d) {
+        $("timerBox").classList.add("hidden");
+        var ok = d.success;
+        var icon = $("resIcon");
+        icon.className = "icon " + (ok ? "ok" : "fail");
+        icon.textContent = ok ? "✓" : "✕";
+        $("resTitle").textContent = ok ? "Thanh toán thành công" : "Thanh toán không thành công";
+        $("resTitle").style.color = ok ? "var(--ok)" : "var(--err)";
+        $("resMsg").textContent = d.message;
+        $("rTrans").textContent = ok ? d.transId : "—";
+        $("rRef").textContent = ref;
+        $("rOrders").textContent = (d.orderCodes || []).join(", ");
+        $("rAmount").textContent = ScShop.vnd(d.amount);
+        $("rTime").textContent = fmtTime(d.responseTime);
+        $("rCode").textContent = d.resultCode;
+        $("btnBack").onclick = function () { clearInterval(backId); window.location.href = d.redirectUrl; };
+        $("btnRetry").classList.toggle("hidden", ok || d.resultCode === 1005);
+        show("stepResult");
+
+        var secs = 10;
+        function tick() {
+            $("autoBack").textContent = "Tự động quay lại cửa hàng sau " + secs + "s";
+            if (secs-- <= 0) { clearInterval(backId); window.location.href = d.redirectUrl; }
+        }
+        tick();
+        backId = setInterval(tick, 1000);
+    }
+
+    function resetForRetry() {
+        clearInterval(backId);
+        finished = false; remaining = EXPIRE_SECONDS; otpTries = 0; phone = ""; balance = DEMO_BALANCE;
+        $("timerBox").classList.remove("hidden");
+        $("phone").value = ""; $("phoneErr").textContent = "";
+        show("stepChoose");
+        startTimer();
+    }
+
+    // ---------- sự kiện ----------
+    function bind() {
+        Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+            t.onclick = function () {
+                Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (x) { x.classList.toggle("active", x === t); });
+                var qr = t.getAttribute("data-tab") === "qr";
+                $("tabQr").classList.toggle("hidden", !qr);
+                $("tabWallet").classList.toggle("hidden", qr);
+            };
+        });
+        $("btnScanned").onclick = function () { payType = "qr"; phone = "0901234567"; balance = DEMO_BALANCE; goConfirm(); };
+        $("btnPhone").onclick = function () {
+            var v = $("phone").value.replace(/\s/g, "");
+            if (!/^0\d{9}$/.test(v)) { $("phoneErr").textContent = "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)."; return; }
+            $("phoneErr").textContent = "";
+            payType = "wallet"; phone = v;
+            balance = /0000$/.test(v) ? 10000 : DEMO_BALANCE; // kịch bản số dư không đủ
+            startOtp();
+        };
+        $("btnResend").onclick = function () { $("otpErr").textContent = "Đã gửi lại mã OTP (demo: " + DEMO_OTP + ")."; startOtp(); };
+        $("btnOtp").onclick = function () {
+            if ($("otp").value.trim() === DEMO_OTP) { goConfirm(); return; }
+            otpTries++;
+            if (otpTries >= 3) { submit(1003); return; }
+            $("otpErr").textContent = "Mã OTP không đúng. Bạn còn " + (3 - otpTries) + " lần thử.";
+        };
+        $("btnConfirm").onclick = function () { submit(balance < Number(info.amount) ? 1001 : 0); };
+        $("btnReject").onclick = function () { submit(1006); };
+        $("btnCancelChoose").onclick = function () { submit(1006); };
+        $("btnRetry").onclick = resetForRetry;
+    }
+
+    // ---------- khởi động ----------
+    if (!ref) { fatal("Thiếu mã giao dịch."); return; }
+    if (!ScShop.isLoggedIn()) { window.location.href = "/login.html"; return; }
+
+    ScShop.authFetch("/api/user/payments/momo-mock/info?ref=" + encodeURIComponent(ref)).then(function (data) {
+        info = data;
+        if (info.paid) { fatal("Giao dịch này đã được thanh toán."); return; }
+        $("loading").classList.add("hidden");
+        $("sOrders").textContent = (info.orderCodes || []).join(", ");
+        $("sRef").textContent = info.paymentRef;
+        $("sAmount").textContent = ScShop.vnd(info.amount);
+        drawFakeQr(info.paymentRef);
+        bind();
+        show("stepChoose");
+        startTimer();
+    }).catch(function (err) { fatal(err.message); });
+})();
+</script>
+</body>
+</html>
