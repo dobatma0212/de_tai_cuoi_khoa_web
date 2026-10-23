@@ -74,9 +74,6 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     @Value("${app.order.deliver-delay-minutes:5}")
     private long deliverDelayMinutes;
 
-    private static final String DEFAULT_CATEGORY_CLOTHING = "Bộ áo quần";
-    private static final String DEFAULT_CATEGORY_ACCESSORY = "Phụ kiện";
-
     // ============ Chi nhánh của manager ============
 
     @Override
@@ -99,41 +96,39 @@ public class ManagerShopServiceImpl implements ManagerShopService {
 
     // ============ Danh mục sản phẩm ============
 
+    /**
+     * Cùng nguồn danh mục với form tạo sản phẩm của admin (ProductServiceImpl
+     * .getCategoriesByShop): toàn bộ danh mục theo chi nhánh (shop_categories)
+     * gộp trùng tên. Nhờ vậy chi nhánh mới bổ nhiệm cũng thấy đầy đủ danh mục
+     * admin đã dùng khi thêm sản phẩm. Số đếm đếm theo TÊN danh mục trên toàn
+     * bộ sản phẩm đang mở bán của hệ thống — khớp với cách lọc sản phẩm bên dưới.
+     */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<ShopCategoryDto> getMyCategories(Long managerId) {
-        Shop shop = findMyShop(managerId);
-        ensureDefaultCategories(shop);
-        return toCategoryDtos(shop.getId());
+        findMyShop(managerId);
+        Map<String, Long> countByName = productRepository.findByStatusOrderByCreatedAtDesc("active").stream()
+                .filter(p -> p.getCategory() != null && p.getCategory().getName() != null)
+                .collect(Collectors.groupingBy(
+                        p -> p.getCategory().getName().trim().toLowerCase(java.util.Locale.ROOT),
+                        Collectors.counting()));
+        Map<String, ShopCategoryDto> uniqueByName = new java.util.LinkedHashMap<>();
+        for (ShopCategory sc : shopCategoryRepository.findAll()) {
+            String nameLower = sc.getName().trim().toLowerCase(java.util.Locale.ROOT);
+            uniqueByName.computeIfAbsent(nameLower, k -> ShopCategoryDto.builder()
+                    .id(sc.getId())
+                    .name(sc.getName())
+                    .sortOrder(sc.getSortOrder())
+                    .totalProducts(countByName.getOrDefault(nameLower, 0L))
+                    .build());
+        }
+        return uniqueByName.values().stream()
+                .sorted(java.util.Comparator.comparing(ShopCategoryDto::getSortOrder)
+                        .thenComparing(ShopCategoryDto::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     // Manager chỉ được xem danh mục; thêm/sửa/xóa do admin và nhân viên thực hiện
-
-    /** Chi nhánh mới chưa có danh mục thì tạo sẵn 2 danh mục mặc định */
-    private void ensureDefaultCategories(Shop shop) {
-        if (shopCategoryRepository.countByShopId(shop.getId()) > 0) {
-            return;
-        }
-        shopCategoryRepository.save(ShopCategory.builder()
-                .shop(shop).name(DEFAULT_CATEGORY_CLOTHING).sortOrder(0).build());
-        shopCategoryRepository.save(ShopCategory.builder()
-                .shop(shop).name(DEFAULT_CATEGORY_ACCESSORY).sortOrder(1).build());
-        log.info("Đã tạo danh mục mặc định cho chi nhánh ID: {}", shop.getId());
-    }
-
-    private List<ShopCategoryDto> toCategoryDtos(Long shopId) {
-        return shopCategoryRepository.findByShopIdOrderBySortOrderAscIdAsc(shopId)
-                .stream().map(this::toCategoryDto).toList();
-    }
-
-    private ShopCategoryDto toCategoryDto(ShopCategory c) {
-        return ShopCategoryDto.builder()
-                .id(c.getId())
-                .name(c.getName())
-                .sortOrder(c.getSortOrder())
-                .totalProducts(productRepository.countByShopIdAndCategoryId(c.getShop().getId(), c.getId()))
-                .build();
-    }
 
     // ============ Sản phẩm chi nhánh (manager chỉ được xem) ============
 
@@ -141,27 +136,25 @@ public class ManagerShopServiceImpl implements ManagerShopService {
     @Transactional(readOnly = true)
     public List<ProductResponseDto> getMyProducts(Long managerId, Long categoryId) {
         Shop shop = findMyShop(managerId);
-        ensureDefaultCategories(shop);
-        return findActiveProducts(categoryId, shop).stream()
-                .map(p -> productMapper.toDto(p, shop.getId())).toList();
+        List<Product> products = (categoryId == null || categoryId <= 0)
+                ? productRepository.findByStatusOrderByCreatedAtDesc("active")
+                : findActiveProductsByCategory(categoryId);
+        return products.stream().map(p -> productMapper.toDto(p, shop.getId())).toList();
     }
 
     /**
-     * Sản phẩm đang mở bán của TOÀN hệ thống (đồng bộ với phần admin);
-     * có categoryId thì lấy danh mục của chi nhánh rồi lọc theo TÊN danh mục
-     * (danh mục là dữ liệu theo từng shop, giống cách admin gộp trùng tên).
+     * Sản phẩm đang mở bán của TOÀN hệ thống thuộc danh mục được chọn
+     * (danh mục là dữ liệu theo từng shop nên lọc theo TÊN để gom cả các
+     * chi nhánh khác trùng tên danh mục — giống cách admin gộp trùng tên).
      */
-    private List<Product> findActiveProducts(Long categoryId, Shop shop) {
-        if (categoryId == null || categoryId <= 0) {
-            return productRepository.findByStatusOrderByCreatedAtDesc("active");
-        }
-        ShopCategory category = shopCategoryRepository.findByIdAndShopId(categoryId, shop.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục trong chi nhánh của bạn."));
-        String name = category.getName().trim().toLowerCase();
+    private List<Product> findActiveProductsByCategory(Long categoryId) {
+        ShopCategory category = shopCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy danh mục."));
+        String name = category.getName().trim().toLowerCase(java.util.Locale.ROOT);
         return productRepository.findByStatusOrderByCreatedAtDesc("active").stream()
                 .filter(p -> p.getCategory() != null
                         && p.getCategory().getName() != null
-                        && p.getCategory().getName().trim().toLowerCase().equals(name))
+                        && p.getCategory().getName().trim().toLowerCase(java.util.Locale.ROOT).equals(name))
                 .toList();
     }
 
@@ -255,7 +248,7 @@ public class ManagerShopServiceImpl implements ManagerShopService {
         return toOrderDto(orderRepository.save(order));
     }
 
-    /** Hoàn lại tồn kho các sản phẩm của đơn bị hủy về chi nhánh */
+    /** Hoàn lại tồn kho các sản phẩm của đơn bị hủy về chi nhánh (cả tổng và theo size) */
     private void restockOrder(Order order) {
         for (var oi : orderItemRepository.findByOrderId(order.getId())) {
             if (oi.getProduct() == null) continue;
@@ -264,6 +257,9 @@ public class ManagerShopServiceImpl implements ManagerShopService {
                     .orElse(BranchStock.builder().product(oi.getProduct())
                             .shop(order.getShop()).stock(0).build());
             bs.setStock(bs.getStock() + oi.getQuantity());
+            bs.setSizeStocks(com.storechain.group4.util.SizeStockUtil.addToSize(
+                    bs.getSizeStocks(), oi.getProduct().getSizes(), bs.getStock(),
+                    oi.getSize(), oi.getQuantity()));
             branchStockRepository.save(bs);
         }
     }

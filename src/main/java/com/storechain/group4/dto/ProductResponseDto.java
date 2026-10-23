@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -40,6 +41,9 @@ public class ProductResponseDto {
 
     private String sizes;
     private List<String> sizesList;
+
+    /** Tồn kho của chi nhánh đang xem theo từng size (null nếu kho chưa phân bổ size) */
+    private Map<String, Integer> branchSizeStocks;
     private String color;
 
     /** Danh sách các biến thể con SKU tự sinh (kèm ảnh riêng) */
