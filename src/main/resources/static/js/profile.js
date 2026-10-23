@@ -588,6 +588,12 @@
         ["RETURN", "Trả hàng - hoàn tiền"]
     ];
     var transporters = [];
+    // Realtime (WebSocket): tu dong tai lai danh sach don khi co thay doi
+    window.addEventListener("sc:order-event", function () {
+        var el = $("orderList");
+        if (el && el.offsetParent !== null) { loadOrders(); }
+    });
+
     var currentOrderStatus = "";
     var orderCache = [];
 
@@ -1021,6 +1027,12 @@
             renderUserOrders(userOrdersCache.filter(function (o) { return orderMatchesFilter(o, userOrderFilter); }));
         };
     }
+
+    // Realtime (WebSocket): tu dong tai lai danh sach don khi co thay doi
+    window.addEventListener("sc:order-event", function () {
+        var el = $("userOrderList");
+        if (el && el.offsetParent !== null) { loadUserOrders(); }
+    });
 
     function loadUserOrders() {
         userApi("GET", "/orders").then(function (res) {

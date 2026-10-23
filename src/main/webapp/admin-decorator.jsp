@@ -161,5 +161,6 @@
     </footer>
     <!-- Footer Section End -->
 
+    <script src="/js/realtime.js"></script>
 </body>
 </html>

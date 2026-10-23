@@ -72,6 +72,7 @@ public class SecurityConfig {
                                 "/",
                                 "/*.html",
                                 "/payment/**",
+                                "/ws/**",  // WebSocket handshake; JWT được kiểm tra ở frame STOMP CONNECT
                                 "/WEB-INF/views/**",
                                 "/decorator.jsp",
                                 "/decorator-simple.jsp",

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@EntityListeners(com.storechain.group4.realtime.OrderEntityListener.class)
 @Table(name = "orders")
 @Getter
 @Setter
@@ -135,6 +136,13 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
+
+    /** Gia tri truoc do, dung de phat hien thay doi trang thai cho WebSocket (khong luu DB) */
+    @Transient
+    private String snapshotStatus;
+
+    @Transient
+    private String snapshotPaymentStatus;
 
     @PrePersist
     protected void onCreate() {

@@ -158,6 +158,12 @@
         ["RETURN", "Trả hàng - hoàn tiền"]
     ];
     var empOrderStatus = "";
+    // Realtime (WebSocket): tu dong tai lai danh sach don khi co thay doi
+    window.addEventListener("sc:order-event", function () {
+        var el = $("empOrderList");
+        if (el && el.offsetParent !== null) { loadEmpOrders(); }
+    });
+
     var empOrderCache = [];
     var empTransporters = [];
 

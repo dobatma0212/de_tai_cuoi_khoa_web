@@ -89,5 +89,6 @@
         </div>
     </footer>
 
+    <script src="/js/realtime.js"></script>
 </body>
 </html>
