@@ -38,6 +38,12 @@
     var transporters = [];
     var selectedTransporterId = null;
 
+    // Realtime (WebSocket): tu dong tai lai danh sach don khi co thay doi
+    window.addEventListener("sc:order-event", function () {
+        var el = $("myOrders");
+        if (el && el.offsetParent !== null) { loadMyOrders(); }
+    });
+
     document.addEventListener("DOMContentLoaded", function () {
         if (!getToken()) {
             $("cartNotLoggedIn").style.display = "block";
