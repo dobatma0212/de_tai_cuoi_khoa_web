@@ -258,7 +258,7 @@ public class PaymentService {
     private String createMomoPayUrl(String ref, BigDecimal amount) {
         if (momoMock) {
             // Địa chỉ tương đối: chạy đúng cả trên localhost lẫn ngrok
-            return "/momo-mock.html?ref=" + URLEncoder.encode(ref, StandardCharsets.UTF_8);
+            return "/payment/momo-mock.html?ref=" + URLEncoder.encode(ref, StandardCharsets.UTF_8);
         }
         String amountStr = amount.toBigInteger().toString();
         String orderInfo = "Thanh toan don hang " + ref;

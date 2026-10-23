@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-@org.springframework.core.annotation.Order(1)
 @RequiredArgsConstructor
 @Slf4j
 public class DataInitializer implements CommandLineRunner {

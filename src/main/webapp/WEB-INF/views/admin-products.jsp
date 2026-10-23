@@ -1,8 +1,9 @@
-<!DOCTYPE html>
-<html lang="vi">
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true" %>
 
+<!DOCTYPE html>
+<html lang="zxx">
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
     <meta name="description" content="Quản lý Sản phẩm - Male Fashion Admin">
     <meta name="keywords" content="Male_Fashion, admin, product, management, inventory">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,18 +11,14 @@
     <title>Quản lý Sản phẩm | Male-Fashion Admin</title>
 
     <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Css Styles -->
-    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
-    <link rel="stylesheet" href="/css/magnific-popup.css" type="text/css">
-    <link rel="stylesheet" href="/css/nice-select.css" type="text/css">
-    <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
-    <link rel="stylesheet" href="/css/style.css" type="text/css">
-    <link rel="stylesheet" href="/css/admin.css" type="text/css">
+
+    
+
+    
+
+    
 
     <style>
         /* Card thống kê */
@@ -587,65 +584,9 @@
         .detail-value { font-weight: 700; color: #111111; text-align: right; }
     </style>
 </head>
-
 <body>
-    <!-- Page Preloder -->
-    <div id="preloder">
-        <div class="loader"></div>
-    </div>
 
-    <!-- Toast Notifications Container -->
-    <div id="toast-container"></div>
-
-    <!-- Header Section Begin -->
-    <header class="header admin-header">
-        <div class="header__top">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-5 col-md-5 col-5">
-                        <div class="header__top__left">
-                            <p><i class="fa fa-sliders"></i> Bảng điều khiển Quản trị</p>
-                        </div>
-                    </div>
-                    <div class="col-lg-7 col-md-7 col-7">
-                        <div class="header__top__right d-flex justify-content-end align-items-center">
-                            <a href="/index.html" class="topbar-shop-link" title="Xem trang bán hàng">
-                                <i class="fa fa-external-link"></i> Xem Cửa hàng
-                            </a>
-                            <div class="header__top__links" id="auth-user-info">
-                                <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
-                                <button class="btn btn-sm btn-outline-light" id="btn-header-login" onclick="openLoginModal()">Đăng nhập</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-2 col-md-3">
-                    <div class="header__logo admin-header-logo-wrap">
-                        <a href="/admin-products.html"><img src="/img/logo.png" alt="Male-Fashion Logo"></a>
-                        <span class="admin-portal-tag">PORTAL</span>
-                    </div>
-                </div>
-                <div class="col-lg-10 col-md-9">
-                    <nav class="header__menu mobile-menu">
-                        <ul class="admin-nav-list">
-                            <li><a href="/admin-users.html"><i class="fa fa-users"></i> Người dùng</a></li>
-                            <li class="active"><a href="/admin-products.html"><i class="fa fa-cube"></i> Sản phẩm</a></li>
-                            <li><a href="/admin-categories.html"><i class="fa fa-tags"></i> Danh mục</a></li>
-                            <li><a href="/admin-shops.html"><i class="fa fa-building"></i> Chi nhánh</a></li>
-                            <li><a href="/admin-transporters.html"><i class="fa fa-truck"></i> Vận chuyển</a></li>
-                            <li><a href="/admin-promotions.html"><i class="fa fa-percent"></i> Khuyến mãi</a></li>
-                        </ul>
-                    </nav>
-                </div>
-            </div>
-            <div class="canvas__open"><i class="fa fa-bars"></i></div>
-        </div>
-    </header>
-    <!-- Header Section End -->
+    
 
     <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-option">
@@ -2536,5 +2477,4 @@
         }
     </script>
 </body>
-
 </html>
