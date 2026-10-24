@@ -450,14 +450,22 @@
             width: 100%;
             float: none;
             height: 46px;
-            line-height: 46px;
+            line-height: normal;
             padding-left: 15px;
             padding-right: 34px;
+            padding-top: 0;
+            padding-bottom: 0;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             background-color: #fff;
             font-size: 14px;
             color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        #addressForm .nice-select .current {
+            flex: 1;
         }
 
         #addressForm .nice-select .list {
