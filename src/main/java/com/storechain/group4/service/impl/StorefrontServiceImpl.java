@@ -316,7 +316,7 @@ public class StorefrontServiceImpl implements StorefrontService {
         Map<Long, List<CartItem>> byShop = new java.util.LinkedHashMap<>();
         Map<Long, Shop> assignedShops = new java.util.HashMap<>();
         for (CartItem ci : cartItems) {
-            Shop shop = pickNearestShopWithStock(ci.getProduct(), ci.getSize(), address);
+            Shop shop = pickNearestShopWithStock(ci.getProduct(), ci.getSize(), ci.getQuantity(), address);
             byShop.computeIfAbsent(shop.getId(), k -> new ArrayList<>()).add(ci);
             assignedShops.putIfAbsent(shop.getId(), shop);
         }
@@ -341,7 +341,15 @@ public class StorefrontServiceImpl implements StorefrontService {
      *    rồi chi nhánh có tồn kho size đó nhiều hơn.
      * Không xác định được tọa độ (địa chỉ lạ) thì rơi về xếp hạng so chuỗi tỉnh/quận cũ.
      */
-    private Shop pickNearestShopWithStock(Product product, String size, ShippingAddress address) {
+    /**
+     * Chọn chi nhánh phù hợp nhất để xử lý đơn của một sản phẩm (tính theo TỒN KHO SIZE):
+     * 1. Ưu tiên tuyệt đối chi nhánh còn ĐỦ SỐ LƯỢNG khách đặt (đúng size).
+     * 2. Trong nhóm đủ số lượng: khớp tỉnh + quận/huyện > chỉ khớp tỉnh > gần nhất theo tọa độ.
+     * 3. Không chi nhánh nào đủ số lượng thì gán về chi nhánh có nhiều hàng nhất
+     *    (cùng tỉnh/quận nếu có) để đảm bảo phần được giao nhiều nhất có thể.
+     */
+    private Shop pickNearestShopWithStock(Product product, String size, int quantity,
+                                          ShippingAddress address) {
         List<Shop> shops = shopRepository.findByStatus("active");
         if (shops.isEmpty()) {
             throw new IllegalArgumentException(
@@ -360,6 +368,7 @@ public class StorefrontServiceImpl implements StorefrontService {
 
         BranchStock best = null;
         double bestDistanceKm = Double.MAX_VALUE;
+        boolean bestEnough = false;
         int bestScore = -1;
         int bestStock = -1;
         for (Shop shop : shops) {
@@ -367,6 +376,7 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .findByProductIdAndShopId(product.getId(), shop.getId()).orElse(null);
             int stock = availableForSize(bs, product, size);
             if (stock <= 0) continue;
+            boolean enough = stock >= Math.max(1, quantity);
 
             int score = 0;
             String shopAddr = normalizeAddressPart(shop.getAddress());
@@ -381,11 +391,14 @@ public class StorefrontServiceImpl implements StorefrontService {
             if (shopGeo == null) shopGeo = vietnamGeoService.resolve(shop.getAddress());
             Double distanceKm = vietnamGeoService.distanceKm(customerGeo, shopGeo);
 
-            // Thứ tự ưu tiên: (1) khớp tỉnh + quận/huyện > chỉ tỉnh > không khớp;
-            // (2) trong cùng mức khớp thì chọn chi nhánh GẦN hơn theo tọa độ thật;
-            // (3) không đo được khoảng cách thì so tồn kho nhiều hơn.
+            // Thứ tự ưu tiên: (1) chi nhánh ĐỦ số lượng khách đặt;
+            // (2) khớp tỉnh + quận/huyện > chỉ tỉnh > không khớp;
+            // (3) trong cùng nhóm thì chọn GẦN hơn theo tọa độ thật;
+            // (4) không đo được khoảng cách thì so tồn kho nhiều hơn.
             boolean better;
-            if (score != bestScore) {
+            if (enough != bestEnough) {
+                better = enough;
+            } else if (score != bestScore) {
                 better = score > bestScore;
             } else if (distanceKm != null && bestDistanceKm != Double.MAX_VALUE) {
                 better = distanceKm < bestDistanceKm;
@@ -398,6 +411,7 @@ public class StorefrontServiceImpl implements StorefrontService {
             }
             if (better) {
                 best = bs;
+                bestEnough = enough;
                 bestDistanceKm = distanceKm != null ? distanceKm : Double.MAX_VALUE;
                 bestScore = score;
                 bestStock = stock;

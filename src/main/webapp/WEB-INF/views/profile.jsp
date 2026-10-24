@@ -1085,7 +1085,7 @@
     <script src="/js/mixitup.min.js"></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/vn-address.js"></script>
+    <script src="/js/vn-address.js?v=20261025"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/profile.js"></script>

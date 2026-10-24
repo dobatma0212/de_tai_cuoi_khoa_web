@@ -97,11 +97,18 @@
             fillSelect(dSel, [], "— Chọn quận/huyện —");
             refreshNiceSelect(pSel);
             refreshNiceSelect(dSel);
-            pSel.addEventListener("change", function () {
+            var onChange = function () {
                 var p = findProvince(pSel.value);
                 fillSelect(dSel, p ? p.districts : [], "— Chọn quận/huyện —");
                 refreshNiceSelect(dSel);
-            });
+            };
+            // nice-select kích hoạt change qua jQuery.trigger — handler phải gắn
+            // bằng jQuery.on thì mới nhận được (addEventListener gốc không thấy)
+            if (window.jQuery) {
+                window.jQuery(pSel).on("change", onChange);
+            } else {
+                pSel.addEventListener("change", onChange);
+            }
             pSel.setAttribute("data-vn-ready", "1");
             pSel.dispatchEvent(new CustomEvent("vn-address:ready", { bubbles: true }));
         }).catch(function () {
