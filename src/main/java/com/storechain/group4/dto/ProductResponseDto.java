@@ -44,6 +44,9 @@ public class ProductResponseDto {
 
     /** Tồn kho của chi nhánh đang xem theo từng size (null nếu kho chưa phân bổ size) */
     private Map<String, Integer> branchSizeStocks;
+
+    /** Tồn kho theo size TỔNG HỢP toàn hệ thống (dùng ở storefront, khi không xem theo chi nhánh) */
+    private Map<String, Integer> totalSizeStocks;
     private String color;
 
     /** Danh sách các biến thể con SKU tự sinh (kèm ảnh riêng) */

@@ -319,6 +319,9 @@
     function showAddAddressForm() {
         $("addressForm").reset();
         $("addrId").value = "";
+        // reset() trả select về option đầu; dọn lại nhãn tỉnh/quận cho gọn
+        var d = $("addrDistrict");
+        if (d && d.tagName === "SELECT") d.innerHTML = '<option value="">— Chọn quận/huyện —</option>';
         $("addressFormTitle").textContent = "Thêm địa chỉ mới";
         $("addressFormCard").style.display = "block";
         $("addressFormCard").scrollIntoView({ behavior: "smooth" });
@@ -335,8 +338,10 @@
             $("addrId").value = a.id;
             $("addrName").value = a.receiverName;
             $("addrPhone").value = a.receiverPhone;
-            $("addrProvince").value = a.province;
-            $("addrDistrict").value = a.district;
+            // Tỉnh/quận là select (vn-address.js): khớp mềm giá trị cũ với danh sách chuẩn
+            if (window.VnAddress) {
+                window.VnAddress.setValues("addrProvince", "addrDistrict", a.province, a.district);
+            }
             $("addrWard").value = a.ward || "";
             $("addrDetail").value = a.detailAddress;
             $("addrDefault").checked = !!a.isDefault;

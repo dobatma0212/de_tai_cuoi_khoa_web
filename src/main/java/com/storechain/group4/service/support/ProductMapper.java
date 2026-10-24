@@ -42,6 +42,23 @@ public class ProductMapper {
             branchSizeStocks = com.storechain.group4.util.SizeStockUtil
                     .parseSizeStocks(branch.getSizeStocks(), p.getSizes(), branchStock);
         }
+        // Storefront (không theo chi nhánh): tổng hợp tồn theo size của TOÀN hệ thống
+        java.util.Map<String, Integer> totalSizeStocks = null;
+        if (shopId == null) {
+            java.util.Map<String, Integer> agg = new java.util.LinkedHashMap<>();
+            for (BranchStock b : branchStockRepository.findByProductId(p.getId())) {
+                int stock = Math.max(0, b.getStock());
+                if (stock <= 0) continue;
+                java.util.Map<String, Integer> part =
+                        (b.getSizeStocks() == null || b.getSizeStocks().isBlank())
+                                ? com.storechain.group4.util.SizeStockUtil.splitEvenly(
+                                        parseSizes(p.getSizes()), stock)
+                                : com.storechain.group4.util.SizeStockUtil.parseSizeStocks(
+                                        b.getSizeStocks(), p.getSizes(), stock);
+                part.forEach((k, v) -> agg.merge(k, Math.max(0, v), Integer::sum));
+            }
+            if (!agg.isEmpty()) totalSizeStocks = agg;
+        }
         return ProductResponseDto.builder()
                 .id(p.getId())
                 .shopId(p.getShop() != null ? p.getShop().getId() : null)
@@ -63,6 +80,7 @@ public class ProductMapper {
                 .stock(p.getStock())
                 .branchStock(branchStock)
                 .branchSizeStocks(branchSizeStocks)
+                .totalSizeStocks(totalSizeStocks)
                 .sizes(p.getSizes())
                 .sizesList(parseSizes(p.getSizes()))
                 .color(p.getColor())

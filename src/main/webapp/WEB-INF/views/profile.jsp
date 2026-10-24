@@ -999,11 +999,15 @@
                                             </div>
                                             <div class="col-md-6 form-group">
                                                 <label class="profile-info-label">Tỉnh/Thành phố (*)</label>
-                                                <input type="text" id="addrProvince" class="form-control" maxlength="100" required>
+                                                <select id="addrProvince" class="form-control" required>
+                                                    <option value="">Đang tải danh sách tỉnh/thành…</option>
+                                                </select>
                                             </div>
                                             <div class="col-md-6 form-group">
                                                 <label class="profile-info-label">Quận/Huyện (*)</label>
-                                                <input type="text" id="addrDistrict" class="form-control" maxlength="100" required>
+                                                <select id="addrDistrict" class="form-control" required>
+                                                    <option value="">— Chọn quận/huyện —</option>
+                                                </select>
                                             </div>
                                             <div class="col-md-6 form-group">
                                                 <label class="profile-info-label">Phường/Xã</label>
@@ -1042,6 +1046,7 @@
     <script src="/js/mixitup.min.js"></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
+    <script src="/js/vn-address.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/profile.js"></script>
