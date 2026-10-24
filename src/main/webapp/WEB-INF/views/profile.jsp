@@ -444,6 +444,45 @@
             font-weight: 700;
             margin-left: 4px;
         }
+
+        /* ===== Dropdown Tỉnh/Thành phố - Quận/Huyện (vn-address.js) ===== */
+        #addressForm .nice-select {
+            width: 100%;
+            float: none;
+            height: 46px;
+            line-height: 46px;
+            padding-left: 15px;
+            padding-right: 34px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: #fff;
+            font-size: 14px;
+            color: #333;
+        }
+
+        #addressForm .nice-select .list {
+            width: 100%;
+            max-height: 260px;
+            overflow-y: auto;
+            border-radius: 4px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+        }
+
+        #addressForm .nice-select .list .option {
+            line-height: 36px;
+            min-height: 36px;
+            font-size: 14px;
+        }
+
+        #addressForm .nice-select .list .option:hover,
+        #addressForm .nice-select .list .option.selected.focus {
+            background: #f6f6f6;
+        }
+
+        #addressForm .nice-select:hover,
+        #addressForm .nice-select.open {
+            border-color: #e53637;
+        }
     </style>
 </head>
 <body>

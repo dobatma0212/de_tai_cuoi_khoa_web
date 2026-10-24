@@ -79,6 +79,14 @@
     }
     function escapeAttr(s) { return escapeHtml2(s).replace(/"/g, "&quot;"); }
 
+    /** Đồng bộ giao diện nice-select (nếu plugin đã bọc select) với option mới */
+    function refreshNiceSelect(sel) {
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.niceSelect) {
+            var $el = window.jQuery(sel);
+            if ($el.next(".nice-select").length) $el.niceSelect("update");
+        }
+    }
+
     /** Đổ dữ liệu vào cặp select tỉnh / quận. API lỗi thì chuyển 2 ô về input text. */
     function populate(provinceSelId, districtSelId) {
         var pSel = document.getElementById(provinceSelId);
@@ -87,9 +95,12 @@
         fetchProvinces().then(function (list) {
             fillSelect(pSel, list.map(function (p) { return p.name; }), "— Chọn tỉnh/thành phố —");
             fillSelect(dSel, [], "— Chọn quận/huyện —");
+            refreshNiceSelect(pSel);
+            refreshNiceSelect(dSel);
             pSel.addEventListener("change", function () {
                 var p = findProvince(pSel.value);
                 fillSelect(dSel, p ? p.districts : [], "— Chọn quận/huyện —");
+                refreshNiceSelect(dSel);
             });
             pSel.setAttribute("data-vn-ready", "1");
             pSel.dispatchEvent(new CustomEvent("vn-address:ready", { bubbles: true }));
@@ -127,6 +138,8 @@
             } else {
                 pSel.value = "";
             }
+            refreshNiceSelect(pSel);
+            refreshNiceSelect(dSel);
         }).catch(function () { /* fallback input tự giữ giá trị qua form.reset/gán trực tiếp */ });
     }
 
