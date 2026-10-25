@@ -356,14 +356,17 @@ public class StorefrontServiceImpl implements StorefrontService {
                     "Hệ thống chưa có chi nhánh nào để xử lý đơn hàng của bạn.");
         }
         String province = normalizeAddressPart(address.getProvince());
-        String district = normalizeAddressPart(address.getDistrict());
+        // Quận giữ nguyên tiền tố ("quan 1") — nếu bỏ prefix thì "Quận 1" thành "1"
+        // và contains("1") khớp nhầm mọi địa chỉ có số 1 (VD số nhà của chi nhánh Quận 7)
+        String district = normalizeKeepPrefix(address.getDistrict());
         // Tọa độ khách: geocode địa chỉ đầy đủ (đường + phường + quận + tỉnh);
         // thất bại thì rơi về tọa độ tâm tỉnh từ bảng nhúng sẵn
         String customerAddressStr = String.join(", ",
                 java.util.stream.Stream.of(address.getDetailAddress(), address.getWard(),
                                 address.getDistrict(), address.getProvince())
                         .filter(s -> s != null && !s.isBlank()).toList());
-        double[] customerGeo = geocodingService.geocodeWithFallback(customerAddressStr);
+        double[] customerGeo = geocodingService.geocodeWithFallback(customerAddressStr,
+                vietnamGeoService.resolve(address.getProvince()));
         if (customerGeo == null) customerGeo = vietnamGeoService.resolve(address.getProvince());
 
         BranchStock best = null;
@@ -387,7 +390,8 @@ public class StorefrontServiceImpl implements StorefrontService {
                 }
             }
             // Tọa độ chi nhánh: geocode địa chỉ thật, lỗi thì fallback tâm tỉnh
-            double[] shopGeo = geocodingService.geocodeWithFallback(shop.getAddress());
+            double[] shopGeo = geocodingService.geocodeWithFallback(shop.getAddress(),
+                    vietnamGeoService.resolve(shop.getAddress()));
             if (shopGeo == null) shopGeo = vietnamGeoService.resolve(shop.getAddress());
             Double distanceKm = vietnamGeoService.distanceKm(customerGeo, shopGeo);
 
@@ -487,6 +491,17 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .replaceAll("\\p{M}+", "");
         p = p.replace('đ', 'd');
         p = p.replaceAll("^(tinh|thanh pho|quan|huyen|q\\.|h\\.)\\s*", "");
+        p = p.replaceAll("\\s+", " ");
+        return p;
+    }
+
+    /** Như normalizeAddressPart nhưng GIỮ tiền tố hành chính (dùng cho so khớp quận/huyện) */
+    private String normalizeKeepPrefix(String part) {
+        if (part == null) return "";
+        String p = part.trim().toLowerCase(java.util.Locale.ROOT);
+        p = java.text.Normalizer.normalize(p, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        p = p.replace('đ', 'd');
         p = p.replaceAll("\\s+", " ");
         return p;
     }
