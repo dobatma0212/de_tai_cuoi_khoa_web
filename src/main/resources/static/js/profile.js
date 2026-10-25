@@ -319,6 +319,9 @@
     function showAddAddressForm() {
         $("addressForm").reset();
         $("addrId").value = "";
+        // reset() trả select về option đầu; dọn lại nhãn tỉnh/quận cho gọn
+        var d = $("addrDistrict");
+        if (d && d.tagName === "SELECT") d.innerHTML = '<option value="">— Chọn quận/huyện —</option>';
         $("addressFormTitle").textContent = "Thêm địa chỉ mới";
         $("addressFormCard").style.display = "block";
         $("addressFormCard").scrollIntoView({ behavior: "smooth" });
@@ -335,8 +338,10 @@
             $("addrId").value = a.id;
             $("addrName").value = a.receiverName;
             $("addrPhone").value = a.receiverPhone;
-            $("addrProvince").value = a.province;
-            $("addrDistrict").value = a.district;
+            // Tỉnh/quận là select (vn-address.js): khớp mềm giá trị cũ với danh sách chuẩn
+            if (window.VnAddress) {
+                window.VnAddress.setValues("addrProvince", "addrDistrict", a.province, a.district);
+            }
             $("addrWard").value = a.ward || "";
             $("addrDetail").value = a.detailAddress;
             $("addrDefault").checked = !!a.isDefault;
@@ -531,6 +536,18 @@
         return c ? c.name : "";
     }
 
+    /** Dòng "Tồn theo size: S: 5 · M: 0 · ..." — chỉ hiện với sản phẩm phân size */
+    function renderSizeStocks(p) {
+        var ss = p.branchSizeStocks;
+        if (!ss || !Object.keys(ss).length || !p.sizesList || !p.sizesList.length) return "";
+        return '<small class="text-muted d-block">Tồn theo size: ' +
+            p.sizesList.filter(function (s) { return ss.hasOwnProperty(s); })
+                .map(function (s) {
+                    var q = ss[s] || 0;
+                    return escapeHtml(s) + ': <b style="color:' + (q > 0 ? "#28a745" : "#e53637") + ';">' + q + "</b>";
+                }).join(" · ") + "</small>";
+    }
+
     function renderProducts(list) {
         var container = $("productList");
         $("productListTitle").textContent = "Danh sách sản phẩm — " + currentCategoryName() +
@@ -562,6 +579,7 @@
                 '<small class="text-muted">Tồn kho tại chi nhánh: <b style="color:' +
                 (stock > 0 ? "#28a745" : "#e53637") + ';">' + stock + "</b>" +
                 (stock > 0 ? "" : ' <span class="badge badge-danger">Hết hàng</span>') + "</small>" +
+                renderSizeStocks(p) +
                 (sizes ? '<small class="text-muted d-block">Size: ' + escapeHtml(sizes) + "</small>" : "") +
                 (p.color ? '<small class="text-muted d-block">Màu: ' + escapeHtml(p.color) + "</small>" : "") +
                 (p.variants && p.variants.length

@@ -142,32 +142,57 @@
         $("pdCategory").textContent = p.categoryName || "";
         $("pdName").textContent = p.name;
         $("pdPrice").textContent = formatVnd(p.price);
-        $("pdStock").textContent = p.stock > 0 ? ("Còn " + p.stock + " sản phẩm") : "Hết hàng";
+        // Tồn theo size chỉ dùng NỘI BỘ để khóa size hết hàng & phân phối đơn —
+        // không hiển thị số lượng tồn cho khách
+        var sizeMap = p.totalSizeStocks || null;
+        var hasSizes = p.sizesList && p.sizesList.length > 0 && sizeMap;
+        function updateStockLabel() {
+            if (hasSizes && selectedSize && sizeMap.hasOwnProperty(selectedSize)) {
+                var qty = sizeMap[selectedSize] || 0;
+                $("pdStock").textContent = qty > 0 ? "Còn hàng" : ("Hết size " + selectedSize + " — vui lòng chọn size khác");
+                $("pdStock").style.color = qty > 0 ? "" : "#e53637";
+            } else {
+                $("pdStock").textContent = p.stock > 0 ? "Còn hàng" : "Hết hàng";
+                $("pdStock").style.color = "";
+            }
+        }
+        updateStockLabel();
         $("pdDescription").textContent = p.description || "Chưa có mô tả.";
         $("pdRatingStars").innerHTML = starsHtml(p.avgRating || 0);
         $("pdRatingText").textContent = p.reviewCount > 0
             ? (p.avgRating + "/5 — " + p.reviewCount + " đánh giá")
             : "Chưa có đánh giá";
 
-        // Chọn size
+        // Chọn size (size hết hàng bị khóa, hiện mờ kèm số tồn)
         var sizes = p.sizesList || [];
         if (sizes.length) {
             $("pdSizeSection").style.display = "block";
             $("pdSizes").innerHTML = sizes.map(function (s) {
-                return '<button type="button" class="size-btn" data-size="' + escapeHtml(s) + '">' +
+                var qty = sizeMap && sizeMap.hasOwnProperty(s) ? (sizeMap[s] || 0) : null;
+                var out = qty !== null && qty <= 0;
+                return '<button type="button" class="size-btn" data-size="' + escapeHtml(s) + '"' +
+                    (out ? ' disabled title="Tạm hết size này"' : '') +
+                    ' style="' + (out ? "opacity:.4;" : "") + '">' +
                     escapeHtml(s) + "</button>";
             }).join("");
-            Array.prototype.forEach.call($("pdSizes").querySelectorAll(".size-btn"), function (btn) {
+            Array.prototype.forEach.call($("pdSizes").querySelectorAll(".size-btn:not([disabled])"), function (btn) {
                 btn.addEventListener("click", function () {
                     selectedSize = btn.getAttribute("data-size");
                     Array.prototype.forEach.call($("pdSizes").querySelectorAll(".size-btn"), function (b) {
                         b.classList.remove("active");
                     });
                     btn.classList.add("active");
+                    updateStockLabel();
                 });
             });
-            selectedSize = sizes[0];
-            $("pdSizes").querySelector(".size-btn").classList.add("active");
+            var firstAvailable = $("pdSizes").querySelector(".size-btn:not([disabled])");
+            if (firstAvailable) {
+                selectedSize = firstAvailable.getAttribute("data-size");
+                firstAvailable.classList.add("active");
+            } else {
+                selectedSize = null;
+            }
+            updateStockLabel();
         }
 
         // Chọn màu (vòng tròn màu, giống bảng màu bên trang quản lý)

@@ -30,6 +30,7 @@ import com.storechain.group4.repository.ShopRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
 import com.storechain.group4.service.StorefrontService;
+import com.storechain.group4.util.SizeStockUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -74,6 +75,8 @@ public class StorefrontServiceImpl implements StorefrontService {
     private final UserRepository userRepository;
     private final BranchStockRepository branchStockRepository;
     private final ShopRepository shopRepository;
+    private final com.storechain.group4.service.support.VietnamGeoService vietnamGeoService;
+    private final com.storechain.group4.service.support.GeocodingService geocodingService;
     private final com.storechain.group4.service.PaymentService paymentService;
     private final com.storechain.group4.service.PromotionCalculator promotionCalculator;
     private final com.storechain.group4.repository.PromotionUsageRepository promotionUsageRepository;
@@ -90,7 +93,20 @@ public class StorefrontServiceImpl implements StorefrontService {
         dto.setAvgRating(round1(reviewRepository.averageRatingByProductId(productId)));
         dto.setReviewCount(reviewRepository.countByProductId(productId));
         // Tồn kho toàn hãng = tổng tồn kho của tất cả chi nhánh
-        dto.setStock(branchStockRepository.sumStockByProductId(productId));
+        int totalStock = branchStockRepository.sumStockByProductId(productId);
+        dto.setStock(totalStock);
+        // Tồn theo size tổng hợp toàn hệ thống (kho cũ chưa phân bổ size thì chia đều)
+        java.util.Map<String, Integer> agg = new java.util.LinkedHashMap<>();
+        for (BranchStock b : branchStockRepository.findByProductId(productId)) {
+            int stock = Math.max(0, b.getStock());
+            if (stock <= 0) continue;
+            java.util.Map<String, Integer> part =
+                    (b.getSizeStocks() == null || b.getSizeStocks().isBlank())
+                            ? SizeStockUtil.splitEvenly(parseSizes(p.getSizes()), stock)
+                            : SizeStockUtil.parseSizeStocks(b.getSizeStocks(), p.getSizes(), stock);
+            part.forEach((k, v) -> agg.merge(k, Math.max(0, v), Integer::sum));
+        }
+        if (!agg.isEmpty()) dto.setTotalSizeStocks(agg);
         return dto;
     }
 
@@ -166,9 +182,6 @@ public class StorefrontServiceImpl implements StorefrontService {
             throw new IllegalArgumentException("Sản phẩm đã hết hàng.");
         }
         int qty = Math.max(1, quantity);
-        if (qty > totalStock) {
-            throw new IllegalArgumentException("Chỉ còn " + totalStock + " sản phẩm trong kho.");
-        }
         List<String> sizes = parseSizes(product.getSizes());
         String chosen = size == null ? "" : size.trim();
         if (!sizes.isEmpty() && !sizes.contains(chosen)) {
@@ -176,6 +189,15 @@ public class StorefrontServiceImpl implements StorefrontService {
         }
         if (sizes.isEmpty()) {
             chosen = "";
+        }
+        // Kiểm tra số lượng theo ĐÚNG SIZE còn hàng trên toàn hệ thống
+        int sizeStock = totalAvailableForSize(product, chosen);
+        if (sizeStock <= 0) {
+            throw new IllegalArgumentException("Size " + chosen + " của sản phẩm này đã hết hàng.");
+        }
+        if (qty > sizeStock) {
+            throw new IllegalArgumentException("Size " + chosen + " chỉ còn " + sizeStock
+                    + " sản phẩm trong kho.");
         }
         List<String> colors = parseSizes(product.getColor());
         String chosenColor = color == null ? "" : color.trim();
@@ -199,9 +221,12 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .build());
         } else {
             int newQty = item.getQuantity() + qty;
-            if (newQty > branchStockRepository.sumStockByProductId(product.getId())) {
+            int mergedStock = totalAvailableForSize(item.getProduct(), item.getSize());
+            if (newQty > mergedStock) {
                 throw new IllegalArgumentException("Tổng số lượng trong giỏ vượt quá tồn kho ("
-                        + branchStockRepository.sumStockByProductId(product.getId()) + ").");
+                        + (item.getSize() == null || item.getSize().isBlank()
+                                ? "còn " + mergedStock
+                                : "size " + item.getSize() + " còn " + mergedStock) + ").");
             }
             item.setQuantity(newQty);
             item = cartItemRepository.save(item);
@@ -217,9 +242,12 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (quantity < 1) {
             throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
         }
-        int totalStock = branchStockRepository.sumStockByProductId(item.getProduct().getId());
-        if (quantity > totalStock) {
-            throw new IllegalArgumentException("Vượt quá tồn kho (" + totalStock + ").");
+        int sizeStock = totalAvailableForSize(item.getProduct(), item.getSize());
+        if (quantity > sizeStock) {
+            throw new IllegalArgumentException("Vượt quá tồn kho ("
+                    + (item.getSize() == null || item.getSize().isBlank()
+                            ? "còn " + sizeStock
+                            : "size " + item.getSize() + " còn " + sizeStock) + ").");
         }
         item.setQuantity(quantity);
         return toCartDto(cartItemRepository.save(item));
@@ -253,6 +281,16 @@ public class StorefrontServiceImpl implements StorefrontService {
         if (cartItems.isEmpty()) {
             throw new IllegalArgumentException("Giỏ hàng của bạn đang trống.");
         }
+        // Kiểm tra số lượng từng dòng theo ĐÚNG SIZE trước khi tách đơn —
+        // tránh tạo dở dang khi một dòng vượt tồn kho
+        for (CartItem ci : cartItems) {
+            int sizeStock = totalAvailableForSize(ci.getProduct(), ci.getSize());
+            if (ci.getQuantity() > sizeStock) {
+                throw new IllegalArgumentException("Sản phẩm \"" + ci.getProduct().getName()
+                        + (ci.getSize() == null || ci.getSize().isBlank() ? "" : " size " + ci.getSize())
+                        + "\" chỉ còn " + sizeStock + " sản phẩm. Vui lòng giảm số lượng trong giỏ.");
+            }
+        }
         ShippingAddress address = shippingAddressRepository
                 .findByUserIdOrderByIsDefaultDescCreatedAtDesc(userId)
                 .stream().findFirst()
@@ -278,7 +316,7 @@ public class StorefrontServiceImpl implements StorefrontService {
         Map<Long, List<CartItem>> byShop = new java.util.LinkedHashMap<>();
         Map<Long, Shop> assignedShops = new java.util.HashMap<>();
         for (CartItem ci : cartItems) {
-            Shop shop = pickNearestShopWithStock(ci.getProduct(), address);
+            Shop shop = pickNearestShopWithStock(ci.getProduct(), ci.getSize(), ci.getQuantity(), address);
             byShop.computeIfAbsent(shop.getId(), k -> new ArrayList<>()).add(ci);
             assignedShops.putIfAbsent(shop.getId(), shop);
         }
@@ -294,29 +332,54 @@ public class StorefrontServiceImpl implements StorefrontService {
     }
 
     /**
-     * Chọn chi nhánh phù hợp nhất để xử lý đơn của một sản phẩm:
-     * 1. Ưu tiên chi nhánh active còn đủ hàng, cùng tỉnh + cùng quận/huyện với địa chỉ nhận.
-     * 2. Sau đó đến chi nhánh cùng tỉnh còn hàng.
-     * 3. Cuối cùng là bất kỳ chi nhánh active nào còn hàng (ưu tiên ít hàng trống trước).
-     * Nếu không chi nhánh nào còn hàng thì ném lỗi.
+     * Chọn chi nhánh phù hợp nhất để xử lý đơn của một sản phẩm (tính theo TỒN KHO SIZE):
+     * 1. Chỉ xét chi nhánh active còn đủ hàng đúng size.
+     * 2. Nhóm còn hàng, chọn chi nhánh GẦN KHÁCH NHẤT theo tọa độ thật từ
+     *    Geocoding API (Photon/OpenStreetMap, có cache); API lỗi thì fallback
+     *    về bảng tọa độ tâm tỉnh (VietnamGeoService). Khoảng cách nhỏ hơn thắng.
+     * 3. Khi khoảng cách bằng nhau (cùng tỉnh) thì ưu tiên chi nhánh cùng quận/huyện,
+     *    rồi chi nhánh có tồn kho size đó nhiều hơn.
+     * Không xác định được tọa độ (địa chỉ lạ) thì rơi về xếp hạng so chuỗi tỉnh/quận cũ.
      */
-    private Shop pickNearestShopWithStock(Product product, ShippingAddress address) {
+    /**
+     * Chọn chi nhánh phù hợp nhất để xử lý đơn của một sản phẩm (tính theo TỒN KHO SIZE):
+     * 1. Ưu tiên tuyệt đối chi nhánh còn ĐỦ SỐ LƯỢNG khách đặt (đúng size).
+     * 2. Trong nhóm đủ số lượng: khớp tỉnh + quận/huyện > chỉ khớp tỉnh > gần nhất theo tọa độ.
+     * 3. Không chi nhánh nào đủ số lượng thì gán về chi nhánh có nhiều hàng nhất
+     *    (cùng tỉnh/quận nếu có) để đảm bảo phần được giao nhiều nhất có thể.
+     */
+    private Shop pickNearestShopWithStock(Product product, String size, int quantity,
+                                          ShippingAddress address) {
         List<Shop> shops = shopRepository.findByStatus("active");
         if (shops.isEmpty()) {
             throw new IllegalArgumentException(
                     "Hệ thống chưa có chi nhánh nào để xử lý đơn hàng của bạn.");
         }
         String province = normalizeAddressPart(address.getProvince());
-        String district = normalizeAddressPart(address.getDistrict());
+        // Quận giữ nguyên tiền tố ("quan 1") — nếu bỏ prefix thì "Quận 1" thành "1"
+        // và contains("1") khớp nhầm mọi địa chỉ có số 1 (VD số nhà của chi nhánh Quận 7)
+        String district = normalizeKeepPrefix(address.getDistrict());
+        // Tọa độ khách: geocode địa chỉ đầy đủ (đường + phường + quận + tỉnh);
+        // thất bại thì rơi về tọa độ tâm tỉnh từ bảng nhúng sẵn
+        String customerAddressStr = String.join(", ",
+                java.util.stream.Stream.of(address.getDetailAddress(), address.getWard(),
+                                address.getDistrict(), address.getProvince())
+                        .filter(s -> s != null && !s.isBlank()).toList());
+        double[] customerGeo = geocodingService.geocodeWithFallback(customerAddressStr,
+                vietnamGeoService.resolve(address.getProvince()));
+        if (customerGeo == null) customerGeo = vietnamGeoService.resolve(address.getProvince());
 
         BranchStock best = null;
+        double bestDistanceKm = Double.MAX_VALUE;
+        boolean bestEnough = false;
         int bestScore = -1;
         int bestStock = -1;
         for (Shop shop : shops) {
             BranchStock bs = branchStockRepository
                     .findByProductIdAndShopId(product.getId(), shop.getId()).orElse(null);
-            int stock = bs == null ? 0 : Math.max(0, bs.getStock());
+            int stock = availableForSize(bs, product, size);
             if (stock <= 0) continue;
+            boolean enough = stock >= Math.max(1, quantity);
 
             int score = 0;
             String shopAddr = normalizeAddressPart(shop.getAddress());
@@ -326,24 +389,119 @@ public class StorefrontServiceImpl implements StorefrontService {
                     score = 3;
                 }
             }
-            if (score > bestScore || (score == bestScore && stock > bestStock)) {
+            // Tọa độ chi nhánh: geocode địa chỉ thật, lỗi thì fallback tâm tỉnh
+            double[] shopGeo = geocodingService.geocodeWithFallback(shop.getAddress(),
+                    vietnamGeoService.resolve(shop.getAddress()));
+            if (shopGeo == null) shopGeo = vietnamGeoService.resolve(shop.getAddress());
+            Double distanceKm = vietnamGeoService.distanceKm(customerGeo, shopGeo);
+
+            // Thứ tự ưu tiên: (1) chi nhánh ĐỦ số lượng khách đặt;
+            // (2) khớp tỉnh + quận/huyện > chỉ tỉnh > không khớp;
+            // (3) trong cùng nhóm thì chọn GẦN hơn theo tọa độ thật;
+            // (4) không đo được khoảng cách thì so tồn kho nhiều hơn.
+            boolean better;
+            if (enough != bestEnough) {
+                better = enough;
+            } else if (score != bestScore) {
+                better = score > bestScore;
+            } else if (distanceKm != null && bestDistanceKm != Double.MAX_VALUE) {
+                better = distanceKm < bestDistanceKm;
+            } else if (distanceKm != null) {
+                better = true;
+            } else if (bestDistanceKm == Double.MAX_VALUE) {
+                better = stock > bestStock;
+            } else {
+                better = false;
+            }
+            if (better) {
                 best = bs;
+                bestEnough = enough;
+                bestDistanceKm = distanceKm != null ? distanceKm : Double.MAX_VALUE;
                 bestScore = score;
                 bestStock = stock;
             }
         }
         if (best == null) {
             throw new IllegalArgumentException("Sản phẩm \"" + product.getName()
+                    + (size == null || size.isBlank() ? "" : " size " + size)
                     + "\" hiện đã hết hàng tại tất cả chi nhánh.");
         }
         return best.getShop();
     }
 
-    /** Chuẩn hóa một phần địa chỉ để so khớp (bỏ tiền tố, thường hóa) */
+    /**
+     * Tổng số hàng có thể bán của một size trên TOÀN hệ thống (để kiểm tra số
+     * lượng khách đặt vào giỏ / khi đặt hàng không vượt tồn kho theo size).
+     */
+    private int totalAvailableForSize(Product product, String size) {
+        int total = 0;
+        for (Shop shop : shopRepository.findByStatus("active")) {
+            BranchStock bs = branchStockRepository
+                    .findByProductIdAndShopId(product.getId(), shop.getId()).orElse(null);
+            total += availableForSize(bs, product, size);
+        }
+        return total;
+    }
+
+    /**
+     * Trừ tồn kho của một size, trả về chuỗi sizeStocks mới. Kho cũ chưa phân
+     * bổ theo size được khởi tạo bằng cách chia đều (cùng quy ước với nhập hàng).
+     * Trừ "mềm": nếu size không có trong phân bổ hoặc không đủ thì chỉ trừ về 0,
+     * không chặn đặt hàng (tổng tồn đã được kiểm tra trước đó).
+     */
+    private String subtractSize(BranchStock bs, Product p, String size, int quantity) {
+        if (quantity <= 0) return bs.getSizeStocks();
+        Map<String, Integer> map = (bs.getSizeStocks() == null || bs.getSizeStocks().isBlank())
+                ? SizeStockUtil.splitEvenly(SizeStockUtil.parseSizes(p.getSizes()), bs.getStock())
+                : SizeStockUtil.parseSizeStocks(bs.getSizeStocks(), p.getSizes(), bs.getStock());
+        String key = (size == null || size.isBlank())
+                ? (map.containsKey("Tiêu chuẩn") ? "Tiêu chuẩn"
+                        : map.keySet().stream().findFirst().orElse(null))
+                : size;
+        if (key == null || !map.containsKey(key)) return bs.getSizeStocks();
+        map.put(key, Math.max(0, map.get(key) - quantity));
+        return SizeStockUtil.toSizeStocksString(map);
+    }
+
+    /**
+     * Số lượng còn có thể bán của một size tại chi nhánh. Sản phẩm không phân
+     * size (hoặc chi nhánh chưa có phân bổ theo size — kho cũ) thì tính theo tổng tồn.
+     */
+    private int availableForSize(BranchStock bs, Product product, String size) {
+        if (bs == null) return 0;
+        int total = Math.max(0, bs.getStock());
+        if (total <= 0) return 0;
+        List<String> sizes = com.storechain.group4.util.SizeStockUtil.parseSizes(product.getSizes());
+        if (sizes.isEmpty() || size == null || size.isBlank()) return total;
+        if (bs.getSizeStocks() == null || bs.getSizeStocks().isBlank()) return total;
+        var map = com.storechain.group4.util.SizeStockUtil
+                .parseSizeStocks(bs.getSizeStocks(), product.getSizes(), total);
+        return Math.max(0, map.getOrDefault(size, 0));
+    }
+
+    /**
+     * Chuẩn hóa một phần địa chỉ để so khớp: bỏ tiền tố hành chính, bỏ dấu
+     * tiếng Việt (địa chỉ khách nhập và địa chỉ chi nhánh admin lập có thể
+     * khác nhau về dấu/kiểu viết — VD "Bình Dương" vs "Binh Duong").
+     */
     private String normalizeAddressPart(String part) {
         if (part == null) return "";
         String p = part.trim().toLowerCase(java.util.Locale.ROOT);
-        p = p.replaceAll("^(tỉnh|tinh|thành phố|thanh pho|quận|quan|huyện|huyen|q\\.|h\\.)\\s*", "");
+        p = java.text.Normalizer.normalize(p, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        p = p.replace('đ', 'd');
+        p = p.replaceAll("^(tinh|thanh pho|quan|huyen|q\\.|h\\.)\\s*", "");
+        p = p.replaceAll("\\s+", " ");
+        return p;
+    }
+
+    /** Như normalizeAddressPart nhưng GIỮ tiền tố hành chính (dùng cho so khớp quận/huyện) */
+    private String normalizeKeepPrefix(String part) {
+        if (part == null) return "";
+        String p = part.trim().toLowerCase(java.util.Locale.ROOT);
+        p = java.text.Normalizer.normalize(p, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        p = p.replace('đ', 'd');
         p = p.replaceAll("\\s+", " ");
         return p;
     }
@@ -467,11 +625,12 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .size(ci.getSize())
                     .color(ci.getColor())
                     .build());
-            // Trừ tồn kho tại chi nhánh được phân phối
+            // Trừ tồn kho tại chi nhánh được phân phối (cả tổng và theo size)
             BranchStock bs = branchStockRepository
                     .findByProductIdAndShopId(p.getId(), shop.getId())
                     .orElse(BranchStock.builder().product(p).shop(shop).stock(0).build());
             bs.setStock(Math.max(0, bs.getStock() - ci.getQuantity()));
+            bs.setSizeStocks(subtractSize(bs, p, ci.getSize(), ci.getQuantity()));
             branchStockRepository.save(bs);
         }
         return toOrderDto(order);
@@ -537,7 +696,7 @@ public class StorefrontServiceImpl implements StorefrontService {
         }
         order.setCancelReason(reason.trim() + " (khách hàng hủy)");
         order.setStatus(Order.STATUS_CANCELLED);
-        // Hoàn tồn kho về chi nhánh phụ trách
+        // Hoàn tồn kho về chi nhánh phụ trách (cả tổng và theo size)
         for (var oi : orderItemRepository.findByOrderId(order.getId())) {
             if (oi.getProduct() == null) continue;
             BranchStock bs = branchStockRepository
@@ -545,6 +704,9 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .orElse(BranchStock.builder().product(oi.getProduct())
                             .shop(order.getShop()).stock(0).build());
             bs.setStock(bs.getStock() + oi.getQuantity());
+            bs.setSizeStocks(com.storechain.group4.util.SizeStockUtil.addToSize(
+                    bs.getSizeStocks(), oi.getProduct().getSizes(), bs.getStock(),
+                    oi.getSize(), oi.getQuantity()));
             branchStockRepository.save(bs);
         }
         return toOrderDto(orderRepository.save(order));

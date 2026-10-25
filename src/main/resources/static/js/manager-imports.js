@@ -194,6 +194,11 @@
         $("impProductHint").textContent = "Tồn tại chi nhánh: " + (p.branchStock || 0) +
             (p.brand ? " — Thương hiệu: " + p.brand : "") +
             (p.color ? " — Màu: " + p.color : "");
+        var ss = p.branchSizeStocks;
+        if (ss && Object.keys(ss).length) {
+            $("impProductHint").textContent += " — Tồn theo size: " +
+                Object.keys(ss).map(function (s) { return s + ": " + (ss[s] || 0); }).join(", ");
+        }
     }
 
     function currentProduct() {

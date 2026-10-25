@@ -30,11 +30,35 @@ public class ProductMapper {
      * @param shopId chi nhánh của người gọi để tính branchStock; null thì lấy tổng aggregate
      */
     public ProductResponseDto toDto(Product p, Long shopId) {
+        BranchStock branch = shopId == null
+                ? null
+                : branchStockRepository.findByProductIdAndShopId(p.getId(), shopId).orElse(null);
         Integer branchStock = shopId == null
                 ? p.getStock()
-                : branchStockRepository.findByProductIdAndShopId(p.getId(), shopId)
-                        .map(BranchStock::getStock)
-                        .orElse(0);
+                : (branch == null ? 0 : Math.max(0, branch.getStock()));
+        // Tồn kho chi nhánh theo từng size (kho cũ chưa phân bổ size thì bỏ trống)
+        java.util.Map<String, Integer> branchSizeStocks = null;
+        if (branch != null && branch.getSizeStocks() != null && !branch.getSizeStocks().isBlank()) {
+            branchSizeStocks = com.storechain.group4.util.SizeStockUtil
+                    .parseSizeStocks(branch.getSizeStocks(), p.getSizes(), branchStock);
+        }
+        // Storefront (không theo chi nhánh): tổng hợp tồn theo size của TOÀN hệ thống
+        java.util.Map<String, Integer> totalSizeStocks = null;
+        if (shopId == null) {
+            java.util.Map<String, Integer> agg = new java.util.LinkedHashMap<>();
+            for (BranchStock b : branchStockRepository.findByProductId(p.getId())) {
+                int stock = Math.max(0, b.getStock());
+                if (stock <= 0) continue;
+                java.util.Map<String, Integer> part =
+                        (b.getSizeStocks() == null || b.getSizeStocks().isBlank())
+                                ? com.storechain.group4.util.SizeStockUtil.splitEvenly(
+                                        parseSizes(p.getSizes()), stock)
+                                : com.storechain.group4.util.SizeStockUtil.parseSizeStocks(
+                                        b.getSizeStocks(), p.getSizes(), stock);
+                part.forEach((k, v) -> agg.merge(k, Math.max(0, v), Integer::sum));
+            }
+            if (!agg.isEmpty()) totalSizeStocks = agg;
+        }
         return ProductResponseDto.builder()
                 .id(p.getId())
                 .shopId(p.getShop() != null ? p.getShop().getId() : null)
@@ -55,6 +79,8 @@ public class ProductMapper {
                 .sizeChart(p.getSizeChart())
                 .stock(p.getStock())
                 .branchStock(branchStock)
+                .branchSizeStocks(branchSizeStocks)
+                .totalSizeStocks(totalSizeStocks)
                 .sizes(p.getSizes())
                 .sizesList(parseSizes(p.getSizes()))
                 .color(p.getColor())

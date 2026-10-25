@@ -444,6 +444,53 @@
             font-weight: 700;
             margin-left: 4px;
         }
+
+        /* ===== Dropdown Tỉnh/Thành phố - Quận/Huyện (vn-address.js) ===== */
+        #addressForm .nice-select {
+            width: 100%;
+            float: none;
+            height: 46px;
+            line-height: normal;
+            padding-left: 15px;
+            padding-right: 34px;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            background-color: #fff;
+            font-size: 14px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        #addressForm .nice-select .current {
+            flex: 1;
+        }
+
+        #addressForm .nice-select .list {
+            width: 100%;
+            max-height: 260px;
+            overflow-y: auto;
+            border-radius: 4px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+        }
+
+        #addressForm .nice-select .list .option {
+            line-height: 36px;
+            min-height: 36px;
+            font-size: 14px;
+        }
+
+        #addressForm .nice-select .list .option:hover,
+        #addressForm .nice-select .list .option.selected.focus {
+            background: #f6f6f6;
+        }
+
+        #addressForm .nice-select:hover,
+        #addressForm .nice-select.open {
+            border-color: #e53637;
+        }
     </style>
 </head>
 <body>
@@ -999,11 +1046,15 @@
                                             </div>
                                             <div class="col-md-6 form-group">
                                                 <label class="profile-info-label">Tỉnh/Thành phố (*)</label>
-                                                <input type="text" id="addrProvince" class="form-control" maxlength="100" required>
+                                                <select id="addrProvince" class="form-control" required>
+                                                    <option value="">Đang tải danh sách tỉnh/thành…</option>
+                                                </select>
                                             </div>
                                             <div class="col-md-6 form-group">
                                                 <label class="profile-info-label">Quận/Huyện (*)</label>
-                                                <input type="text" id="addrDistrict" class="form-control" maxlength="100" required>
+                                                <select id="addrDistrict" class="form-control" required>
+                                                    <option value="">— Chọn quận/huyện —</option>
+                                                </select>
                                             </div>
                                             <div class="col-md-6 form-group">
                                                 <label class="profile-info-label">Phường/Xã</label>
@@ -1042,6 +1093,7 @@
     <script src="/js/mixitup.min.js"></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/main.js"></script>
+    <script src="/js/vn-address.js?v=20261025"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/sc-shop-ui.js"></script>
     <script src="/js/profile.js"></script>
