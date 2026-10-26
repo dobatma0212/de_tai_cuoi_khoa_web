@@ -160,7 +160,6 @@
                         <!-- Sản phẩm được render động bằng /js/catalog.js (danh mục toàn hãng) -->
                     </div>
                     <div class="shop-pagination-meta" id="catalogPaginationMeta">Chọn trang để xem thêm sản phẩm</div>
-                    <div class="shop-pagination-meta" id="catalogPaginationMeta">Chọn trang để xem thêm sản phẩm</div>
                     <div class="row" id="catalogPaginationRow" style="display:none;">
                         <div class="col-lg-12">
                             <div class="product__pagination" id="catalogPagination"></div>
