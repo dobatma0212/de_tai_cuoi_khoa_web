@@ -22,7 +22,6 @@
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
     <link rel="stylesheet" href="/css/auth.css" type="text/css">
-    <link rel="stylesheet" href="/css/storechain-rework.css" type="text/css">
     <sitemesh:write property="head"/>
 </head>
 <body>
@@ -36,7 +35,7 @@
     <div class="offcanvas-menu-wrapper">
         <div class="offcanvas__option">
             <div class="offcanvas__links">
-                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Đăng nhập</a>
+                <a href="/login.html" id="navAuthMobile" class="nav-auth-link">Sign in</a>
                 <a href="#">FAQs</a>
             </div>
             <div class="offcanvas__top__hover">
@@ -56,7 +55,7 @@
         </div>
         <div id="mobile-menu-wrap"></div>
         <div class="offcanvas__text">
-            <p>Mua sắm dễ dàng · Giao hàng tận nơi · Hỗ trợ tận tâm</p>
+            <p>Free shipping, 30-day return or refund guarantee.</p>
         </div>
     </div>
     <!-- Offcanvas Menu End -->
@@ -68,13 +67,13 @@
                 <div class="row">
                     <div class="col-lg-6 col-md-7">
                         <div class="header__top__left">
-                            <p>Mua sắm dễ dàng · Giao hàng tận nơi · Hỗ trợ tận tâm</p>
+                            <p>Free shipping, 30-day return or refund guarantee.</p>
                         </div>
                     </div>
                     <div class="col-lg-6 col-md-5">
                         <div class="header__top__right">
                             <div class="header__top__links">
-                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Đăng nhập</a>
+                                <a href="/login.html" id="navAuthDesktop" class="nav-auth-link">Sign in</a>
                                 <a href="#">FAQs</a>
                             </div>
                             <div class="header__top__hover">
@@ -100,9 +99,9 @@
                 <div class="col-lg-6 col-md-6">
                     <nav class="header__menu mobile-menu">
                         <ul>
-                            <li class="<%= activeHome %>"><a href="./index.html">Trang chủ</a></li>
-                            <li class="<%= activeShop %>"><a href="./shop.html">Cửa hàng</a></li>
-                            <li><a href="#">Danh mục</a>
+                            <li class="<%= activeHome %>"><a href="./index.html">Home</a></li>
+                            <li class="<%= activeShop %>"><a href="./shop.html">Shop</a></li>
+                            <li><a href="#">Pages</a>
                                 <ul class="dropdown">
                                     <li><a href="./about.html">About Us</a></li>
                                     <li><a href="./shop-details.html">Shop Details</a></li>
@@ -116,8 +115,8 @@
                                     <li class="admin-nav-only" style="display: none;"><a href="./admin-transporters.html" style="color: #e53637; font-weight: 700;"><i class="fa fa-truck"></i> Quản lý Vận chuyển</a></li>
                                 </ul>
                             </li>
-                            <li class="<%= activeBlog %>"><a href="./blog.html">Tin tức</a></li>
-                            <li class="<%= activeContact %>"><a href="./contact.html">Liên hệ</a></li>
+                            <li class="<%= activeBlog %>"><a href="./blog.html">Blog</a></li>
+                            <li class="<%= activeContact %>"><a href="./contact.html">Contacts</a></li>
                         </ul>
                     </nav>
                 </div>
@@ -146,37 +145,37 @@
                         <div class="footer__logo">
                             <a href="#"><img src="/img/footer-logo.png" alt=""></a>
                         </div>
-                        <p>StoreChain mang đến trải nghiệm mua sắm tiện lợi, sản phẩm đa dạng và dịch vụ tận tâm.</p>
+                        <p>The customer is at the heart of our unique business model, which includes design.</p>
                         <a href="#"><img src="/img/payment.png" alt=""></a>
                     </div>
                 </div>
                 <div class="col-lg-2 offset-lg-1 col-md-3 col-sm-6">
                     <div class="footer__widget">
-                        <h6>Mua sắm</h6>
+                        <h6>Shopping</h6>
                         <ul>
-                            <li><a href="/shop.html">Tất cả sản phẩm</a></li>
-                            <li><a href="/shop.html">Sản phẩm nổi bật</a></li>
-                            <li><a href="/shop.html">Danh mục sản phẩm</a></li>
-                            <li><a href="/shop.html">Ưu đãi</a></li>
+                            <li><a href="#">Clothing Store</a></li>
+                            <li><a href="#">Trending Shoes</a></li>
+                            <li><a href="#">Accessories</a></li>
+                            <li><a href="#">Sale</a></li>
                         </ul>
                     </div>
                 </div>
                 <div class="col-lg-2 col-md-3 col-sm-6">
                     <div class="footer__widget">
-                        <h6>Hỗ trợ</h6>
+                        <h6>Shopping</h6>
                         <ul>
-                            <li><a href="/contact.html">Liên hệ</a></li>
-                            <li><a href="/contact.html">Thanh toán</a></li>
-                            <li><a href="/contact.html">Tài khoản của tôi</a></li>
-                            <li><a href="/contact.html">Giỏ hàng</a></li>
+                            <li><a href="#">Contact Us</a></li>
+                            <li><a href="#">Payment Methods</a></li>
+                            <li><a href="#">Delivary</a></li>
+                            <li><a href="#">Return & Exchanges</a></li>
                         </ul>
                     </div>
                 </div>
                 <div class="col-lg-3 offset-lg-1 col-md-6 col-sm-6">
                     <div class="footer__widget">
-                        <h6>Cập nhật ưu đãi</h6>
+                        <h6>NewLetter</h6>
                         <div class="footer__newslatter">
-                            <p>Theo dõi StoreChain để không bỏ lỡ sản phẩm mới và chương trình ưu đãi.</p>
+                            <p>Be the first to know about new arrivals, look books, sales & promos!</p>
                             <form action="#">
                                 <input type="text" placeholder="Your email">
                                 <button type="submit"><span class="icon_mail_alt"></span></button>
@@ -189,12 +188,12 @@
                 <div class="col-lg-12 text-center">
                     <div class="footer__copyright__text">
                         <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-                        <p>Bản quyền ©
+                        <p>Copyright ©
                             <script>
                                 document.write(new Date().getFullYear());
                             </script>2020
-                            Đã đăng ký bản quyền | Thiết kế với <i class="fa fa-heart-o"
-                            aria-hidden="true"></i> bởi StoreChain
+                            All rights reserved | This template is made with <i class="fa fa-heart-o"
+                            aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib</a>
                         </p>
                         <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
                     </div>

@@ -1,19 +1,18 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true" %>
 
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="zxx">
 <head>
 <meta charset="UTF-8">
-    <meta name="description" content="Khám phá sản phẩm tại StoreChain">
-    <meta name="keywords" content="StoreChain, mua sắm, sản phẩm">
+    <meta name="description" content="Male_Fashion Template">
+    <meta name="keywords" content="Male_Fashion, unica, creative, html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Cửa hàng | StoreChain</title>
+    <title>Male-Fashion | Template</title>
 
     <!-- Google Font -->
 
     <link rel="stylesheet" href="/css/shop-redesign.css" type="text/css">
-    <link rel="stylesheet" href="/css/catalog-compat.css" type="text/css">
 </head>
 <body>
 <!-- Breadcrumb Section Begin -->
@@ -22,10 +21,10 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="breadcrumb__text">
-                        <h4>Cửa hàng</h4>
+                        <h4>Shop</h4>
                         <div class="breadcrumb__links">
-                            <a href="/">Trang chủ</a>
-                            <span>Cửa hàng</span>
+                            <a href="./index.html">Home</a>
+                            <span>Shop</span>
                         </div>
                     </div>
                 </div>
@@ -40,7 +39,7 @@
             <div class="row">
                 <div class="col-lg-3">
                     <aside class="shop__sidebar shop-filter-panel">
-                        <div class="shop-filter-heading"><div><span class="shop-eyebrow">TÌM KIẾM CỦA BẠN</span><h5>Bộ lọc sản phẩm</h5></div><button type="button" id="catalogClearFilters" class="shop-reset-btn" disabled>Đặt lại</button></div>
+                        <div class="shop-filter-heading"><div><span class="shop-eyebrow">TÌM KIẾM CỦA BẠN</span><h5>Bộ lọc sản phẩm</h5></div><button type="button" id="catalogResetFilters" class="shop-reset-btn" disabled>Đặt lại</button></div>
                         <div class="shop__sidebar__search">
                             <form id="catalogSearchForm">
                                 <input type="text" id="catalogSearch" placeholder="Tìm kiếm sản phẩm...">
@@ -152,7 +151,6 @@
                         </div>
                     </div>
                     <h5 id="catalogCategoryTitle" style="display:none;"></h5>
-                    <div id="catalogActiveFilters" class="sc-active-filters" aria-live="polite"></div>
                     <div class="row" id="categoryCardGrid">
                         <!-- Thẻ danh mục (ảnh = sản phẩm đại diện), render động bằng /js/catalog.js -->
                     </div>
