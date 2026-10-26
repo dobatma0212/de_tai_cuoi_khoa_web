@@ -12,7 +12,11 @@
 
     <!-- Google Font -->
 
+<<<<<<< HEAD
     <link rel="stylesheet" href="/css/shop-redesign.css" type="text/css">
+=======
+    <!-- Css Styles -->
+>>>>>>> origin/main
 </head>
 <body>
 <!-- Breadcrumb Section Begin -->
@@ -34,12 +38,20 @@
     <!-- Breadcrumb Section End -->
 
     <!-- Shop Section Begin -->
+<<<<<<< HEAD
     <section class="shop spad shop-redesign">
         <div class="container">
             <div class="row">
                 <div class="col-lg-3">
                     <aside class="shop__sidebar shop-filter-panel">
                         <div class="shop-filter-heading"><div><span class="shop-eyebrow">TÌM KIẾM CỦA BẠN</span><h5>Bộ lọc sản phẩm</h5></div><button type="button" id="catalogResetFilters" class="shop-reset-btn" disabled>Đặt lại</button></div>
+=======
+    <section class="shop spad">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3">
+                    <div class="shop__sidebar">
+>>>>>>> origin/main
                         <div class="shop__sidebar__search">
                             <form id="catalogSearchForm">
                                 <input type="text" id="catalogSearch" placeholder="Tìm kiếm sản phẩm...">
@@ -123,11 +135,18 @@
                                 </div>
                             </div>
                         </div>
+<<<<<<< HEAD
                     </aside>
                 </div>
                 <div class="col-lg-9">
                     <div class="shop-results-heading"><div><span class="shop-eyebrow">STORECHAIN COLLECTION</span><h3>Khám phá sản phẩm</h3><p>Tìm đúng phong cách của bạn với bộ lọc và sắp xếp nhanh.</p></div></div>
                     <div class="shop__product__option shop-toolbar">
+=======
+                    </div>
+                </div>
+                <div class="col-lg-9">
+                    <div class="shop__product__option">
+>>>>>>> origin/main
                         <div class="row">
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <div class="shop__product__option__left">
@@ -157,7 +176,10 @@
                     <div class="row" id="catalogGrid">
                         <!-- Sản phẩm được render động bằng /js/catalog.js (danh mục toàn hãng) -->
                     </div>
+<<<<<<< HEAD
                     <div class="shop-pagination-meta" id="catalogPaginationMeta">Chọn trang để xem thêm sản phẩm</div>
+=======
+>>>>>>> origin/main
                     <div class="row" id="catalogPaginationRow" style="display:none;">
                         <div class="col-lg-12">
                             <div class="product__pagination" id="catalogPagination"></div>
