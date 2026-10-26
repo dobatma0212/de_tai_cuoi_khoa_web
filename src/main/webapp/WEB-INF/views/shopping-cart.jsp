@@ -1,0 +1,368 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" isELIgnored="true" %>
+
+<!DOCTYPE html>
+<html lang="zxx">
+<head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Giỏ hàng | Male-Fashion</title>
+
+    
+
+    
+
+    <style>
+        .cart-section {
+            padding: 40px 0 80px;
+            background: #f5f5f5;
+            min-height: 60vh;
+        }
+
+        .cart-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .07);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding: 14px 0;
+        }
+
+        .cart-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            background: #f5f5f5;
+        }
+
+        .qty-box {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .qty-box button {
+            border: none;
+            background: #f5f5f5;
+            width: 30px;
+            height: 30px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .qty-box input {
+            width: 46px;
+            text-align: center;
+            border: none;
+            height: 30px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .summary-total {
+            font-size: 20px;
+            font-weight: 900;
+            color: #e53637;
+        }
+
+        .btn-store {
+            background: #e53637;
+            color: #fff;
+            border: none;
+            font-weight: 800;
+            padding: 12px 28px;
+            border-radius: 6px;
+        }
+
+        .btn-store:hover {
+            background: #c72b2c;
+            color: #fff;
+        }
+
+        .transporter-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1.5px solid #eee;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .transporter-option.active {
+            border-color: #e53637;
+            background: #fff5f5;
+        }
+
+        .order-status-badge {
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 700;
+            color: #fff;
+            display: inline-block;
+        }
+
+        .status-NEW { background: #007bff; }
+        .status-CONFIRMED { background: #17a2b8; }
+        .status-PICKED_UP { background: #6c757d; }
+        .status-SHIPPING { background: #ffc107; color: #333; }
+        .status-DELIVERED { background: #28a745; }
+        .status-CANCELLED { background: #dc3545; }
+        .status-RETURNED { background: #343a40; }
+    </style>
+</head>
+<body>
+
+    
+
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Giỏ hàng</h4>
+                        <div class="breadcrumb__links">
+                            <a href="./index.html">Home</a>
+                            <span>Giỏ hàng</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cart-section">
+        <div class="container">
+            <div id="cartNotLoggedIn" class="cart-card" style="display:none; text-align:center; padding:50px;">
+                <h5>Bạn cần đăng nhập để xem giỏ hàng.</h5>
+                <a href="/login.html" class="btn-store" style="display:inline-block; margin-top:16px; text-decoration:none;">Đăng nhập</a>
+            </div>
+
+            <div id="cartWrapper" style="display:none;">
+                <div class="row">
+                    <!-- Danh sách sản phẩm -->
+                    <div class="col-lg-8">
+                        <div class="cart-card">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="font-weight-bold mb-0">Giỏ hàng của bạn</h5>
+                                <button type="button" id="btnClearCart" class="btn btn-sm btn-link btn-link-danger"
+                                        style="border:none;background:none;color:#999;text-decoration:underline;cursor:pointer;">
+                                    Xóa tất cả
+                                </button>
+                            </div>
+                            <div id="cartItems"></div>
+                        </div>
+
+                        <!-- Đơn hàng của tôi -->
+                        <div class="cart-card">
+                            <h5 class="font-weight-bold mb-3">Đơn hàng của tôi</h5>
+                            <div id="myOrders"></div>
+                        </div>
+                    </div>
+
+                    <!-- Thanh toán -->
+                    <div class="col-lg-4">
+                        <div class="cart-card">
+                            <h5 class="font-weight-bold mb-3">Thanh toán</h5>
+
+                            <div class="mb-3">
+                                <b>Nhận hàng tại:</b>
+                                <div id="addressBox" class="text-muted mt-1" style="font-size:14px;"></div>
+                                <a href="/profile.html" class="d-block mt-1" style="font-size:13px;">Quản lý địa chỉ nhận hàng</a>
+                            </div>
+
+                            <b>Nhà vận chuyển:</b>
+                            <div id="transporterBox" class="mt-2 mb-3"></div>
+
+                            <div class="form-group">
+                                <b>Ghi chú</b>
+                                <textarea id="orderNote" class="form-control mt-1" rows="2"
+                                          maxlength="500" placeholder="Ghi chú cho chi nhánh..."></textarea>
+                            </div>
+
+                            <div class="cart__discount mb-3">
+                                <h6 class="font-weight-bold mb-2">Mã Giảm Giá / Voucher</h6>
+                                <select id="cart-coupon-select" class="form-control">
+                                    <option value="">-- Chọn mã giảm giá --</option>
+                                </select>
+                                <div id="cart-coupon-msg" class="mt-2" style="font-size: 13px; font-weight: 600;"></div>
+                            </div>
+
+                            <div class="mb-3" id="paymentMethodBox">
+                                <b>Phương thức thanh toán:</b>
+                                <div class="mt-2">
+                                    <label class="d-block mb-1"><input type="radio" name="paymentMethod" value="COD" checked>
+                                        Thanh toán khi nhận hàng (COD)</label>
+                                    <label class="d-block mb-1"><input type="radio" name="paymentMethod" value="VNPAY">
+                                        VNPAY (thẻ ATM / QR / ngân hàng)</label>
+                                    <label class="d-block mb-1"><input type="radio" name="paymentMethod" value="MOMO">
+                                        Ví MoMo</label>
+                                </div>
+                            </div>
+
+                            <div class="summary-row"><span>Tạm tính</span><span id="sumSubtotal">0₫</span></div>
+                            <div class="summary-row"><span>Phí vận chuyển</span><span id="sumShipping">0₫</span></div>
+                            <div class="summary-row"><span>Khuyến mãi</span><span id="sumDiscount" style="color:#28a745;">-0₫</span></div>
+                            <hr>
+                            <div class="summary-row"><b>Tổng cộng</b><span class="summary-total" id="sumTotal">0₫</span></div>
+
+                            <button type="button" id="btnCheckout" class="btn-store w-100 mt-2">
+                                <i class="fa fa-check"></i> Đặt hàng
+                            </button>
+                            <div class="alert auth-alert mt-2" id="checkoutAlert" style="display:none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/jquery.nicescroll.min.js"></script>
+    <script src="/js/jquery.magnific-popup.min.js"></script>
+    <script src="/js/jquery.countdown.min.js"></script>
+    <script src="/js/jquery.slicknav.js"></script>
+    <script src="/js/mixitup.min.js"></script>
+    <script src="/js/owl.carousel.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/cart-api.js"></script>
+    <script src="/js/sc-shop-ui.js"></script>
+    <script src="/js/cart.js"></script>
+    <script>
+        let appliedCoupon = null;
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // Đọc tạm tính hiện tại từ khối tổng kết do cart.js render
+        function getCurrentSubtotal() {
+            const el = document.getElementById('sumSubtotal');
+            if (!el) return 0;
+            const digits = el.textContent.replace(/[^\d]/g, '');
+            return digits ? parseInt(digits, 10) : 0;
+        }
+
+        function applyCartCoupon(code) {
+            const msgEl = $('#cart-coupon-msg');
+
+            if (!code) {
+                appliedCoupon = null;
+                window.appliedCouponData = null;
+                if (window.updateSummary) window.updateSummary();
+                msgEl.text('').css('color', '');
+                return;
+            }
+
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                msgEl.html('Vui lòng <a href="/login.html" class="text-danger font-weight-bold">đăng nhập</a> để áp dụng voucher!').css('color', '#dc3545');
+                return;
+            }
+
+            msgEl.text('Đang kiểm tra mã...').css('color', '#666');
+
+            $.ajax({
+                url: '/api/public/promotions/check-voucher',
+                type: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    code: code,
+                    orderTotal: getCurrentSubtotal()
+                }),
+                success: function(res) {
+                    if (res.success && res.data && res.data.valid) {
+                        const d = res.data;
+                        appliedCoupon = d;
+                        window.appliedCouponData = d;
+                        if (window.updateSummary) window.updateSummary();
+                        msgEl.text('✓ ' + d.message).css('color', '#28a745');
+                    } else {
+                        appliedCoupon = null;
+                        window.appliedCouponData = null;
+                        if (window.updateSummary) window.updateSummary();
+                        msgEl.text('✗ ' + (res.data ? res.data.message : res.message)).css('color', '#dc3545');
+                    }
+                },
+                error: function(xhr) {
+                    appliedCoupon = null;
+                    window.appliedCouponData = null;
+                    if (window.updateSummary) window.updateSummary();
+                    const err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Mã giảm giá không hợp lệ!';
+                    msgEl.text('✗ ' + err).css('color', '#dc3545');
+                }
+            });
+        }
+
+        // Nạp danh sách voucher đang có hiệu lực vào dropdown để user chọn
+        function loadAvailableVouchers() {
+            const token = localStorage.getItem('jwt_token');
+            const select = document.getElementById('cart-coupon-select');
+            if (!select) return;
+            // main.js khởi tạo nice-select cho mọi <select> nhưng trang này
+            // không include CSS của nó -> trả về select gốc để render đúng
+            if ($.fn.niceSelect) $(select).niceSelect('destroy');
+            if (!token) return;
+
+            $.ajax({
+                url: '/api/public/promotions/available-vouchers',
+                type: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token },
+                success: function(res) {
+                    const vouchers = (res.success && res.data) ? res.data : [];
+                    if (!vouchers.length) {
+                        select.innerHTML = '<option value="">Chưa có mã giảm giá nào</option>';
+                        return;
+                    }
+                    select.innerHTML = '<option value="">-- Chọn mã giảm giá --</option>' +
+                        vouchers.map(function(v) {
+                            let saving;
+                            if (v.promoType === 'SHIPPING') {
+                                saving = 'Giảm phí vận chuyển ' + formatMoney(v.discountValue);
+                            } else if (v.discountType === 'PERCENTAGE') {
+                                saving = 'Giảm ' + v.discountValue + '%';
+                                if (v.maxDiscountAmount) saving += ' (tối đa ' + formatMoney(v.maxDiscountAmount) + ')';
+                            } else {
+                                saving = 'Giảm ' + formatMoney(v.discountValue);
+                            }
+                            if (v.minOrderValue && v.minOrderValue > 0) {
+                                saving += ' — đơn từ ' + formatMoney(v.minOrderValue);
+                            }
+                            saving += v.shopName ? ' — chi nhánh ' + v.shopName : ' — toàn hệ thống';
+                            const label = v.code + ' | ' + saving + (v.name ? ' (' + v.name + ')' : '');
+                            return '<option value="' + v.code + '">' + label + '</option>';
+                        }).join('');
+                }
+            });
+        }
+
+        $('#cart-coupon-select').on('change', function() {
+            applyCartCoupon(this.value ? this.value.trim().toUpperCase() : '');
+        });
+
+        loadAvailableVouchers();
+    </script>
+</body>
+</html>

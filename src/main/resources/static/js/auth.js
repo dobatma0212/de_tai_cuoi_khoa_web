@@ -69,6 +69,21 @@
         return !!(s && (s.token || localStorage.getItem("jwt_token")));
     }
 
+    function isAdmin(session) {
+        if (!session) session = getSession();
+        if (!session) return false;
+        var user = session.user && typeof session.user === "object" ? session.user : session;
+        var r = (user.role || session.role || "").toUpperCase();
+        if (r.includes("ADMIN")) return true;
+        var roles = user.roles || session.roles;
+        if (Array.isArray(roles)) {
+            return roles.some(function (role) {
+                return (role || "").toUpperCase().includes("ADMIN");
+            });
+        }
+        return false;
+    }
+
     function isAdminOrManager(session) {
         if (!session) session = getSession();
         if (!session) return false;
@@ -89,7 +104,7 @@
     }
 
     function updateAdminNavVisibility() {
-        var show = isLoggedIn() && isAdminOrManager();
+        var show = isLoggedIn() && isAdmin();
         var items = document.querySelectorAll(".admin-nav-only");
         for (var i = 0; i < items.length; i++) {
             items[i].style.display = show ? "" : "none";
@@ -120,21 +135,21 @@
             var user = session.user && typeof session.user === "object" ? session.user : session;
             var displayName = user.fullName || user.username || session.fullName || session.username || "Tài khoản";
             var adminBtnHtml = "";
-            if (isAdminOrManager(session)) {
-                adminBtnHtml = '<a href="/admin-users.html" class="auth-admin-btn" style="color: #ffffff; background: #e53637; padding: 3px 10px; border-radius: 4px; font-weight: 700; margin-right: 12px; font-size: 13px; text-decoration: none; display: inline-block;"><i class="fa fa-cogs" aria-hidden="true"></i> Quản trị Users</a>';
+            if (isAdmin(session)) {
+                adminBtnHtml = '<a href="/admin-users.html" class="auth-admin-btn" style="color: #ffffff; background: #e53637; padding: 3px 10px; border-radius: 4px; font-weight: 700; margin-right: 12px; font-size: 13px; text-decoration: none; display: inline-block;"><i class="fa fa-cogs" aria-hidden="true"></i> Quản trị Hệ thống</a>';
             }
 
             if (desktopLink) {
                 desktopLink.innerHTML =
                     adminBtnHtml +
-                    '<i class="fa fa-user-circle-o" aria-hidden="true"></i> Xin chào, ' + escapeHtml(displayName) +
+                    '<a href="/profile.html" style="color: inherit; text-decoration: none;"><i class="fa fa-user-circle-o" aria-hidden="true"></i> Xin chào, ' + escapeHtml(displayName) + "</a>" +
                     ' <span class="auth-logout-link" id="btnLogoutDesktop" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 desktopLink.removeAttribute("href");
             }
             if (mobileLink) {
                 mobileLink.innerHTML =
                     adminBtnHtml +
-                    'Xin chào, ' + escapeHtml(displayName) +
+                    '<a href="/profile.html" style="color: inherit; text-decoration: none;">Xin chào, ' + escapeHtml(displayName) + "</a>" +
                     ' <span class="auth-logout-link" id="btnLogoutMobile" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 mobileLink.removeAttribute("href");
             }
@@ -202,6 +217,7 @@
         getSession: getSession,
         clearSession: clearSession,
         isLoggedIn: isLoggedIn,
+        isAdmin: isAdmin,
         isAdminOrManager: isAdminOrManager,
         logout: logout,
         showAlert: showAlert,

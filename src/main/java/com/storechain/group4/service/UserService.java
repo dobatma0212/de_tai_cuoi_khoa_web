@@ -21,6 +21,8 @@ public interface UserService {
 
     void deleteUser(Long id, CustomUserDetails currentUser);
 
+    void deleteUserInternal(Long id);
+
     UserStatsDto getUserStats();
 }
 

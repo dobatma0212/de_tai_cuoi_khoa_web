@@ -90,6 +90,20 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnreadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn("JSON không đọc được: {}", ex.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error(
+                "Dữ liệu gửi lên không hợp lệ (kiểm tra lại định dạng ngày giờ, số lượng...)."));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("DataIntegrityViolation: {}", ex.getMessage());
+        return ResponseEntity.badRequest().body(ApiResponse.error(
+                "Không thể thực hiện vì dữ liệu đang được dùng ở nơi khác (mã trùng, đang nằm trong đơn hàng/giỏ hàng...)."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unhandled Exception: ", ex);

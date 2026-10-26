@@ -31,6 +31,11 @@ public class User {
     @JoinColumn(name = "role_id")
     private Role role;
 
+    /** Chi nhánh nhân viên đang làm việc (chỉ áp dụng cho ROLE_EMPLOYEE) */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "shop_id")
+    private Shop shop;
+
     @Column(name = "username", nullable = false, length = 50, unique = true)
     private String username;
 

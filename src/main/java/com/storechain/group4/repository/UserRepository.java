@@ -44,4 +44,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.role.name = :roleType")
     long countByRoleType(@Param("roleType") RoleType roleType);
+
+    @Query("SELECT u FROM User u WHERE u.role.name = :roleType ORDER BY u.fullName ASC")
+    java.util.List<User> findByRoleType(@Param("roleType") RoleType roleType);
+
+    /** Tất cả nhân viên (đang làm việc + đã sa thải) từng thuộc chi nhánh */
+    @Query("SELECT u FROM User u WHERE u.shop.id = :shopId AND u.role.name IN :roleTypes "
+            + "ORDER BY u.fullName ASC")
+    java.util.List<User> findByShopIdAndRoleNameIn(@Param("shopId") Long shopId,
+            @Param("roleTypes") java.util.Collection<RoleType> roleTypes);
+
+    /** Toàn bộ nhân sự thuộc chi nhánh (ưu tiên ROLE_EMPLOYEE lên đầu) */
+    @Query("SELECT u FROM User u WHERE u.shop.id = :shopId ORDER BY (CASE WHEN u.role.name = 'ROLE_EMPLOYEE' THEN 0 ELSE 1 END), u.fullName ASC")
+    java.util.List<User> findByShopId(@Param("shopId") Long shopId);
+
+    /** Số nhân viên đang làm việc của chi nhánh */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.shop.id = :shopId AND u.role.name = 'ROLE_EMPLOYEE'")
+    long countEmployeesByShopId(@Param("shopId") Long shopId);
 }

@@ -37,6 +37,9 @@ public class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private jakarta.persistence.EntityManager entityManager;
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -118,7 +121,7 @@ public class UserServiceTest {
             userService.createUser(request, managerUserDetails);
         });
 
-        assertTrue(ex.getMessage().contains("Manager"));
+        assertTrue(ex.getMessage().contains("ADMIN"));
         verify(userRepository, never()).save(any());
     }
 
@@ -144,6 +147,64 @@ public class UserServiceTest {
 
         assertTrue(ex.getMessage().contains("ADMIN"));
         verify(userRepository, never()).delete(any());
+    }
+
+    @Test
+    void testGetUsersSuccess() {
+        User user = User.builder().id(1L).username("user1").email("user1@test.com").role(userRole).status("active").build();
+        org.springframework.data.domain.Page<User> page = new org.springframework.data.domain.PageImpl<>(List.of(user));
+        when(userRepository.searchUsers(any(), any(), any(), any())).thenReturn(page);
+
+        org.springframework.data.domain.Page<UserResponseDto> result = userService.getUsers(null, null, null, 0, 10, "id", "desc");
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals("user1", result.getContent().get(0).getUsername());
+    }
+
+    @Test
+    void testGetUserStatsSuccess() {
+        when(userRepository.count()).thenReturn(10L);
+        when(userRepository.countByStatus("active")).thenReturn(8L);
+        when(userRepository.countByStatus("locked")).thenReturn(1L);
+        when(userRepository.countByStatus("banned")).thenReturn(1L);
+        when(userRepository.countByRoleType(RoleType.ROLE_ADMIN)).thenReturn(1L);
+        when(userRepository.countByRoleType(RoleType.ROLE_MANAGER)).thenReturn(2L);
+        when(userRepository.countByRoleType(RoleType.ROLE_USER)).thenReturn(7L);
+
+        var stats = userService.getUserStats();
+        assertNotNull(stats);
+        assertEquals(10L, stats.getTotalUsers());
+        assertEquals(8L, stats.getActiveUsers());
+        assertEquals(2L, stats.getLockedUsers());
+        assertEquals(1L, stats.getAdminUsers());
+        assertEquals(2L, stats.getManagerUsers());
+        assertEquals(7L, stats.getRegularUsers());
+    }
+
+    @Test
+    void testDeleteUserSuccess() {
+        User target = User.builder().id(5L).username("targetUser").email("target@test.com").role(userRole).build();
+        when(userRepository.findById(5L)).thenReturn(Optional.of(target));
+        jakarta.persistence.Query mockQuery = mock(jakarta.persistence.Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(mockQuery);
+        when(mockQuery.setParameter(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.executeUpdate()).thenReturn(1);
+
+        userService.deleteUser(5L, adminUserDetails);
+        verify(userRepository).delete(target);
+    }
+
+    @Test
+    void testDeleteUserInternalSuccess() {
+        User target = User.builder().id(6L).username("employeeTarget").email("emp@test.com").role(userRole).build();
+        when(userRepository.findById(6L)).thenReturn(Optional.of(target));
+        jakarta.persistence.Query mockQuery = mock(jakarta.persistence.Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(mockQuery);
+        when(mockQuery.setParameter(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.executeUpdate()).thenReturn(1);
+
+        userService.deleteUserInternal(6L);
+        verify(userRepository).delete(target);
     }
 }
 

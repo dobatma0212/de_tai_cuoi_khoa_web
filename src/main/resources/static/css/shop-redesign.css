@@ -1,0 +1,70 @@
+/* StoreChain shop refresh */
+.shop-redesign { background: #f7f8fa; padding: 42px 0 76px; }
+.shop-redesign .container { max-width: 1320px; }
+.shop-redesign .shop-filter-panel { background: #fff; border: 1px solid #e9ebef; border-radius: 18px; padding: 22px 20px; box-shadow: 0 10px 30px rgba(24,35,56,.045); }
+.shop-filter-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:20px; }
+.shop-eyebrow { display:block; color:#8b93a3; font-size:10px; font-weight:900; letter-spacing:1.8px; margin-bottom:7px; }
+.shop-filter-heading h5 { color:#172033; font-size:19px; font-weight:900; margin:0; }
+.shop-reset-btn { border:1px solid #e5e8ee; color:#8a91a0; background:#fff; border-radius:8px; padding:7px 10px; font-size:12px; font-weight:800; transition:.2s; }
+.shop-reset-btn:not(:disabled), .shop-reset-btn.is-active { color:#d52d3a; border-color:#f2c6cb; cursor:pointer; }
+.shop-reset-btn:disabled { opacity:.5; cursor:not-allowed; }
+.shop-redesign .shop__sidebar__search { margin-bottom:20px; }
+.shop-redesign .shop__sidebar__search form { display:flex; border:1px solid #e5e8ee; border-radius:10px; overflow:hidden; background:#fbfcfe; }
+.shop-redesign .shop__sidebar__search input { min-width:0; height:44px; padding:0 12px; border:0; background:transparent; font-size:13px; }
+.shop-redesign .shop__sidebar__search button { flex:0 0 42px; background:#202b3c; color:#fff; border:0; }
+.shop-redesign .shop__sidebar__accordion .card { border:0; border-top:1px solid #edf0f4; border-radius:0; margin:0; background:transparent; }
+.shop-redesign .shop__sidebar__accordion .card-heading { padding:15px 0 9px; }
+.shop-redesign .shop__sidebar__accordion .card-heading a { display:block; color:#202b3c; font-size:13px; font-weight:900; text-transform:none; }
+.shop-redesign .shop__sidebar__accordion .card-heading a:after { content:'−'; float:right; color:#8b93a3; }
+.shop-redesign .shop__sidebar__accordion .card-body { padding:5px 0 16px; }
+.shop-redesign #catalogPriceRanges { list-style:none; padding:0; margin:0; }
+.shop-redesign #catalogPriceRanges li { margin:0; }
+.shop-redesign #catalogPriceRanges a { display:block; color:#6e7787; padding:7px 9px; border-radius:7px; font-size:12px; transition:background .15s,color .15s; }
+.shop-redesign #catalogPriceRanges a:hover, .shop-redesign #catalogPriceRanges a.is-selected { color:#d52d3a; background:#fff0f1; font-weight:800; }
+.shop-redesign .shop__sidebar__size { display:flex; flex-wrap:wrap; gap:7px; }
+.shop-redesign .shop__sidebar__size label { display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:35px; padding:0 9px; border:1px solid #e5e8ee; border-radius:8px; color:#697284; background:#fff; font-size:11px; font-weight:800; cursor:pointer; }
+.shop-redesign .shop__sidebar__size label:has(input:checked) { border-color:#202b3c; background:#202b3c; color:#fff; }
+.shop-redesign .shop__sidebar__size input { position:absolute; opacity:0; width:1px; height:1px; }
+.shop-redesign #catalogColors a { position:relative; box-sizing:border-box; border:2px solid #fff !important; outline:1px solid #dfe3e9; transition:transform .15s,outline .15s; }
+.shop-redesign #catalogColors a.is-selected { outline:2px solid #202b3c; transform:scale(1.08); }
+.shop-redesign #catalogColors a[data-color=""] { width:auto !important; height:auto !important; background:#f2f4f7 !important; border:0 !important; border-radius:7px !important; padding:6px 9px; color:#606a7a; font-size:11px !important; text-decoration:none !important; }
+.shop-redesign #catalogTags { display:flex; flex-wrap:wrap; gap:7px; }
+.shop-redesign #catalogTags a { padding:6px 10px; border-radius:999px; background:#f2f4f7; color:#697284; font-size:11px; transition:.15s; }
+.shop-redesign #catalogTags a:hover, .shop-redesign #catalogTags a.is-selected { background:#202b3c; color:#fff; }
+.shop-results-heading { display:flex; justify-content:space-between; align-items:flex-end; margin:2px 0 22px; }
+.shop-results-heading h3 { color:#172033; font-size:30px; font-weight:900; letter-spacing:-.7px; margin:0 0 7px; }
+.shop-results-heading p { color:#7c8493; font-size:13px; margin:0; }
+.shop-toolbar { padding:13px 16px; margin-bottom:20px; border:1px solid #e9ebef; border-radius:12px; background:#fff; }
+.shop-toolbar .row { align-items:center; }
+.shop-toolbar p { color:#697284; font-size:12px; margin:0; }
+.shop-toolbar .shop__product__option__right { display:flex; align-items:center; justify-content:flex-end; gap:10px; }
+.shop-toolbar select { height:39px; min-width:165px; padding:0 32px 0 12px; border:1px solid #e5e8ee; border-radius:8px; background:#fff; color:#202b3c; font-size:12px; }
+.shop-redesign #catalogCategoryTitle { color:#202b3c; font-size:20px; font-weight:900; margin:0 0 18px; }
+.shop-redesign #catalogCategoryTitle button { color:#d52d3a; font-weight:800; }
+.shop-redesign #categoryCardGrid .catalog-cat-card { height:100%; border-radius:14px; overflow:hidden; border:1px solid #e9ebef; background:#fff; transition:transform .2s,box-shadow .2s; }
+.shop-redesign #categoryCardGrid .catalog-cat-card:hover { transform:translateY(-4px); box-shadow:0 12px 26px rgba(24,35,56,.09); }
+.shop-redesign #categoryCardGrid .product__item__pic { height:230px; background-size:cover; background-position:center; }
+.shop-redesign #categoryCardGrid .product__item__text { padding:15px 17px 18px; }
+.shop-redesign #categoryCardGrid h6 { font-weight:900; color:#202b3c; }
+.shop-redesign #catalogGrid > [class*="col-"] { margin-bottom:22px; }
+.shop-redesign #catalogGrid .product__item { height:100%; padding:0 0 15px; border:1px solid #e9ebef; border-radius:14px; background:#fff; overflow:hidden; transition:transform .2s,box-shadow .2s; }
+.shop-redesign #catalogGrid .product__item:hover { transform:translateY(-4px); box-shadow:0 12px 26px rgba(24,35,56,.09); }
+.shop-redesign #catalogGrid .product__item__pic { height:260px; border-radius:0; background-size:cover; background-position:center; }
+.shop-redesign #catalogGrid .product__item__text { padding:15px 15px 0; }
+.shop-redesign #catalogGrid .product__item__text h6 { min-height:38px; color:#202b3c; font-weight:800; line-height:1.45; }
+.shop-redesign #catalogGrid .product__item__text .rating { margin-top:10px; }
+.shop-redesign #catalogGrid .product__item__text .rating h5 { color:#d52d3a; font-size:17px; font-weight:900; }
+.shop-redesign #catalogGrid .sc-add-cart { display:inline-block; color:#697284; font-size:11px; font-weight:800; }
+.shop-redesign .sc-stat { color:#8b93a3; font-size:10px; }
+.shop-redesign .shop-pagination-meta { color:#8b93a3; font-size:12px; text-align:center; margin:12px 0 8px; }
+.shop-redesign #catalogPaginationRow { margin-top:5px; }
+.shop-redesign #catalogPagination { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:7px; }
+.shop-redesign #catalogPagination .catalog-page-btn { display:inline-flex; justify-content:center; align-items:center; min-width:40px; height:40px; padding:0 12px; border:1px solid #e3e7ed; border-radius:10px; background:#fff; color:#4d5869; font-size:12px; font-weight:900; transition:all .15s; }
+.shop-redesign #catalogPagination .catalog-page-btn:hover:not(:disabled) { color:#fff; background:#202b3c; border-color:#202b3c; }
+.shop-redesign #catalogPagination .catalog-page-btn.active, .shop-redesign #catalogPagination .catalog-page-btn:disabled.active { background:#d52d3a; color:#fff; border-color:#d52d3a; }
+.shop-redesign #catalogPagination .catalog-page-btn:disabled:not(.active) { opacity:.38; cursor:not-allowed; }
+.shop-redesign #catalogPagination .catalog-page-nav { gap:6px; }
+.shop-redesign #catalogPagination .catalog-page-nav span { font-size:11px; }
+.shop-redesign #catalogPagination .catalog-page-ellipsis { color:#8b93a3; padding:0 2px; }
+@media (max-width: 991px) { .shop-redesign .shop-filter-panel { margin-bottom:25px; } .shop-results-heading h3 { font-size:25px; } .shop-redesign #catalogGrid .product__item__pic { height:230px; } }
+@media (max-width: 575px) { .shop-redesign { padding:25px 0 50px; } .shop-redesign .shop-filter-panel { padding:17px 15px; } .shop-results-heading { margin-bottom:16px; } .shop-results-heading h3 { font-size:23px; } .shop-results-heading p { font-size:12px; } .shop-toolbar .shop__product__option__right { justify-content:flex-start; margin-top:12px; } .shop-toolbar .shop__product__option__right p { display:none; } .shop-redesign #catalogGrid .product__item__pic { height:190px; } .shop-redesign #catalogPagination .catalog-page-btn { min-width:35px; height:36px; padding:0 9px; } .shop-redesign #catalogPagination .catalog-page-nav span { display:none; } }

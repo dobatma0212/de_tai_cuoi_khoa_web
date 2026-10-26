@@ -71,6 +71,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/*.html",
+                                "/payment/**",
+                                "/ws/**",  // WebSocket handshake; JWT được kiểm tra ở frame STOMP CONNECT
+                                "/WEB-INF/views/**",
+                                "/decorator.jsp",
+                                "/decorator-simple.jsp",
+                                "/admin-decorator.jsp",
                                 "/css/**",
                                 "/js/**",
                                 "/img/**",
@@ -86,14 +92,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 3. Phân quyền theo Role
-                        .requestMatchers("/api/admin/users/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/admin/categories/**").hasAnyRole("ADMIN", "MANAGER")
-                        .requestMatchers("/api/admin/transporters/**").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/manager/**").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers("/api/vendor/**").hasAnyRole("VENDOR", "ADMIN")
-                        .requestMatchers("/api/shipper/**").hasAnyRole("SHIPPER", "ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                        // Nhân viên chi nhánh: quản lý sản phẩm, hoa hồng, tính công
+                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
+                        // Manager kế thừa toàn bộ quyền của User; Employee cũng có quyền User cơ bản
+                        .requestMatchers("/api/user/**")
+                            .hasAnyRole("USER", "MANAGER", "EMPLOYEE", "ADMIN")
+
+                        // 4. API hồ sơ cá nhân / địa chỉ nhận hàng: mọi người dùng đã đăng nhập
+                        .requestMatchers("/api/profile/**").authenticated()
 
                         // Tất cả các request còn lại yêu cầu xác thực
                         .anyRequest().authenticated()

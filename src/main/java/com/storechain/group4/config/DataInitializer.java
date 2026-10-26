@@ -7,11 +7,13 @@ import com.storechain.group4.model.User;
 import com.storechain.group4.repository.RoleRepository;
 import com.storechain.group4.repository.TransporterRepository;
 import com.storechain.group4.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -25,18 +27,297 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final com.storechain.group4.repository.CategoryRepository categoryRepository;
+    private final com.storechain.group4.repository.ShopCategoryRepository shopCategoryRepository;
     private final TransporterRepository transporterRepository;
+    private final com.storechain.group4.repository.ShopRepository shopRepository;
     private final com.storechain.group4.repository.ProductRepository productRepository;
+    private final com.storechain.group4.repository.PromotionRepository promotionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @Override
     public void run(String... args) {
-        initRoles();
-        initDefaultAdmin();
-        initDefaultManager();
-        initDefaultCategories();
-        initDefaultTransporters();
-        initDefaultProducts();
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            fixPromotionsTable();
+            cleanupObsoleteRoles();
+            fixLegacySchema();
+            initRoles();
+            initDefaultAdmin();
+            initDefaultManager();
+            initDefaultCategories();
+            initDefaultTransporters();
+            initDefaultShops();
+            initDefaultEmployee();
+            initDefaultShopCategories();
+            initBranchStocks();
+            initDefaultProducts();
+            initDefaultPromotions();
+        });
+    }
+
+    private void fixPromotionsTable() {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> cols = entityManager.createNativeQuery(
+                    "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions'"
+            ).getResultList();
+
+            log.info("Columns found in promotions table: {}", cols);
+
+            if (!cols.isEmpty() && !cols.contains("promotion_id")) {
+                log.info("Fixing promotions table schema (missing promotion_id)...");
+                entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS promotion_products").executeUpdate();
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS promotion_usages").executeUpdate();
+                entityManager.createNativeQuery("DROP TABLE IF EXISTS promotions").executeUpdate();
+                entityManager.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "CREATE TABLE IF NOT EXISTS promotions (" +
+                        "  promotion_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "  promotion_type VARCHAR(30) NOT NULL," +
+                        "  shop_id BIGINT NULL," +
+                        "  name VARCHAR(200) NOT NULL," +
+                        "  description TEXT," +
+                        "  code VARCHAR(50) UNIQUE," +
+                        "  discount_type VARCHAR(30) NOT NULL," +
+                        "  discount_value DECIMAL(12,2) NOT NULL," +
+                        "  min_order_value DECIMAL(12,2)," +
+                        "  max_discount_amount DECIMAL(12,2)," +
+                        "  usage_limit INT," +
+                        "  usage_limit_per_user INT," +
+                        "  used_count INT NOT NULL DEFAULT 0," +
+                        "  promo_type VARCHAR(10) NULL," +
+                        "  start_date DATETIME NOT NULL," +
+                        "  end_date DATETIME NOT NULL," +
+                        "  status VARCHAR(20) NOT NULL DEFAULT 'active'," +
+                        "  version BIGINT DEFAULT 0," +
+                        "  created_at DATETIME," +
+                        "  updated_at DATETIME" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                ).executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "CREATE TABLE IF NOT EXISTS promotion_usages (" +
+                        "  usage_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY," +
+                        "  promotion_id BIGINT NOT NULL," +
+                        "  user_id BIGINT NOT NULL," +
+                        "  discount_amount DECIMAL(12,2) NOT NULL," +
+                        "  order_total DECIMAL(12,2) NOT NULL," +
+                        "  used_at DATETIME," +
+                        "  CONSTRAINT fk_usage_promotion FOREIGN KEY (promotion_id) REFERENCES promotions(promotion_id) ON DELETE CASCADE" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                ).executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "CREATE TABLE IF NOT EXISTS promotion_products (" +
+                        "  promotion_id BIGINT NOT NULL," +
+                        "  product_id BIGINT NOT NULL," +
+                        "  PRIMARY KEY (promotion_id, product_id)," +
+                        "  CONSTRAINT fk_promo_prod_promo FOREIGN KEY (promotion_id) REFERENCES promotions(promotion_id) ON DELETE CASCADE," +
+                        "  CONSTRAINT fk_promo_prod_prod FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                ).executeUpdate();
+
+                log.info("Successfully recreated promotions, promotion_usages, and promotion_products tables!");
+            }
+
+            relaxLegacyPromotionColumns(cols);
+        } catch (Exception e) {
+            log.error("Notice in fixPromotionsTable: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Bảng promotions của các môi trường cũ còn giữ cột legacy NOT NULL
+     * (value, active, min_order_amount) và shop_id / promo_type bắt buộc,
+     * trong khi entity mới không map value/active/min_order_amount và cho
+     * phép shop_id, promo_type null (khuyến mãi toàn server). INSERT sẽ bị
+     * MySQL từ chối ở chế độ STRICT_ALL_TABLES, nên nới lỏng thành nullable.
+     */
+    private void relaxLegacyPromotionColumns(List<Object> cols) {
+        if (cols.isEmpty()) {
+            return;
+        }
+        @SuppressWarnings("unchecked")
+        List<Object> notNullable = entityManager.createNativeQuery(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotions' " +
+                "AND IS_NULLABLE = 'NO' AND COLUMN_DEFAULT IS NULL " +
+                "AND COLUMN_NAME IN ('shop_id', 'promo_type', 'value', 'active', 'min_order_amount')"
+        ).getResultList();
+
+        for (Object colObj : notNullable) {
+            String col = String.valueOf(colObj);
+            String type = switch (col) {
+                case "shop_id" -> "BIGINT";
+                case "promo_type" -> "VARCHAR(10)";
+                case "value" -> "DECIMAL(13,0)";
+                case "active" -> "BIT(1)";
+                case "min_order_amount" -> "DECIMAL(13,0)";
+                default -> null;
+            };
+            if (type == null) {
+                continue;
+            }
+            log.info("Nới lỏng cột legacy {}.promotions thành nullable...", col);
+            entityManager.createNativeQuery(
+                    "ALTER TABLE promotions MODIFY COLUMN " + col + " " + type + " NULL"
+            ).executeUpdate();
+        }
+
+        // Dòng dữ liệu cũ có thể còn status rỗng, chuẩn hóa để không bị treo ở trạng thái lạ
+        entityManager.createNativeQuery(
+                "UPDATE promotions SET status = 'inactive' WHERE status = '' OR status IS NULL"
+        ).executeUpdate();
+
+        if (!notNullable.isEmpty()) {
+            log.info("Đã nới lỏng {} cột legacy trong bảng promotions", notNullable.size());
+        }
+    }
+
+    /**
+     * Migration mô hình mới: sản phẩm là danh mục chung toàn hãng,
+     * tồn kho được giữ theo từng chi nhánh trong bảng branch_stocks.
+     * Với dữ liệu cũ, mỗi sản phẩm được gán tồn kho (cột products.stock)
+     * về chi nhánh đang sở hữu sản phẩm đó.
+     */
+    private void initBranchStocks() {
+        runStandaloneMigration(
+                "INSERT INTO branch_stocks (product_id, shop_id, stock, updated_at) " +
+                "SELECT p.product_id, p.shop_id, p.stock, NOW() FROM products p " +
+                "WHERE NOT EXISTS (SELECT 1 FROM branch_stocks b WHERE b.product_id = p.product_id AND b.shop_id = p.shop_id)",
+                "Bỏ qua migration tồn kho chi nhánh (branch_stocks)");
+    }
+
+    /**
+     * Xóa các role cũ (ROLE_VENDOR, ROLE_SHIPPER) khỏi database.
+     * Đổi vendor thành manager: user có role ROLE_VENDOR chuyển sang ROLE_MANAGER.
+     * User có role ROLE_SHIPPER chuyển sang ROLE_USER.
+     * Sau đó xóa 2 role này khỏi bảng roles để tránh lỗi deserialize enum trong JPA.
+     */
+    private void cleanupObsoleteRoles() {
+        try {
+            // Đảm bảo ROLE_MANAGER và ROLE_USER có sẵn trong bảng roles
+            Role managerRole = roleRepository.findByName(RoleType.ROLE_MANAGER)
+                    .orElseGet(() -> roleRepository.save(new Role(RoleType.ROLE_MANAGER, "Quản lý cửa hàng")));
+            Role userRole = roleRepository.findByName(RoleType.ROLE_USER)
+                    .orElseGet(() -> roleRepository.save(new Role(RoleType.ROLE_USER, "Người dùng / Khách hàng mua sắm")));
+
+            // 1. Chuyển các user có role ROLE_VENDOR sang ROLE_MANAGER
+            @SuppressWarnings("unchecked")
+            List<Object> vendorResults = entityManager
+                    .createNativeQuery("SELECT role_id FROM roles WHERE role_name = 'ROLE_VENDOR'")
+                    .getResultList();
+
+            if (!vendorResults.isEmpty()) {
+                Long vendorRoleId = ((Number) vendorResults.get(0)).longValue();
+                int updated = entityManager
+                        .createNativeQuery("UPDATE users SET role_id = :newRoleId WHERE role_id = :oldRoleId")
+                        .setParameter("newRoleId", managerRole.getId())
+                        .setParameter("oldRoleId", vendorRoleId)
+                        .executeUpdate();
+                log.info("Đã chuyển {} người dùng từ ROLE_VENDOR sang ROLE_MANAGER", updated);
+
+                entityManager
+                        .createNativeQuery("DELETE FROM roles WHERE role_id = :roleId")
+                        .setParameter("roleId", vendorRoleId)
+                        .executeUpdate();
+                log.info("Đã xóa role cũ ROLE_VENDOR khỏi database");
+            }
+
+            // 2. Chuyển các user có role ROLE_SHIPPER sang ROLE_USER
+            @SuppressWarnings("unchecked")
+            List<Object> shipperResults = entityManager
+                    .createNativeQuery("SELECT role_id FROM roles WHERE role_name = 'ROLE_SHIPPER'")
+                    .getResultList();
+
+            if (!shipperResults.isEmpty()) {
+                Long shipperRoleId = ((Number) shipperResults.get(0)).longValue();
+                int updated = entityManager
+                        .createNativeQuery("UPDATE users SET role_id = :newRoleId WHERE role_id = :oldRoleId")
+                        .setParameter("newRoleId", userRole.getId())
+                        .setParameter("oldRoleId", shipperRoleId)
+                        .executeUpdate();
+                log.info("Đã chuyển {} người dùng từ ROLE_SHIPPER sang ROLE_USER", updated);
+
+                entityManager
+                        .createNativeQuery("DELETE FROM roles WHERE role_id = :roleId")
+                        .setParameter("roleId", shipperRoleId)
+                        .executeUpdate();
+                log.info("Đã xóa role cũ ROLE_SHIPPER khỏi database");
+            }
+        } catch (Exception e) {
+            log.error("Lỗi trong quá trình dọn dẹp role cũ: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Sửa schema legacy còn sót từ mô hình cũ (ddl-auto=update chỉ thêm cột mới,
+     * không tự xóa/sửa cột cũ nên làm hỏng INSERT):
+     * 1. shops.name (cột cũ, NOT NULL) chặn INSERT vì entity giờ map shop_name -> cho phép NULL.
+     * 2. products.category_id còn khóa ngoại trỏ về bảng categories (danh mục toàn hãng cũ)
+     *    trong khi entity dùng shop_categories -> xóa FK legacy.
+     */
+    private void fixLegacySchema() {
+        runStandaloneMigration("ALTER TABLE shops MODIFY `name` VARCHAR(150) NULL",
+                "Bỏ qua sửa cột legacy shops.name");
+
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> legacyFks = entityManager.createNativeQuery(
+                    "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' " +
+                    "AND COLUMN_NAME = 'category_id' AND REFERENCED_TABLE_NAME = 'categories'")
+                    .getResultList();
+            for (Object fkName : legacyFks) {
+                runStandaloneMigration("ALTER TABLE products DROP FOREIGN KEY `" + fkName + "`",
+                        "Bỏ qua xóa khóa ngoại legacy products -> categories");
+                log.info("Đã xóa khóa ngoại legacy products.category_id -> categories ({})", fkName);
+            }
+
+            // Đảm bảo có FK đúng sang shop_categories (bảng danh mục chi nhánh hiện tại)
+            Object fkCount = entityManager.createNativeQuery(
+                    "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' " +
+                    "AND COLUMN_NAME = 'category_id' AND REFERENCED_TABLE_NAME = 'shop_categories'")
+                    .getSingleResult();
+            if (((Number) fkCount).intValue() == 0) {
+                runStandaloneMigration("ALTER TABLE products ADD CONSTRAINT FK_products_shop_category " +
+                        "FOREIGN KEY (category_id) REFERENCES shop_categories(category_id)",
+                        "Bỏ qua thêm FK products -> shop_categories");
+                log.info("Đã thêm khóa ngoại products.category_id -> shop_categories");
+            }
+            // cart_items: unique cũ (user_id, product_id, size) chặn lưu 2 màu khác nhau
+            // cùng size -> đổi thành (user_id, product_id, size, color)
+            try {
+                @SuppressWarnings("unchecked")
+                List<Object> oldIdx = entityManager.createNativeQuery(
+                        "SELECT INDEX_NAME FROM information_schema.STATISTICS " +
+                        "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cart_items' AND NON_UNIQUE = 0 " +
+                        "AND INDEX_NAME <> 'PRIMARY' " +
+                        "GROUP BY INDEX_NAME " +
+                        "HAVING GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) = 'user_id,product_id,size'")
+                        .getResultList();
+                if (!oldIdx.isEmpty()) {
+                    runStandaloneMigration(
+                            "ALTER TABLE cart_items ADD CONSTRAINT UK_cart_user_product_size_color " +
+                            "UNIQUE (user_id, product_id, size, color)",
+                            "Bỏ qua thêm unique cart_items (user, product, size, color)");
+                    for (Object idxName : oldIdx) {
+                        runStandaloneMigration("ALTER TABLE cart_items DROP INDEX `" + idxName + "`",
+                                "Bỏ qua xóa unique cart_items cũ");
+                    }
+                    log.info("Đã đổi unique cart_items sang (user_id, product_id, size, color)");
+                }
+            } catch (Exception e) {
+                log.info("Bỏ qua kiểm tra unique cart_items: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.info("Bỏ qua kiểm tra khóa ngoại legacy của products: {}", e.getMessage());
+        }
     }
 
     private void initRoles() {
@@ -45,10 +326,9 @@ public class DataInitializer implements CommandLineRunner {
                 String description = switch (roleType) {
                     case ROLE_USER -> "Người dùng / Khách hàng mua sắm";
                     case ROLE_GUEST -> "Khách vãng lai";
-                    case ROLE_VENDOR -> "Nhà bán hàng / Đối tác";
-                    case ROLE_MANAGER -> "Quản lý chuỗi cửa hàng";
+                    case ROLE_MANAGER -> "Quản lý cửa hàng";
+                    case ROLE_EMPLOYEE -> "Nhân viên chi nhánh";
                     case ROLE_ADMIN -> "Quản trị viên hệ thống";
-                    case ROLE_SHIPPER -> "Nhân viên giao hàng";
                 };
                 roleRepository.save(new Role(roleType, description));
                 log.info("Khởi tạo role: {} - {}", roleType.name(), description);
@@ -93,6 +373,32 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(manager);
             log.info("Tạo tài khoản Manager mặc định: username = manager, password = manager123, email = manager@storechain.com");
+        }
+    }
+
+    /** Nhân viên mẫu, gán vào chi nhánh đầu tiên (Quận 1) */
+    private void initDefaultEmployee() {
+        if (!userRepository.existsByUsername("employee")) {
+            Role employeeRole = roleRepository.findByName(RoleType.ROLE_EMPLOYEE)
+                    .orElseThrow(() -> new RuntimeException("Role EMPLOYEE không tồn tại"));
+
+            var shops = shopRepository.findAll();
+            var shop = shops.isEmpty() ? null : shops.get(0);
+
+            User employee = User.builder()
+                    .username("employee")
+                    .email("employee@storechain.com")
+                    .password(passwordEncoder.encode("employee123"))
+                    .fullName("Nhân viên chi nhánh")
+                    .phone("0901234567")
+                    .status("active")
+                    .role(employeeRole)
+                    .shop(shop)
+                    .build();
+
+            userRepository.save(employee);
+            log.info("Tạo tài khoản Employee mặc định: username = employee, password = employee123, chi nhánh = {}",
+                    shop != null ? shop.getName() : "(chưa gán)");
         }
     }
 
@@ -206,71 +512,203 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    private void initDefaultShops() {
+        if (shopRepository.count() == 0) {
+            User defaultManager = userRepository.findByUsername("manager").orElse(null);
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Quận 1")
+                    .slug("male-fashion-chi-nhanh-quan-1")
+                    .address("123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh")
+                    .phone("028 3822 1234")
+                    .description("Chi nhánh trung tâm TP.HCM, trưng bày đầy đủ các bộ sưu tập thời trang nam cao cấp mới nhất.")
+                    .status("active")
+                    .manager(defaultManager)
+                    .build());
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Ba Đình")
+                    .slug("male-fashion-chi-nhanh-ba-dinh")
+                    .address("45 Kim Mã, Phường Kim Mã, Quận Ba Đình, Hà Nội")
+                    .phone("024 3747 5678")
+                    .description("Chi nhánh thủ đô Hà Nội, phong cách phục vụ chuyên nghiệp, đa dạng các mẫu âu phục và phụ kiện.")
+                    .status("active")
+                    .manager(null)
+                    .build());
+
+            shopRepository.save(com.storechain.group4.model.Shop.builder()
+                    .name("Male Fashion - Chi nhánh Hải Châu")
+                    .slug("male-fashion-chi-nhanh-hai-chau")
+                    .address("88 Bạch Đằng, Phường Hải Châu 1, Quận Hải Châu, Đà Nẵng")
+                    .phone("0236 3848 999")
+                    .description("Chi nhánh trung tâm TP. Đà Nẵng bên bờ sông Hàn thơ mộng.")
+                    .status("active")
+                    .manager(null)
+                    .build());
+
+            log.info("Khởi tạo danh sách chi nhánh cửa hàng mặc định thành công!");
+        }
+    }
+
+    /**
+     * Mỗi chi nhánh có sẵn 2 danh mục mặc định (Bộ áo quần, Phụ kiện);
+     * các sản phẩm cũ chưa gắn danh mục sẽ được ghép theo cột category_group cũ.
+     */
+    private void initDefaultShopCategories() {
+        var shops = shopRepository.findAll();
+        boolean changed = false;
+        for (var shop : shops) {
+            var catRepo = shopCategoryRepository;
+            if (catRepo.countByShopId(shop.getId()) == 0) {
+                catRepo.save(com.storechain.group4.model.ShopCategory.builder()
+                        .shop(shop).name("Bộ áo quần").sortOrder(0).build());
+                catRepo.save(com.storechain.group4.model.ShopCategory.builder()
+                        .shop(shop).name("Phụ kiện").sortOrder(1).build());
+                changed = true;
+            }
+        }
+        if (changed) {
+            log.info("Đã tạo danh mục mặc định (Bộ áo quần, Phụ kiện) cho các chi nhánh.");
+        }
+        // Ghép sản phẩm cũ (category_id NULL hoặc 0) vào danh mục theo category_group cũ.
+        // Mỗi lệnh chạy trong transaction riêng: nếu cột category_group đã bị xóa khỏi DB
+        // thì chỉ bỏ qua lệnh đó mà không làm hỏng transaction chính của ứng dụng.
+        runStandaloneMigration(
+                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Bộ áo quần' " +
+                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                "AND p.category_group IN ('CLOTHING', 'Bộ áo quần')",
+                "Bỏ qua ghép sản phẩm theo category_group (CLOTHING)");
+        runStandaloneMigration(
+                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Phụ kiện' " +
+                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                "AND p.category_group IN ('ACCESSORY', 'Phụ kiện')",
+                "Bỏ qua ghép sản phẩm theo category_group (ACCESSORY)");
+        // Sản phẩm còn lại: gán vào danh mục đầu tiên của chi nhánh
+        runStandaloneMigration(
+                "UPDATE products p JOIN (" +
+                "SELECT sc.shop_id, MIN(sc.category_id) AS cid FROM shop_categories sc GROUP BY sc.shop_id" +
+                ") t ON t.shop_id = p.shop_id " +
+                "SET p.category_id = t.cid WHERE p.category_id IS NULL OR p.category_id = 0",
+                "Bỏ qua gán danh mục cho sản phẩm chưa phân loại");
+    }
+
+    /** Chạy 1 câu SQL migration trong transaction độc lập (REQUIRES_NEW), lỗi thì chỉ ghi log rồi bỏ qua */
+    private void runStandaloneMigration(String sql, String skipMessage) {
+        try {
+            var template = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+            // REQUIRES_NEW: tách khỏi transaction lớn của DataInitializer để lỗi không lây lan
+            template.setPropagationBehavior(
+                    org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            template.executeWithoutResult(status ->
+                    entityManager.createNativeQuery(sql).executeUpdate());
+        } catch (Exception e) {
+            log.info("{}: {}", skipMessage, e.getMessage());
+        }
+    }
+
     private void initDefaultProducts() {
-        if (productRepository.count() > 0) {
-            return;
+        if (productRepository.count() == 0) {
+            com.storechain.group4.model.Shop shop0 = shopRepository.findAll().stream().findFirst().orElse(null);
+            com.storechain.group4.model.ShopCategory cat = shop0 == null ? null
+                    : shopCategoryRepository.findAll().stream().filter(c -> c.getShop() != null && c.getShop().getId().equals(shop0.getId())).findFirst().orElse(null);
+
+            productRepository.save(com.storechain.group4.model.Product.builder()
+                    .name("Áo Thun Nam Cổ Tròn Basic Cotton")
+                    .slug("ao-thun-nam-co-tron-basic-cotton")
+                    .description("Chất liệu 100% cotton thoáng mát, thấm hút mồ hôi, form dáng năng động trẻ trung.")
+                    .price(new BigDecimal("250000.00"))
+                    .imageUrl("/img/product/product-1.jpg")
+                    .category(cat)
+                    .shop(shop0)
+                    .stock(100)
+                    .status("active")
+                    .build());
+
+            productRepository.save(com.storechain.group4.model.Product.builder()
+                    .name("Áo Sơ Mi Nam Tay Dài Oxford")
+                    .slug("ao-so-mi-nam-tay-dai-oxford")
+                    .description("Phong cách lịch lãm, chất vải dày dặn ít nhăn, phù hợp công sở và sự kiện.")
+                    .price(new BigDecimal("420000.00"))
+                    .imageUrl("/img/product/product-2.jpg")
+                    .category(cat)
+                    .shop(shop0)
+                    .stock(50)
+                    .status("active")
+                    .build());
+
+            productRepository.save(com.storechain.group4.model.Product.builder()
+                    .name("Quần Jean Nam Slim Fit Co Giãn")
+                    .slug("quan-jean-nam-slim-fit-co-gian")
+                    .description("Dáng ôm tôn dáng, vải denim cao cấp co giãn 4 chiều mềm mại.")
+                    .price(new BigDecimal("550000.00"))
+                    .imageUrl("/img/product/product-3.jpg")
+                    .category(cat)
+                    .shop(shop0)
+                    .stock(80)
+                    .status("active")
+                    .build());
+
+            log.info("Khởi tạo danh sách sản phẩm mẫu thành công (3 sản phẩm)!");
         }
+    }
 
-        record CatRef(String slug) {}
-        record Item(String name, String baseSlug, long priceVnd) {}
+    private void initDefaultPromotions() {
+        if (promotionRepository.count() == 0) {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
 
-        List<CatRef> categorySlugs = List.of(
-                new CatRef("ao-thun-nam"), new CatRef("ao-so-mi-nam"),
-                new CatRef("quan-jean-nam"), new CatRef("quan-tay-nam"),
-                new CatRef("giay-dep-thoi-trang"), new CatRef("that-lung-vi-da")
-        );
+            // 1. Flash Sale: Giảm 20% tự động
+            com.storechain.group4.model.Promotion flashSale = com.storechain.group4.model.Promotion.builder()
+                    .promotionType(com.storechain.group4.model.PromotionType.FLASH_SALE)
+                    .name("Flash Sale Giảm 20% Mùa Hè")
+                    .description("Chương trình Flash Sale giảm trực tiếp 20% trên giá hiển thị sản phẩm.")
+                    .code(null)
+                    .discountType(com.storechain.group4.model.DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("20.00"))
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusDays(15))
+                    .status("active")
+                    .products(new java.util.HashSet<>(productRepository.findAll()))
+                    .build();
+            promotionRepository.save(flashSale);
 
-        List<Item> itemsPerCategory = List.of(
-                new Item("Cơ bản form rộng", "co-ban-form-rong", 249000),
-                new Item("Phối viền contrasting", "phoi-vien-contrasting", 319000),
-                new Item("Premium cotton 100%", "premium-cotton", 429000),
-                new Item("Local brand streetwear", "local-brand-streetwear", 379000),
-                new Item("Họa tiết thủ công", "hoa-tiet-thu-cong", 359000),
-                new Item("Tối giản daily wear", "toi-gian-daily-wear", 289000),
-                new Item("Classic bespoke", "classic-bespoke", 499000),
-                new Item("Edition giới hạn", "edition-gioi-han", 559000)
-        );
+            // 2. Voucher: Giảm 15% tối đa 50k
+            com.storechain.group4.model.Promotion voucher1 = com.storechain.group4.model.Promotion.builder()
+                    .promotionType(com.storechain.group4.model.PromotionType.VOUCHER)
+                    .name("Mã Ưu Đãi Chào Bạn Mới 15%")
+                    .description("Giảm 15% cho đơn hàng từ 200.000đ, tối đa 50.000đ.")
+                    .code("WELCOME15")
+                    .discountType(com.storechain.group4.model.DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("15.00"))
+                    .minOrderValue(new BigDecimal("200000.00"))
+                    .maxDiscountAmount(new BigDecimal("50000.00"))
+                    .usageLimit(500)
+                    .usageLimitPerUser(1)
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusDays(30))
+                    .status("active")
+                    .build();
+            promotionRepository.save(voucher1);
 
-        String[] descriptions = {
-                "Chất liệu cao cấp, thoáng khí và bền màu qua nhiều lần giặt. Đường may tinh tế, form dáng chuẩn theo số đo phổ thông.",
-                "Thiết kế hiện đại, phù hợp đi chơi, đi học và đi làm. Fabric co giãn nhẹ, thoải mái khi mặc cả ngày dài.",
-                "Sản xuất theo quy trình khép kín, kiểm định chất lượng từng lô hàng. Đi kèm chính sách đổi trả 30 ngày."
-        };
+            // 3. Voucher: Giảm 50.000đ cố định
+            com.storechain.group4.model.Promotion voucher2 = com.storechain.group4.model.Promotion.builder()
+                    .promotionType(com.storechain.group4.model.PromotionType.VOUCHER)
+                    .name("Giảm Ngay 50K Đơn Từ 300K")
+                    .description("Nhập mã SALE50K giảm trực tiếp 50.000đ cho đơn hàng từ 300.000đ.")
+                    .code("SALE50K")
+                    .discountType(com.storechain.group4.model.DiscountType.FIXED_AMOUNT)
+                    .discountValue(new BigDecimal("50000.00"))
+                    .minOrderValue(new BigDecimal("300000.00"))
+                    .usageLimit(200)
+                    .usageLimitPerUser(2)
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusDays(60))
+                    .status("active")
+                    .build();
+            promotionRepository.save(voucher2);
 
-        java.util.Random random = new java.util.Random(42);
-        int counter = 0;
-
-        for (CatRef catRef : categorySlugs) {
-            com.storechain.group4.model.Category category = categoryRepository.findBySlug(catRef.slug()).orElse(null);
-            if (category == null) {
-                continue;
-            }
-
-            for (Item item : itemsPerCategory) {
-                counter++;
-                long price = item.priceVnd() + (counter % 4) * 20000;
-                boolean onSale = counter % 3 == 0;
-                long original = onSale ? price + 90000 : 0;
-
-                productRepository.save(com.storechain.group4.model.Product.builder()
-                        .name(item.name() + " " + category.getName())
-                        .slug(item.baseSlug() + "-" + catRef.slug())
-                        .description(descriptions[counter % descriptions.length])
-                        .price(java.math.BigDecimal.valueOf(price))
-                        .originalPrice(onSale ? java.math.BigDecimal.valueOf(original) : null)
-                        .imageUrl("/img/product/product-" + ((counter % 14) + 1) + ".jpg")
-                        .category(category)
-                        .stock(20 + random.nextInt(180))
-                        .soldCount(10 + random.nextInt(990))
-                        .ratingAvg(Math.round((3.0 + random.nextDouble() * 2.0) * 10) / 10.0)
-                        .reviewCount(3 + random.nextInt(197))
-                        .favoriteCount(5 + random.nextInt(495))
-                        .status("active")
-                        .build());
-            }
+            log.info("Khởi tạo danh sách khuyến mãi mẫu thành công (1 Flash Sale, 2 Vouchers)!");
         }
-
-        log.info("Khởi tạo {} sản phẩm mẫu mặc định thành công", counter);
     }
 }
+
 
