@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -192,7 +191,8 @@ public class DataInitializer implements CommandLineRunner {
      * Migration mô hình mới: sản phẩm là danh mục chung toàn hãng,
      * tồn kho được giữ theo từng chi nhánh trong bảng branch_stocks.
      * Với dữ liệu cũ, mỗi sản phẩm được gán tồn kho (cột products.stock)
-     * về chi nhánh đang sở hữu sản phẩm đó.
+     * về chi nhánh đang sở hữu sản phẩm đó, sau đó đồng bộ lại products.stock
+     * bằng tổng tồn kho thực tế từ branch_stocks.
      */
     private void initBranchStocks() {
         runStandaloneMigration(
@@ -200,6 +200,9 @@ public class DataInitializer implements CommandLineRunner {
                 "SELECT p.product_id, p.shop_id, p.stock, NOW() FROM products p " +
                 "WHERE NOT EXISTS (SELECT 1 FROM branch_stocks b WHERE b.product_id = p.product_id AND b.shop_id = p.shop_id)",
                 "Bỏ qua migration tồn kho chi nhánh (branch_stocks)");
+        runStandaloneMigration(
+                "UPDATE products p SET p.stock = COALESCE((SELECT SUM(b.stock) FROM branch_stocks b WHERE b.product_id = p.product_id), 0)",
+                "Bỏ qua đồng bộ tổng tồn kho sản phẩm (products.stock)");
     }
 
     /**
@@ -744,5 +747,3 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
-
-
