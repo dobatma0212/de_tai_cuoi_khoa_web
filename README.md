@@ -90,7 +90,7 @@ de_tai_cuoi_khoa_web/
 ### 1. Yêu cầu hệ thống
 - **JDK:** Phiên bản 26 (hoặc chỉnh `<java.version>` trong `pom.xml` phù hợp với JDK trên máy, ví dụ JDK 21+).
 - **Maven:** Đã tích hợp sẵn Maven Wrapper (`mvnw` / `mvnw.cmd`).
-- **MySQL:** Phiên bản 8.0+ (Mặc định dự án đã được cấu hình sẵn kết nối MySQL Cloud trên Aiven trong `application.properties`, có thể chạy ngay hoặc đổi sang MySQL локаl).
+- **MySQL:** Phiên bản 8.0+ (Mặc định dự án đã được cấu hình sẵn kết nối MySQL Cloud trên Aiven trong `application.properties`, có thể chạy ngay hoặc đổi sang MySQL local).
 
 ### 2. Cấu hình môi trường (`src/main/resources/application.properties`)
 Kiểm tra hoặc tùy chỉnh các thông số quan trọng nếu cần:
