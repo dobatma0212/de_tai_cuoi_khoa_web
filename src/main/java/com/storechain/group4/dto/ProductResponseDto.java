@@ -30,6 +30,16 @@ public class ProductResponseDto {
     private String metaTitle;
     private String metaDescription;
     private BigDecimal price;
+    /** Giá niêm yết gốc của sản phẩm (trước khi áp dụng Flash Sale) */
+    private BigDecimal originalPrice;
+    /** Giá sau khi giảm Flash Sale (null nếu sản phẩm không nằm trong Flash Sale đang chạy) */
+    private BigDecimal salePrice;
+    /** Cờ đánh dấu sản phẩm đang được giảm giá Flash Sale */
+    private boolean onFlashSale;
+    /** Tên chương trình Flash Sale đang áp dụng */
+    private String flashSaleName;
+    /** Phần trăm giảm giá tương đương (làm tròn) để hiển thị badge -XX% */
+    private Integer discountPercent;
     private String description;
     private String imageUrl;
     private List<String> galleryImages;

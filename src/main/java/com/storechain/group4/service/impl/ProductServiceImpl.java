@@ -63,6 +63,7 @@ public class ProductServiceImpl implements ProductService {
     private final ReviewMediaRepository reviewMediaRepository;
     private final OrderItemRepository orderItemRepository;
     private final PromotionRepository promotionRepository;
+    private final com.storechain.group4.service.PromotionCalculator promotionCalculator;
     private final CloudinaryService cloudinaryService;
     private final com.storechain.group4.repository.FavoriteRepository favoriteRepository;
     private final com.storechain.group4.repository.ProductViewRepository productViewRepository;
@@ -116,12 +117,13 @@ public class ProductServiceImpl implements ProductService {
                 ratingByProduct.put(((Number) row[0]).longValue(), row);
             }
         }
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(java.time.LocalDateTime.now());
         return result.map(p -> {
             List<BranchStock> stocks = stocksByProduct.getOrDefault(p.getId(), List.of());
             Object[] rating = ratingByProduct.get(p.getId());
             Double avg = rating == null ? 0.0 : ((Number) rating[1]).doubleValue();
             long count = rating == null ? 0L : ((Number) rating[2]).longValue();
-            return toProductDto(p, stocks, avg, count);
+            return toProductDto(p, stocks, avg, count, activeFlashSales);
         });
     }
 
@@ -220,7 +222,18 @@ public class ProductServiceImpl implements ProductService {
                 .stock(0)
                 .build();
 
+        long existingProductCount = productRepository.count();
         Product saved = productRepository.save(product);
+        if (existingProductCount > 0) {
+            for (Promotion promo : promotionRepository.findAll()) {
+                if (promo.getPromotionType() == com.storechain.group4.model.PromotionType.FLASH_SALE
+                        && promo.getProducts() != null
+                        && promo.getProducts().size() >= existingProductCount) {
+                    promo.getProducts().add(saved);
+                    promotionRepository.save(promo);
+                }
+            }
+        }
 
         // Khởi tạo bản ghi kho cho tất cả các chi nhánh
         initBranchStocksForAllShops(saved, saved.getSizes());
@@ -297,7 +310,18 @@ public class ProductServiceImpl implements ProductService {
         if (request.getIsFeatured() != null) product.setFeatured(request.getIsFeatured());
         if (request.getRepresentative() != null) product.setRepresentative(request.getRepresentative());
 
+        long existingProductCount = productRepository.count();
         Product saved = productRepository.save(product);
+        if (existingProductCount > 0) {
+            for (Promotion promo : promotionRepository.findAll()) {
+                if (promo.getPromotionType() == com.storechain.group4.model.PromotionType.FLASH_SALE
+                        && promo.getProducts() != null
+                        && promo.getProducts().size() >= existingProductCount) {
+                    promo.getProducts().add(saved);
+                    promotionRepository.save(promo);
+                }
+            }
+        }
 
         // Đảm bảo các chi nhánh đều có bản ghi kho
         initBranchStocksForAllShops(saved, saved.getSizes());
@@ -330,7 +354,18 @@ public class ProductServiceImpl implements ProductService {
 
         int safeStock = Math.max(0, stock);
         product.setStock(safeStock);
+        long existingProductCount = productRepository.count();
         Product saved = productRepository.save(product);
+        if (existingProductCount > 0) {
+            for (Promotion promo : promotionRepository.findAll()) {
+                if (promo.getPromotionType() == com.storechain.group4.model.PromotionType.FLASH_SALE
+                        && promo.getProducts() != null
+                        && promo.getProducts().size() >= existingProductCount) {
+                    promo.getProducts().add(saved);
+                    promotionRepository.save(promo);
+                }
+            }
+        }
         return toProductDto(saved);
     }
 
@@ -672,7 +707,18 @@ public class ProductServiceImpl implements ProductService {
                 reviewRepository.averageRatingByProductId(p.getId()), reviewRepository.countByProductId(p.getId()));
     }
 
+    private ProductResponseDto unusedOldToProductDto(Product p) {
+        return toProductDto(p, branchStockRepository.findByProductId(p.getId()),
+                reviewRepository.averageRatingByProductId(p.getId()), reviewRepository.countByProductId(p.getId()),
+                promotionRepository.findActiveFlashSales(java.time.LocalDateTime.now()));
+    }
+
     private ProductResponseDto toProductDto(Product p, List<BranchStock> branchStocks, Double avgRating, long reviewCount) {
+        return toProductDto(p, branchStocks, avgRating, reviewCount,
+                promotionRepository.findActiveFlashSales(java.time.LocalDateTime.now()));
+    }
+
+    private ProductResponseDto toProductDto(Product p, List<BranchStock> branchStocks, Double avgRating, long reviewCount, List<Promotion> activeFlashSales) {
         // Aggregate tổng tồn kho từ tất cả các chi nhánh
         int totalAggregatedStock = branchStocks.stream().mapToInt(BranchStock::getStock).sum();
 
@@ -693,6 +739,46 @@ public class ProductServiceImpl implements ProductService {
             variants = autoGenerateVariants(p.getBaseSku(), p.getColor(), p.getSizes(), p.getImageUrl());
         }
 
+        ProductResponseDto dto = ProductResponseDto.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .baseSku(p.getBaseSku())
+                .brand(p.getBrand())
+                .collectionName(p.getCollectionName())
+                .shopId(p.getShop() != null ? p.getShop().getId() : null)
+                .shopName(p.getShop() != null ? p.getShop().getName() : "Toàn hệ thống")
+                .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
+                .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
+                .slug(p.getSlug())
+                .metaTitle(p.getMetaTitle())
+                .metaDescription(p.getMetaDescription())
+                .price(p.getPrice())
+                .description(p.getDescription())
+                .imageUrl(p.getImageUrl())
+                .galleryImages(deserializeGallery(p.getGalleryImages()))
+                .sizeChart(p.getSizeChart())
+                .stock(totalAggregatedStock)
+                .branchStock(totalAggregatedStock)
+                .sizes(p.getSizes())
+                .sizesList(parseSizes(p.getSizes()))
+                .color(p.getColor())
+                .variants(variants)
+                .branchAllocations(allocations)
+                .avgRating(round1(avgRating))
+                .reviewCount(reviewCount)
+                .isNew(p.isNew())
+                .isBestSeller(p.isBestSeller())
+                .isFeatured(p.isFeatured())
+                .representative(p.isRepresentative())
+                .status(p.getStatus())
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
+                .build();
+        promotionCalculator.applyFlashSaleToDto(dto, p.getPrice(), activeFlashSales);
+        return dto;
+    }
+
+    private ProductResponseDto unusedToProductDtoBuilder(Product p, int totalAggregatedStock, List<ProductVariantDto> variants, List<BranchAllocationDto> allocations, Double avgRating, long reviewCount) {
         return ProductResponseDto.builder()
                 .id(p.getId())
                 .name(p.getName())

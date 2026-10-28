@@ -49,6 +49,14 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final com.storechain.group4.repository.TransporterRepository transporterRepository;
     private final com.storechain.group4.repository.RoleRepository roleRepository;
     private final com.storechain.group4.service.support.ProductMapper productMapper;
+    private final com.storechain.group4.repository.PromotionRepository promotionRepository;
+    private final com.storechain.group4.service.PromotionCalculator promotionCalculator;
+
+
+
+
+
+
 
     @Value("${app.employee.commission-rate:0.02}")
     private BigDecimal commissionRate;
@@ -282,7 +290,8 @@ public class EmployeeServiceImpl implements EmployeeService {
             bs.setStock(available - quantity);
             stocksToUpdate.add(bs);
 
-            BigDecimal price = product.getPrice() == null ? BigDecimal.ZERO : product.getPrice();
+            BigDecimal price = promotionCalculator.resolveEffectivePrice(
+                    promotionRepository.findActiveFlashSales(LocalDateTime.now()), product);
             totalAmount = totalAmount.add(price.multiply(BigDecimal.valueOf(quantity)));
             items.add(com.storechain.group4.model.OrderItem.builder()
                     .product(product)

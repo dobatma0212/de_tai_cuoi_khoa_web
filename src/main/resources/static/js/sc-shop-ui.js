@@ -129,7 +129,7 @@
             '<div class="product__item sc-card" data-id="' + p.id + '">' +
             '<div class="product__item__pic set-bg" data-setbg="' +
             esc(p.imageUrl || "/img/product/product-1.jpg") + '">' +
-            (!inStock ? '<span class="label">Hết hàng</span>' : "") +
+            (!inStock ? '<span class="label">Hết hàng</span>' : (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price) ? '<span class="label" style="background:#e53637;color:#fff;"><i class="fa fa-bolt"></i> -' + (p.discountPercent || "") + "%</span>" : "")) +
             '<button type="button" class="sc-fav-btn' + (isFav(p.id) ? " on" : "") + '" data-id="' + p.id + '" ' +
             'aria-pressed="' + (isFav(p.id) ? "true" : "false") + '" title="Thêm vào yêu thích">' +
             '<i class="fa ' + (isFav(p.id) ? "fa-heart" : "fa-heart-o") + '"></i></button>' +
@@ -140,7 +140,7 @@
                 ? '<a href="#" class="add-cart sc-add-cart" data-id="' + p.id + '" data-needopt="' +
                   (needOptions ? "1" : "0") + '">+ Thêm vào giỏ</a>'
                 : '<span class="text-muted" style="font-size:12px;">Tạm hết hàng</span>') +
-            '<div class="rating"><h5>' + vnd(p.price) + "</h5></div>" +
+            '<div class="rating">' + (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price) ? '<h5 style="color:#e53637;">' + vnd(p.price) + ' <del style="color:#999;font-size:13px;font-weight:400;margin-left:6px;">' + vnd(p.originalPrice) + "</del></h5>" : "<h5>" + vnd(p.price) + "</h5>") + "</div>" +
             (stats.length ? '<span class="sc-stat">' + stats.join(" · ") + "</span>" : "") +
             "</div></div></div>";
     }

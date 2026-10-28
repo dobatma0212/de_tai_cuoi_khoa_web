@@ -432,7 +432,7 @@
             : '<option value="">—</option>';
         sizeSelect.disabled = !sizes.length;
         $("empOfflineProductHint").textContent =
-            "Giá: " + formatVnd(p.price) + " — Tồn kho chi nhánh: " + (p.branchStock || 0) +
+            "Giá: " + formatVnd(p.price) + (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price) ? " (Flash Sale, giá gốc " + formatVnd(p.originalPrice) + ")" : "") + " — Tồn kho chi nhánh: " + (p.branchStock || 0) +
             (p.baseSku ? " — SKU: " + p.baseSku : "") +
             (p.brand ? " — Thương hiệu: " + p.brand : "") +
             (p.color ? " — Màu: " + p.color : "");

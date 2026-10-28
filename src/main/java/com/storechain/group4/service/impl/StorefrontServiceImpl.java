@@ -165,7 +165,13 @@ public class StorefrontServiceImpl implements StorefrontService {
     @Override
     @Transactional(readOnly = true)
     public List<CartItemDto> getCart(Long userId) {
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
         return cartItemRepository.findByUserIdOrderByAddedAtDesc(userId)
+                .stream().map(ci -> toCartDto(ci, activeFlashSales)).toList();
+    }
+
+    private void unusedGetCartRef() {
+        cartItemRepository.findByUserIdOrderByAddedAtDesc(0L)
                 .stream().map(this::toCartDto).toList();
     }
 
@@ -300,8 +306,9 @@ public class StorefrontServiceImpl implements StorefrontService {
         paymentService.assertConfigured(paymentMethod);
         // Các đơn tách từ một lần đặt dùng chung một mã thanh toán online
         String paymentRef = paymentService.isOnline(paymentMethod) ? paymentService.generatePaymentRef() : null;
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
         BigDecimal cartTotal = cartItems.stream()
-                .map(ci -> ci.getProduct().getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
+                .map(ci -> promotionCalculator.resolveEffectivePrice(activeFlashSales, ci.getProduct()).multiply(BigDecimal.valueOf(ci.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         // Voucher toàn hệ thống chỉ áp một lần cho đơn đầu tiên khi giỏ bị tách nhiều chi nhánh
         boolean[] globalVoucherUsed = {false};
@@ -325,7 +332,7 @@ public class StorefrontServiceImpl implements StorefrontService {
         for (Map.Entry<Long, List<CartItem>> entry : byShop.entrySet()) {
             created.add(createOrderForShop(userId, assignedShops.get(entry.getKey()),
                     entry.getValue(), address, transporter, request,
-                    paymentMethod, paymentRef, cartTotal, globalVoucherUsed));
+                    paymentMethod, paymentRef, cartTotal, globalVoucherUsed, activeFlashSales));
         }
         cartItemRepository.deleteByUserId(userId);
         return created;
@@ -521,10 +528,17 @@ public class StorefrontServiceImpl implements StorefrontService {
                                         ShippingAddress address, Transporter transporter,
                                         OrderCreateRequest request,
                                         String paymentMethod, String paymentRef,
-                                        BigDecimal cartTotal, boolean[] globalVoucherUsed) {
+                                        BigDecimal cartTotal, boolean[] globalVoucherUsed,
+                                        List<Promotion> activeFlashSales) {
         BigDecimal totalAmount = BigDecimal.ZERO;
+        java.util.Set<Long> usedFlashSaleIds = new java.util.HashSet<>();
+        usedFlashSaleIds.clear();
         for (CartItem ci : items) {
-            totalAmount = totalAmount.add(ci.getProduct().getPrice()
+            Promotion bestFs = promotionCalculator.findBestFlashSale(activeFlashSales, ci.getProduct().getId(), ci.getProduct().getPrice());
+            if (bestFs != null && bestFs.getId() != null) {
+                usedFlashSaleIds.add(bestFs.getId());
+            }
+            totalAmount = totalAmount.add(promotionCalculator.resolveEffectivePrice(activeFlashSales, ci.getProduct())
                     .multiply(BigDecimal.valueOf(ci.getQuantity())));
         }
 
@@ -613,14 +627,19 @@ public class StorefrontServiceImpl implements StorefrontService {
                 .paymentRef(paymentRef)
                 .build());
 
+        usedFlashSaleIds.clear();
         for (CartItem ci : items) {
+            Promotion bestFs = promotionCalculator.findBestFlashSale(activeFlashSales, ci.getProduct().getId(), ci.getProduct().getPrice());
+            if (bestFs != null && bestFs.getId() != null) {
+                usedFlashSaleIds.add(bestFs.getId());
+            }
             Product p = ci.getProduct();
             orderItemRepository.save(OrderItem.builder()
                     .order(order)
                     .product(p)
                     .productName(p.getName())
                     .imageUrl(p.getImageUrl())
-                    .price(p.getPrice())
+                    .price(promotionCalculator.resolveEffectivePrice(activeFlashSales, p))
                     .quantity(ci.getQuantity())
                     .size(ci.getSize())
                     .color(ci.getColor())
@@ -631,6 +650,10 @@ public class StorefrontServiceImpl implements StorefrontService {
                     .orElse(BranchStock.builder().product(p).shop(shop).stock(0).build());
             bs.setStock(Math.max(0, bs.getStock() - ci.getQuantity()));
             bs.setSizeStocks(subtractSize(bs, p, ci.getSize(), ci.getQuantity()));
+            for (Long fsId : usedFlashSaleIds) {
+                promotionRepository.incrementUsedCount(fsId);
+            }
+            usedFlashSaleIds.clear();
             branchStockRepository.save(bs);
         }
         return toOrderDto(order);
@@ -761,6 +784,27 @@ public class StorefrontServiceImpl implements StorefrontService {
 
     private ProductResponseDto toProductDto(Product p) {
         List<String> sizesList = parseSizes(p.getSizes());
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
+        ProductResponseDto dto = ProductResponseDto.builder()
+                .id(p.getId())
+                .shopId(p.getShop().getId())
+                .shopName(p.getShop().getName())
+                .categoryId(p.getCategory().getId())
+                .categoryName(p.getCategory().getName())
+                .name(p.getName())
+                .price(p.getPrice())
+                .description(p.getDescription())
+                .imageUrl(p.getImageUrl())
+                .stock(p.getStock())
+                .sizes(p.getSizes())
+                .sizesList(sizesList)
+                .color(p.getColor())
+                .representative(p.isRepresentative())
+                .status(p.getStatus())
+                .createdAt(p.getCreatedAt())
+                .build();
+        promotionCalculator.applyFlashSaleToDto(dto, p.getPrice(), activeFlashSales);
+        if (true) return dto;
         return ProductResponseDto.builder()
                 .id(p.getId())
                 .shopId(p.getShop().getId())
@@ -798,6 +842,43 @@ public class StorefrontServiceImpl implements StorefrontService {
     }
 
     private CartItemDto toCartDto(CartItem ci) {
+        return toCartDto(ci, promotionRepository.findActiveFlashSales(LocalDateTime.now()));
+    }
+
+    private CartItemDto toCartDto(CartItem ci, List<Promotion> activeFlashSales) {
+        Product p = ci.getProduct();
+        BigDecimal originalPrice = p.getPrice() != null ? p.getPrice() : BigDecimal.ZERO;
+        Promotion best = promotionCalculator.findBestFlashSale(activeFlashSales, p.getId(), originalPrice);
+        BigDecimal effectivePrice = best != null
+                ? promotionCalculator.calculateFlashSalePrice(best, originalPrice)
+                : originalPrice;
+        Integer discountPercent = null;
+        if (best != null && originalPrice.compareTo(BigDecimal.ZERO) > 0) {
+            int pct = originalPrice.subtract(effectivePrice)
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(originalPrice, 0, RoundingMode.HALF_UP)
+                    .intValue();
+            discountPercent = Math.max(1, pct);
+        }
+        return CartItemDto.builder()
+                .id(ci.getId())
+                .productId(p.getId())
+                .productName(p.getName())
+                .imageUrl(p.getImageUrl())
+                .price(effectivePrice)
+                .originalPrice(originalPrice)
+                .onFlashSale(best != null)
+                .flashSaleName(best != null ? best.getName() : null)
+                .discountPercent(discountPercent)
+                .size(ci.getSize())
+                .color(ci.getColor())
+                .quantity(ci.getQuantity())
+                .stock(branchStockRepository.sumStockByProductId(p.getId()))
+                .subtotal(effectivePrice.multiply(BigDecimal.valueOf(ci.getQuantity())))
+                .build();
+    }
+
+    private CartItemDto unusedToCartDtoLegacy(CartItem ci) {
         Product p = ci.getProduct();
         return CartItemDto.builder()
                 .id(ci.getId())

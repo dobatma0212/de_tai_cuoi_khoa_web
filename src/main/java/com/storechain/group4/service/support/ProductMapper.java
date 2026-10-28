@@ -6,10 +6,14 @@ import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.dto.ProductVariantDto;
 import com.storechain.group4.model.BranchStock;
 import com.storechain.group4.model.Product;
+import com.storechain.group4.model.Promotion;
 import com.storechain.group4.repository.BranchStockRepository;
+import com.storechain.group4.repository.PromotionRepository;
+import com.storechain.group4.service.PromotionCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,12 +28,19 @@ import java.util.List;
 public class ProductMapper {
 
     private final BranchStockRepository branchStockRepository;
+    private final PromotionRepository promotionRepository;
+    private final PromotionCalculator promotionCalculator;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * @param shopId chi nhánh của người gọi để tính branchStock; null thì lấy tổng aggregate
      */
     public ProductResponseDto toDto(Product p, Long shopId) {
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
+        return toDto(p, shopId, activeFlashSales);
+    }
+
+    public ProductResponseDto toDto(Product p, Long shopId, List<Promotion> activeFlashSales) {
         BranchStock branch = shopId == null
                 ? null
                 : branchStockRepository.findByProductIdAndShopId(p.getId(), shopId).orElse(null);
@@ -59,7 +70,7 @@ public class ProductMapper {
             }
             if (!agg.isEmpty()) totalSizeStocks = agg;
         }
-        return ProductResponseDto.builder()
+        ProductResponseDto dto = ProductResponseDto.builder()
                 .id(p.getId())
                 .shopId(p.getShop() != null ? p.getShop().getId() : null)
                 .shopName(p.getShop() != null ? p.getShop().getName() : null)
@@ -93,6 +104,8 @@ public class ProductMapper {
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())
                 .build();
+        promotionCalculator.applyFlashSaleToDto(dto, p.getPrice(), activeFlashSales);
+        return dto;
     }
 
     private List<String> parseSizes(String sizes) {

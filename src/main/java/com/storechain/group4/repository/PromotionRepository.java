@@ -91,8 +91,8 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     @Query("UPDATE Promotion p SET p.status = 'expired' WHERE p.endDate < :now AND p.status = 'active'")
     int expirePromotions(@Param("now") LocalDateTime now);
 
-    // Find active flash sales
-    @Query("SELECT p FROM Promotion p WHERE p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")
+    // Find active flash sales (fetch products eagerly to avoid N+1 / LazyInitializationException)
+    @Query("SELECT DISTINCT p FROM Promotion p LEFT JOIN FETCH p.products WHERE p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND (p.endDate IS NULL OR p.endDate >= :now) AND (p.usageLimit IS NULL OR p.usedCount < p.usageLimit)")
     List<Promotion> findActiveFlashSales(@Param("now") LocalDateTime now);
 
     default List<Promotion> findActiveFlashSales(PromotionType promotionType, String status, LocalDateTime now) {
@@ -111,7 +111,7 @@ public interface PromotionRepository extends JpaRepository<Promotion, Long> {
     @Query("SELECT p FROM Promotion p WHERE p.shop IS NOT NULL AND LOWER(p.code) = LOWER(:code) AND p.status = 'active' ORDER BY p.id")
     List<Promotion> findActiveShopVouchersByCode(@Param("code") String code);
 
-    // Find active flash sales for specific product
-    @Query("SELECT p FROM Promotion p JOIN p.products prod WHERE prod.id = :productId AND p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND p.endDate >= :now")
+    // Find active flash sales for specific product (including store-wide flash sales with empty product list)
+    @Query("SELECT DISTINCT p FROM Promotion p LEFT JOIN p.products prod WHERE (prod.id = :productId OR p.products IS EMPTY) AND p.promotionType = com.storechain.group4.model.PromotionType.FLASH_SALE AND p.status = 'active' AND p.startDate <= :now AND (p.endDate IS NULL OR p.endDate >= :now) AND (p.usageLimit IS NULL OR p.usedCount < p.usageLimit)")
     List<Promotion> findActiveFlashSalesForProduct(@Param("productId") Long productId, @Param("now") LocalDateTime now);
 }

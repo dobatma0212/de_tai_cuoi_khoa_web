@@ -356,6 +356,7 @@
             font-size: 13px;
         }
 
+        #toast-container,
         .toast-container-custom {
             position: fixed;
             top: 24px;
@@ -993,59 +994,8 @@
         </div>
     </div>
 
-    <!-- Footer Section -->
-    <footer class="footer mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-3 col-md-6 col-sm-6">
-                    <div class="footer__about">
-                        <div class="footer__logo">
-                            <a href="#"><img src="/img/footer-logo.png" alt=""></a>
-                        </div>
-                        <p>Hệ thống Quản trị Male Fashion - Chuỗi cửa hàng thời trang nam hiện đại bậc nhất.</p>
-                    </div>
-                </div>
-                <div class="col-lg-2 offset-lg-1 col-md-3 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>Quản trị</h6>
-                        <ul>
-                            <li><a href="/admin-users.html">Quản lý Tài khoản</a></li>
-                            <li><a href="/admin-products.html">Quản lý Sản phẩm</a></li>
-                            <li><a href="/admin-categories.html">Quản lý Danh mục</a></li>
-                            <li><a href="/admin-shops.html">Quản lý Chi nhánh</a></li>
-                            <li><a href="/admin-transporters.html">Quản lý Vận chuyển</a></li>
-                            <li><a href="/admin-promotions.html">Quản lý Khuyến mãi</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-3 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>Khách hàng</h6>
-                        <ul>
-                            <li><a href="/contact.html">Liên hệ chúng tôi</a></li>
-                            <li><a href="/shop.html">Mua sắm trực tuyến</a></li>
-                            <li><a href="/index.html">Trang chủ cửa hàng</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-3 offset-lg-1 col-md-6 col-sm-6">
-                    <div class="footer__widget">
-                        <h6>Bản tin</h6>
-                        <div class="footer__newslatter">
-                            <p>Đăng ký nhận thông báo về các chi nhánh mới nhất!</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <div class="footer__copyright__text">
-                        <p>Bản quyền &copy; <script>document.write(new Date().getFullYear());</script> Male Fashion Group 4. Tất cả các quyền được bảo lưu.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container-custom"></div>
 
     <!-- Scripts -->
     <script src="/js/jquery-3.3.1.min.js"></script>
@@ -1110,26 +1060,32 @@
 
         // Show toast notification
         function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `custom-toast toast-${type}`;
+            let container = $('#toast-container');
+            if (!container.length) {
+                $('body').append('<div id="toast-container" class="toast-container-custom"></div>');
+                container = $('#toast-container');
+            }
 
+            const normalizedType = type === 'error' ? 'danger' : type;
             let iconClass = 'fa-info-circle';
-            if (type === 'success') iconClass = 'fa-check-circle';
-            if (type === 'danger') iconClass = 'fa-exclamation-circle';
-            if (type === 'warning') iconClass = 'fa-exclamation-triangle';
+            if (normalizedType === 'success') iconClass = 'fa-check-circle';
+            if (normalizedType === 'danger') iconClass = 'fa-exclamation-circle';
+            if (normalizedType === 'warning') iconClass = 'fa-exclamation-triangle';
 
-            toast.innerHTML = `
-                <i class="fa ${iconClass} toast-icon"></i>
-                <div class="toast-message">${escapeHtml(message)}</div>
-                <i class="fa fa-times toast-close" onclick="this.parentElement.remove()"></i>
-            `;
-            container.appendChild(toast);
+            const toast = $(`
+                <div class="custom-toast toast-${normalizedType}">
+                    <i class="fa ${iconClass} toast-icon"></i>
+                    <div class="toast-message">${escapeHtml(message)}</div>
+                    <i class="fa fa-times toast-close" onclick="$(this).parent().fadeOut(300, function(){ $(this).remove(); });"></i>
+                </div>
+            `);
+
+            container.append(toast);
 
             setTimeout(() => {
-                toast.style.transition = 'opacity 0.4s ease';
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 400);
+                toast.fadeOut(400, function () {
+                    $(this).remove();
+                });
             }, 4000);
         }
 
@@ -1170,24 +1126,32 @@
                     return;
                 }
 
-                displayNameEl.innerHTML = `<i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong>`;
+                if (displayNameEl) {
+                    displayNameEl.innerHTML = `<i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong>`;
+                }
                 if (roleIndicatorEl) {
                     roleIndicatorEl.style.display = 'none';
                 }
 
-                authInfoEl.innerHTML = `
-                    <span class="text-white mr-3"><i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong></span>
-                `;
+                if (authInfoEl) {
+                    authInfoEl.innerHTML = `
+                        <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong></span>
+                    `;
+                }
             } else {
-                displayNameEl.innerHTML = `<i class="fa fa-user-circle"></i> Chưa đăng nhập`;
+                if (displayNameEl) {
+                    displayNameEl.innerHTML = `<i class="fa fa-user-circle"></i> Chưa đăng nhập`;
+                }
                 if (roleIndicatorEl) {
                     roleIndicatorEl.style.display = 'none';
                 }
 
-                authInfoEl.innerHTML = `
-                    <span class="text-white mr-3"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
-                    <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()">Đăng nhập</button>
-                `;
+                if (authInfoEl) {
+                    authInfoEl.innerHTML = `
+                        <span class="text-white mr-3" id="user-display-name"><i class="fa fa-user-circle"></i> Chưa đăng nhập</span>
+                        <button class="btn btn-sm btn-outline-light" onclick="openLoginModal()">Đăng nhập</button>
+                    `;
+                }
             }
         }
 
@@ -1282,20 +1246,21 @@
 
         // Fetch list of available managers for dropdowns
         function loadManagers() {
-            fetch('/api/admin/shops/managers', {
-                headers: getAuthHeaders()
-            })
-            .then(res => {
-                if (res.status === 401 || res.status === 403) return { success: false, data: [] };
-                return res.json();
-            })
-            .then(data => {
-                if (data.success && Array.isArray(data.data)) {
-                    availableManagers = data.data;
-                    populateManagerDropdowns();
+            $.ajax({
+                url: '/api/admin/shops/managers',
+                type: 'GET',
+                cache: false,
+                headers: getAuthHeaders(),
+                success: function (data) {
+                    if (data && data.success && Array.isArray(data.data)) {
+                        availableManagers = data.data;
+                        populateManagerDropdowns();
+                    }
+                },
+                error: function (err) {
+                    console.error('Lỗi tải danh sách manager:', err);
                 }
-            })
-            .catch(err => console.error('Lỗi tải danh sách manager:', err));
+            });
         }
 
         function populateManagerDropdowns() {
@@ -1320,73 +1285,93 @@
 
         // Load stats cards
         function loadStats() {
-            fetch('/api/admin/shops/stats', {
-                headers: getAuthHeaders()
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success && res.data) {
-                    $('#stat-total').text(res.data.totalShops || 0);
-                    $('#stat-active').text(res.data.activeShops || 0);
-                    $('#stat-inactive').text(res.data.inactiveShops || 0);
-                    $('#stat-assigned').text(res.data.assignedShops || 0);
+            $.ajax({
+                url: '/api/admin/shops/stats',
+                type: 'GET',
+                cache: false,
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res && res.success && res.data) {
+                        $('#stat-total').text(res.data.totalShops || 0);
+                        $('#stat-active').text(res.data.activeShops || 0);
+                        $('#stat-inactive').text(res.data.inactiveShops || 0);
+                        $('#stat-assigned').text(res.data.assignedShops || 0);
+                    }
+                },
+                error: function (err) {
+                    console.error('Lỗi tải thống kê chi nhánh:', err);
                 }
-            })
-            .catch(err => console.error('Lỗi tải thống kê chi nhánh:', err));
+            });
         }
 
         // Load shops table
-        function loadShops(page = 0) {
+        function loadShops(page = currentPage) {
             currentPage = page;
-            const keyword = $('#search-input').val().trim();
+            const keyword = ($('#search-input').val() || '').trim();
             const status = $('#status-filter').val();
             const sortVal = $('#sort-filter').val() || 'id-desc';
             const [sortBy, sortDir] = sortVal.split('-');
 
-            let url = `/api/admin/shops?page=${page}&size=${pageSize}&sortBy=${sortBy}&sortDir=${sortDir}`;
-            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
-            if (status) url += `&status=${encodeURIComponent(status)}`;
+            const params = {
+                page: currentPage,
+                size: pageSize,
+                sortBy: sortBy || 'id',
+                sortDir: sortDir || 'desc'
+            };
+            if (keyword) params.keyword = keyword;
+            if (status) params.status = status;
 
             $('#shop-table-body').html(`
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="9" class="empty-state">
                         <i class="fa fa-spinner fa-spin"></i>
                         <p>Đang tải danh sách chi nhánh...</p>
                     </td>
                 </tr>
             `);
 
-            fetch(url, { headers: getAuthHeaders() })
-            .then(res => {
-                if (res.status === 401 || res.status === 403) {
-                    $('#shop-table-body').html(`
-                        <tr>
-                            <td colspan="7" class="empty-state">
-                                <i class="fa fa-lock text-warning"></i>
-                                <h5 class="mt-2">Chưa xác thực hoặc không có quyền ADMIN</h5>
-                                <p class="text-muted">Vui lòng đăng nhập với tài khoản Quản trị viên để quản lý chi nhánh.</p>
-                                <button class="btn btn-male-fashion btn-sm mt-2" onclick="openLoginModal()">Đăng nhập ngay</button>
-                            </td>
-                        </tr>
-                    `);
-                    $('#pagination-container').hide();
-                    return null;
+            $.ajax({
+                url: '/api/admin/shops',
+                type: 'GET',
+                cache: false,
+                headers: getAuthHeaders(),
+                data: params,
+                success: function (res) {
+                    if (res && res.success && res.data) {
+                        if (res.data.content && res.data.content.length === 0 && currentPage > 0) {
+                            loadShops(currentPage - 1);
+                            return;
+                        }
+                        renderShopsTable(res.data);
+                    } else {
+                        renderShopsTable({ content: [], totalPages: 0, totalElements: 0, number: 0, size: pageSize });
+                    }
+                },
+                error: function (xhr) {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        $('#shop-table-body').html(`
+                            <tr>
+                                <td colspan="9" class="empty-state">
+                                    <i class="fa fa-lock text-warning"></i>
+                                    <h5 class="mt-2">Chưa xác thực hoặc không có quyền ADMIN</h5>
+                                    <p class="text-muted">Vui lòng đăng nhập với tài khoản Quản trị viên để quản lý chi nhánh.</p>
+                                    <button class="btn btn-male-fashion btn-sm mt-2" onclick="openLoginModal()">Đăng nhập ngay</button>
+                                </td>
+                            </tr>
+                        `);
+                        $('#pagination-container').hide();
+                    } else {
+                        const errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Lỗi kết nối máy chủ';
+                        $('#shop-table-body').html(`
+                            <tr>
+                                <td colspan="9" class="empty-state">
+                                    <i class="fa fa-exclamation-triangle text-danger"></i>
+                                    <p class="text-danger mt-2">Lỗi tải dữ liệu: ${escapeHtml(errMsg)}</p>
+                                </td>
+                            </tr>
+                        `);
+                    }
                 }
-                return res.json();
-            })
-            .then(res => {
-                if (!res || !res.success) return;
-                renderShopsTable(res.data);
-            })
-            .catch(err => {
-                $('#shop-table-body').html(`
-                    <tr>
-                        <td colspan="7" class="empty-state">
-                            <i class="fa fa-exclamation-triangle text-danger"></i>
-                            <p class="text-danger mt-2">Lỗi tải dữ liệu: ${escapeHtml(err.message)}</p>
-                        </td>
-                    </tr>
-                `);
             });
         }
 
@@ -1554,21 +1539,23 @@
 
         // Toggle Active / Inactive
         function toggleStatus(id, newStatus) {
-            fetch(`/api/admin/shops/${id}/status?status=${newStatus}`, {
-                method: 'PATCH',
-                headers: getAuthHeaders()
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Đã cập nhật trạng thái chi nhánh thành công!', 'success');
-                    loadStats();
-                    loadShops(currentPage);
-                } else {
-                    showToast(data.message || 'Không thể cập nhật trạng thái', 'danger');
+            $.ajax({
+                url: `/api/admin/shops/${id}/status?status=${newStatus}`,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (data) {
+                    if (data && data.success) {
+                        loadStats();
+                        loadShops(currentPage);
+                        showToast(data.message || 'Đã cập nhật trạng thái chi nhánh thành công!', 'success');
+                    } else {
+                        showToast((data && data.message) || 'Không thể cập nhật trạng thái', 'danger');
+                    }
+                },
+                error: function (xhr) {
+                    showToast((xhr.responseJSON && xhr.responseJSON.message) || 'Không thể cập nhật trạng thái', 'danger');
                 }
-            })
-            .catch(err => showToast('Lỗi: ' + err.message, 'danger'));
+            });
         }
 
         // Modal Open Handlers
@@ -1588,32 +1575,39 @@
         }
 
         function openEditModal(id) {
-            fetch(`/api/admin/shops/${id}`, { headers: getAuthHeaders() })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success && res.data) {
-                    const shop = res.data;
-                    $('#shop-id').val(shop.id);
-                    $('#shop-name').val(shop.name);
-                    $('#shop-phone').val(shop.phone || '');
-                    $('#shop-address').val(shop.address || '');
-                    $('#shop-description').val(shop.description || '');
-                    $('#shop-status').val(shop.status || 'active');
-                    $('#shop-manager').val(shop.managerId ? String(shop.managerId) : '');
-                    // Đồng bộ nice-select UI sau khi thay đổi giá trị select
-                    if ($.fn.niceSelect) {
-                        $('#shop-status').niceSelect('update');
-                        $('#shop-manager').niceSelect('update');
-                    }
+            $.ajax({
+                url: `/api/admin/shops/${id}`,
+                type: 'GET',
+                cache: false,
+                headers: getAuthHeaders(),
+                success: function (res) {
+                    if (res && res.success && res.data) {
+                        const shop = res.data;
+                        $('#shop-id').val(shop.id);
+                        $('#shop-name').val(shop.name);
+                        $('#shop-phone').val(shop.phone || '');
+                        $('#shop-address').val(shop.address || '');
+                        $('#shop-description').val(shop.description || '');
+                        $('#shop-status').val(shop.status || 'active');
+                        $('#shop-manager').val(shop.managerId ? String(shop.managerId) : '');
+                        // Đồng bộ nice-select UI sau khi thay đổi giá trị select
+                        if ($.fn.niceSelect) {
+                            $('#shop-status').niceSelect('update');
+                            $('#shop-manager').niceSelect('update');
+                        }
 
-                    $('#shopModalTitle').html('<i class="fa fa-pencil mr-2"></i> Chỉnh sửa Chi nhánh #' + shop.id);
-                    $('#btn-submit-shop').text('Cập nhật chi nhánh');
-                    $('#shopModal').modal('show');
-                } else {
-                    showToast(res.message || 'Không tìm thấy chi nhánh', 'danger');
+                        $('#shopModalTitle').html('<i class="fa fa-pencil mr-2"></i> Chỉnh sửa Chi nhánh #' + shop.id);
+                        $('#btn-submit-shop').text('Cập nhật chi nhánh');
+                        $('#shopDetailModal').modal('hide');
+                        $('#shopModal').modal('show');
+                    } else {
+                        showToast((res && res.message) || 'Không tìm thấy chi nhánh', 'danger');
+                    }
+                },
+                error: function (xhr) {
+                    showToast((xhr.responseJSON && xhr.responseJSON.message) || 'Không thể tải thông tin chi nhánh', 'danger');
                 }
-            })
-            .catch(err => showToast('Lỗi: ' + err.message, 'danger'));
+            });
         }
 
         function handleSaveShop(event) {
@@ -1640,7 +1634,7 @@
                 address: address || null,
                 description: description || null,
                 status,
-                managerId: (managerId && managerId > 0) ? managerId : null
+                managerId: (managerId && managerId > 0) ? managerId : (isEdit ? 0 : null)
             };
 
             const url = isEdit ? `/api/admin/shops/${id}` : '/api/admin/shops';
@@ -1649,34 +1643,32 @@
             const btn = $('#btn-submit-shop');
             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang lưu...');
 
-            fetch(url, {
-                method,
+            $.ajax({
+                url: url,
+                type: method,
                 headers: getAuthHeaders(),
-                body: JSON.stringify(payload)
-            })
-            .then(res => {
-                if (res.status === 401 || res.status === 403) {
-                    showToast('Phiên đăng nhập hết hạn hoặc không có quyền ADMIN. Vui lòng đăng nhập lại.', 'danger');
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function (data) {
                     btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
-                    return null;
+                    if (data && data.success) {
+                        $('#shopModal').modal('hide');
+                        loadStats();
+                        loadManagers();
+                        loadShops(isEdit ? currentPage : 0);
+                        showToast(data.message || (isEdit ? 'Cập nhật chi nhánh thành công!' : 'Tạo chi nhánh mới thành công!'), 'success');
+                    } else {
+                        showToast((data && data.message) || 'Lỗi xử lý yêu cầu', 'danger');
+                    }
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        showToast('Phiên đăng nhập hết hạn hoặc không có quyền ADMIN. Vui lòng đăng nhập lại.', 'danger');
+                    } else {
+                        showToast((xhr.responseJSON && xhr.responseJSON.message) || 'Thao tác thất bại!', 'danger');
+                    }
                 }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
-                if (data.success) {
-                    showToast(data.message || (isEdit ? 'Cập nhật chi nhánh thành công!' : 'Tạo chi nhánh mới thành công!'), 'success');
-                    $('#shopModal').modal('hide');
-                    loadStats();
-                    loadShops(isEdit ? currentPage : 0);
-                } else {
-                    showToast(data.message || 'Lỗi xử lý yêu cầu', 'danger');
-                }
-            })
-            .catch(err => {
-                btn.prop('disabled', false).text(isEdit ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh');
-                showToast('Lỗi: ' + err.message, 'danger');
             });
         }
 
@@ -1689,6 +1681,7 @@
             if ($.fn.niceSelect) {
                 $('#assign-manager-select').niceSelect('update');
             }
+            $('#shopDetailModal').modal('hide');
             $('#assignManagerModal').modal('show');
         }
 
@@ -1706,25 +1699,26 @@
                 url += `?managerId=${managerId}`;
             }
 
-            fetch(url, {
-                method: 'PATCH',
-                headers: getAuthHeaders()
-            })
-            .then(res => res.json())
-            .then(data => {
-                btn.prop('disabled', false).text('Xác nhận bổ nhiệm');
-                if (data.success) {
-                    showToast(data.message || 'Bổ nhiệm Quản lý thành công!', 'success');
-                    $('#assignManagerModal').modal('hide');
-                    loadStats();
-                    loadShops(currentPage);
-                } else {
-                    showToast(data.message || 'Lỗi bổ nhiệm quản lý', 'danger');
+            $.ajax({
+                url: url,
+                type: 'PATCH',
+                headers: getAuthHeaders(),
+                success: function (data) {
+                    btn.prop('disabled', false).text('Xác nhận bổ nhiệm');
+                    if (data && data.success) {
+                        $('#assignManagerModal').modal('hide');
+                        loadStats();
+                        loadManagers();
+                        loadShops(currentPage);
+                        showToast(data.message || 'Bổ nhiệm Quản lý thành công!', 'success');
+                    } else {
+                        showToast((data && data.message) || 'Lỗi bổ nhiệm quản lý', 'danger');
+                    }
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).text('Xác nhận bổ nhiệm');
+                    showToast((xhr.responseJSON && xhr.responseJSON.message) || 'Lỗi bổ nhiệm quản lý', 'danger');
                 }
-            })
-            .catch(err => {
-                btn.prop('disabled', false).text('Xác nhận bổ nhiệm');
-                showToast('Lỗi: ' + err.message, 'danger');
             });
         }
 
@@ -1740,25 +1734,26 @@
             const btn = $('#btn-confirm-delete');
             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang xóa...');
 
-            fetch(`/api/admin/shops/${id}`, {
-                method: 'DELETE',
-                headers: getAuthHeaders()
-            })
-            .then(res => res.json())
-            .then(data => {
-                btn.prop('disabled', false).text('Xác nhận xóa');
-                if (data.success) {
-                    showToast('Đã xóa chi nhánh thành công!', 'success');
-                    $('#deleteShopModal').modal('hide');
-                    loadStats();
-                    loadShops(0);
-                } else {
-                    showToast(data.message || 'Không thể xóa chi nhánh', 'danger');
+            $.ajax({
+                url: `/api/admin/shops/${id}`,
+                type: 'DELETE',
+                headers: getAuthHeaders(),
+                success: function (data) {
+                    btn.prop('disabled', false).text('Xác nhận xóa');
+                    if (data && data.success) {
+                        $('#deleteShopModal').modal('hide');
+                        loadStats();
+                        loadManagers();
+                        loadShops(currentPage);
+                        showToast(data.message || 'Đã xóa chi nhánh thành công!', 'success');
+                    } else {
+                        showToast((data && data.message) || 'Không thể xóa chi nhánh', 'danger');
+                    }
+                },
+                error: function (xhr) {
+                    btn.prop('disabled', false).text('Xác nhận xóa');
+                    showToast((xhr.responseJSON && xhr.responseJSON.message) || 'Không thể xóa chi nhánh!', 'danger');
                 }
-            })
-            .catch(err => {
-                btn.prop('disabled', false).text('Xác nhận xóa');
-                showToast('Lỗi: ' + err.message, 'danger');
             });
         }
 

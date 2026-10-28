@@ -153,7 +153,13 @@
         $("pdImage").src = p.imageUrl || "/img/product/product-1.jpg";
         $("pdCategory").textContent = p.categoryName || "";
         $("pdName").textContent = p.name;
-        $("pdPrice").textContent = formatVnd(p.price);
+        if (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price)) {
+            $("pdPrice").innerHTML = formatVnd(p.price) +
+                ' <del style="color:#999;font-size:16px;font-weight:400;margin-left:8px;">' + formatVnd(p.originalPrice) + "</del>" +
+                ' <span style="background:#e53637;color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px;margin-left:8px;vertical-align:middle;"><i class="fa fa-bolt"></i> FLASH SALE -' + (p.discountPercent || "") + "%</span>";
+        } else {
+            $("pdPrice").textContent = formatVnd(p.price);
+        }
         // Tồn theo size chỉ dùng NỘI BỘ để khóa size hết hàng & phân phối đơn —
         // không hiển thị số lượng tồn cho khách
         var sizeMap = p.totalSizeStocks || null;

@@ -219,7 +219,18 @@ public class PromotionServiceImpl implements PromotionService {
             promotion.setStatus(request.getStatus().toLowerCase());
         }
 
-        if (pType == PromotionType.FLASH_SALE && request.getProductIds() != null) {
+        if (pType == PromotionType.FLASH_SALE) {
+            if (request.getProductIds() != null && !request.getProductIds().isEmpty()) {
+                List<Product> products = productRepository.findAllById(request.getProductIds());
+                promotion.setProducts(new HashSet<>(products));
+            } else {
+                List<Product> allProducts = productRepository.findAll();
+                promotion.setProducts(new HashSet<>(allProducts));
+            }
+        } else if (promotion.getProducts() != null) {
+            promotion.getProducts().clear();
+        }
+        if (false) {
             List<Product> products = productRepository.findAllById(request.getProductIds());
             promotion.setProducts(new HashSet<>(products));
         }
