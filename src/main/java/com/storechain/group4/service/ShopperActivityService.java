@@ -73,7 +73,15 @@ public class ShopperActivityService {
     /** Ghi nhận đã xem; xem lại thì chỉ cập nhật thời điểm, đồng thời cắt bớt lịch sử quá dài */
     @Transactional
     public void recordView(Long userId, Long productId) {
-        ProductView existing = productViewRepository.findByUserIdAndProductId(userId, productId).orElse(null);
+        // Duyệt danh sách của chính người dùng thay vì Optional: nếu CSDL lỡ có dòng trùng thì
+        // findByUserIdAndProductId sẽ ném IncorrectResultSizeDataAccessException làm hỏng chức năng
+        ProductView existing = null;
+        for (ProductView v : productViewRepository.findByUserId(userId)) {
+            if (v.getProduct() != null && productId.equals(v.getProduct().getId())) {
+                existing = v;
+                break;
+            }
+        }
         if (existing != null) {
             existing.setViewedAt(LocalDateTime.now());
             productViewRepository.save(existing);
@@ -97,7 +105,7 @@ public class ShopperActivityService {
         int safe = Math.min(Math.max(limit, 1), MAX_VIEW_HISTORY);
         List<Product> products = productViewRepository
                 .findByUserIdOrderByViewedAtDesc(userId, PageRequest.of(0, safe))
-                .stream().map(ProductView::getProduct).toList();
+                .stream().map(ProductView::getProduct).distinct().toList();
         return catalogService.toCards(products);
     }
 

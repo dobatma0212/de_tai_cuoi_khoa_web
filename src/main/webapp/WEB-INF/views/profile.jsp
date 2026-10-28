@@ -1095,8 +1095,8 @@
     <script src="/js/main.js"></script>
     <script src="/js/vn-address.js?v=20261025"></script>
     <script src="/js/auth.js"></script>
-    <script src="/js/sc-shop-ui.js"></script>
-    <script src="/js/profile.js"></script>
+    <script src="/js/sc-shop-ui.js?v=20261028"></script>
+    <script src="/js/profile.js?v=20261028"></script>
     <script src="/js/employee.js"></script>
     <script src="/js/manager-employees.js"></script>
     <script src="/js/manager-imports.js"></script>

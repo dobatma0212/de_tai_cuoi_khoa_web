@@ -1,0 +1,76 @@
+/* Vietnamese typography and accessible contrast fixes */
+:root {
+  --sc-text: #202124;
+  --sc-muted: #555b63;
+  --sc-link: #174ea6;
+  --sc-border: #d5d9df;
+}
+html, body, button, input, select, textarea {
+  font-family: "Be Vietnam Pro", "Noto Sans", Arial, sans-serif;
+}
+body { color: var(--sc-text); }
+body.store-layout { background-color: #fff; color: var(--sc-text); }
+body.store-layout p,
+body.store-layout li,
+body.store-layout label,
+body.store-layout small,
+body.store-layout .text-muted,
+body.store-layout .product__item__text,
+body.store-layout .breadcrumb__text,
+body.store-layout .shop__sidebar,
+body.store-layout .shop__product__option {
+  color: var(--sc-muted);
+}
+body.store-layout h1, body.store-layout h2, body.store-layout h3,
+body.store-layout h4, body.store-layout h5, body.store-layout h6,
+body.store-layout strong, body.store-layout b {
+  color: #202124;
+}
+body.store-layout a { color: var(--sc-link); }
+body.store-layout a:hover, body.store-layout a:focus { color: #0b3d91; }
+body.store-layout .header a,
+body.store-layout .header__menu ul li a,
+body.store-layout .header__nav__option a,
+body.store-layout .header__top__links a { color: #202124; }
+body.store-layout .header a:hover,
+body.store-layout .header__menu ul li a:hover { color: #b4232b; }
+body.store-layout input, body.store-layout select, body.store-layout textarea {
+  color: #202124;
+  background-color: #fff;
+  border-color: var(--sc-border);
+}
+body.store-layout input::placeholder,
+body.store-layout textarea::placeholder { color: #626873; opacity: 1; }
+body.store-layout .btn-primary { color: #fff; background-color: #174ea6; border-color: #174ea6; }
+body.store-layout .btn-danger { color: #fff; }
+body.store-layout .btn-outline-secondary { color: #343a40; border-color: #626873; }
+body.store-layout .badge-secondary { color: #fff; background-color: #545b62; }
+body.store-layout .pagination a,
+body.store-layout .pagination span { color: #174ea6; }
+body.store-layout .pagination .active,
+body.store-layout .pagination .active a { color: #fff; background: #174ea6; }
+.home-redesign { font-family: "Be Vietnam Pro", "Noto Sans", Arial, sans-serif; color: #202124; }
+.home-redesign .home-section-heading h2,
+.home-redesign .home-section-heading h2 em { color: #202124; }
+.home-redesign .home-section-heading p,
+.home-redesign .home-editorial p,
+.home-redesign .home-bottom-note p { color: #555b63; }
+.home-redesign .home-text-link { color: #202124; }
+.home-redesign .home-btn--dark { color: #fff; background: #202124; }
+.home-redesign .home-btn--dark:hover { color: #fff; background: #343a40; }
+
+/* Ensure labels and secondary copy remain readable over light panels */
+.shop-redesign .shop-eyebrow,
+.shop-redesign .shop-reset-btn:disabled,
+.shop-redesign .shop-filter-heading p,
+.shop-redesign .shop-filter-panel small,
+.shop-redesign .shop-filter-panel label,
+.shop-redesign .shop__product__option p,
+.shop-redesign .product__item__text p {
+  color: #555b63 !important;
+}
+.shop-redesign .shop-filter-panel,
+.shop-redesign .shop-filter-panel .card,
+.shop-redesign .shop-filter-panel .card-body { color: #202124; }
+.shop-redesign .shop-filter-panel a { color: #174ea6; }
+.shop-redesign .shop-filter-panel a:hover { color: #0b3d91; }

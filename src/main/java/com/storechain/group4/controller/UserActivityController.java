@@ -87,8 +87,11 @@ public class UserActivityController {
     public ResponseEntity<ApiResponse<List<ProductResponseDto>>> getRecentlyViewed(
             @RequestParam(defaultValue = "12") int limit,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
-        return ResponseEntity.ok(ApiResponse.success("Lấy sản phẩm đã xem thành công",
-                activityService.getRecentlyViewed(currentUser.getId(), limit)));
+        // no-store: danh sách này thay đổi sau mỗi lần xem sản phẩm, không được cache ở trình duyệt
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(ApiResponse.success("Lấy sản phẩm đã xem thành công",
+                        activityService.getRecentlyViewed(currentUser.getId(), limit)));
     }
 
     @DeleteMapping("/recently-viewed")

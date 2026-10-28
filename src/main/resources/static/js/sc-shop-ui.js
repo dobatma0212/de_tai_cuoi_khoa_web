@@ -33,7 +33,8 @@
         var t = token();
         if (t) headers.Authorization = "Bearer " + t;
         if (options.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
-        return fetch(url, Object.assign({}, options, { headers: headers })).then(function (r) {
+        // cache: no-store -> luôn lấy dữ liệu mới (nếu không, nút Back có thể hiện lại danh sách "đã xem" cũ)
+        return fetch(url, Object.assign({}, options, { headers: headers, cache: "no-store" })).then(function (r) {
             if (r.status === 401 || r.status === 403) {
                 throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
             }
@@ -200,15 +201,103 @@
             }
             var card = e.target.closest(".sc-card");
             if (card) {
+                recordView(card.getAttribute("data-id"));
                 window.location.href = "/product-detail.html?productId=" + card.getAttribute("data-id");
             }
         });
     }
 
-    /** Ghi nhận đã xem sản phẩm (bỏ qua lỗi, không chặn giao diện) */
+    // ============ Sản phẩm đã xem ============
+    var VIEW_KEY = "sc_recently_viewed_ids";
+    function readLocalViewIds() {
+        try {
+            var ids = JSON.parse(localStorage.getItem(VIEW_KEY) || "[]");
+            return Array.isArray(ids) ? ids.map(Number).filter(function (id) { return Number.isFinite(id) && id > 0; }) : [];
+        } catch (_) { return []; }
+    }
+    function writeLocalViewIds(ids) {
+        try { localStorage.setItem(VIEW_KEY, JSON.stringify(ids.slice(0, 50))); } catch (_) { /* storage có thể bị chặn */ }
+    }
+    /** Ghi lịch sử local cho khách vãng lai và đồng bộ database khi đã đăng nhập.
+     *  Lịch sử local LUÔN được ghi (kể cả khi đã đăng nhập) để:
+     *  - Người dùng vẫn thấy "đã xem" nếu đồng bộ lên server thất bại (mạng chậm, DB bận...).
+     *  - getRecentlyViewed() có thể gộp dữ liệu server + local, không bị mất mục nào. */
     function recordView(productId) {
-        if (!isLoggedIn()) return;
-        authFetch("/api/user/recently-viewed/" + Number(productId), { method: "POST" }).catch(function () { });
+        productId = Number(productId);
+        if (!Number.isFinite(productId) || productId <= 0) return Promise.resolve(false);
+        var ids = readLocalViewIds().filter(function (id) { return id !== productId; });
+        ids.unshift(productId);
+        writeLocalViewIds(ids);
+        if (!isLoggedIn()) return Promise.resolve(true);
+        return syncViewToServer(productId);
+    }
+    /** Đẩy lượt xem lên server; thử lại 1 lần nếu lỗi tạm thời (mạng/DB 503, token chậm...). */
+    function syncViewToServer(productId, attempt) {
+        return authFetch("/api/user/recently-viewed/" + productId, { method: "POST", keepalive: true })
+            .then(function () { return true; })
+            .catch(function (err) {
+                if (!attempt) return syncViewToServer(productId, 1); // thử lại đúng 1 lần
+                if (global.console) console.warn("Không đồng bộ được lịch sử xem lên tài khoản:", err && err.message);
+                return false;
+            });
+    }
+    /** Lấy danh sách sản phẩm đã xem:
+     *  - Khách (chưa đăng nhập): phân giải từ ID lưu trong localStorage.
+     *  - Đã đăng nhập: lấy từ tài khoản trên server, rồi GỘP thêm các sản phẩm
+     *    chỉ có trong localStorage (đồng bộ thất bại trước đó) -> không bao giờ
+     *    để danh sách trống khi localStorage vẫn còn lịch sử. */
+    function getRecentlyViewed(limit) {
+        limit = Math.min(Math.max(Number(limit) || 8, 1), 50);
+        if (isLoggedIn()) {
+            var serverIds = [];
+            return authFetch("/api/user/recently-viewed?limit=" + limit).then(function (list) {
+                list = Array.isArray(list) ? list : [];
+                serverIds = list.map(function (p) { return Number(p.id); })
+                    .filter(function (id) { return Number.isFinite(id) && id > 0; });
+                // Gộp: mục trên server trước (đúng thứ tự xem gần nhất của tài khoản),
+                // sau đó đến các mục CHỈ có trong localStorage (đồng bộ thất bại trước đó).
+                var mergedIds = serverIds.slice();
+                readLocalViewIds().forEach(function (id) {
+                    if (mergedIds.indexOf(id) < 0) mergedIds.push(id);
+                });
+                mergedIds = mergedIds.slice(0, limit);
+                // Lưu cache local theo danh sách gộp để vẫn dùng được khi hết phiên
+                writeLocalViewIds(mergedIds.concat(readLocalViewIds()
+                    .filter(function (id) { return mergedIds.indexOf(id) < 0; })).slice(0, 50));
+                var byId = {};
+                list.forEach(function (p) { byId[Number(p.id)] = p; });
+                var missing = mergedIds.filter(function (id) { return !byId[id]; });
+                if (!missing.length) return mergedIds.map(function (id) { return byId[id]; }).filter(Boolean);
+                // Phân giải các mục còn thiếu bằng API công khai
+                return Promise.all(missing.map(function (id) {
+                    return fetch("/api/public/products/" + id, { cache: "no-store" }).then(function (r) {
+                        if (!r.ok) return null;
+                        return r.json();
+                    }).then(function (payload) {
+                        if (!payload || payload.success === false) return null;
+                        var product = payload.data || payload;
+                        return product && product.id != null ? product : null;
+                    }).catch(function () { return null; });
+                })).then(function (extras) {
+                    extras.forEach(function (p) { if (p && !byId[Number(p.id)]) byId[Number(p.id)] = p; });
+                    return mergedIds.map(function (id) { return byId[id]; }).filter(Boolean);
+                });
+            }).catch(function () { return resolveLocalViewed(limit); });
+        }
+        return resolveLocalViewed(limit);
+    }
+    function resolveLocalViewed(limit) {
+        var ids = readLocalViewIds().slice(0, limit);
+        return Promise.all(ids.map(function (id) {
+            return fetch("/api/public/products/" + id, { cache: "no-store" }).then(function (r) {
+                if (!r.ok) return null;
+                return r.json();
+            }).then(function (payload) {
+                if (!payload || payload.success === false) return null;
+                var product = payload.data || payload;
+                return product && product.id != null ? product : null;
+            }).catch(function () { return null; });
+        })).then(function (items) { return items.filter(Boolean); });
     }
 
     // ============ Thanh toán ============
@@ -251,6 +340,6 @@
         token: token, isLoggedIn: isLoggedIn, esc: esc, vnd: vnd, authFetch: authFetch,
         loadFavIds: loadFavIds, isFav: isFav, toggleFav: toggleFav, paintHeart: paintHeart,
         cardHtml: cardHtml, applyBackgrounds: applyBackgrounds, bindCards: bindCards,
-        recordView: recordView, updateCartBadge: updateCartBadge
+        recordView: recordView, getRecentlyViewed: getRecentlyViewed, updateCartBadge: updateCartBadge
     };
 })(window);

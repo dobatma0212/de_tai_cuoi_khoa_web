@@ -12,8 +12,8 @@
 <!DOCTYPE html>
 <html lang="zxx">
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <!-- Font tu host: dam bao hien thi dung tieng Viet -->
+    <link rel="stylesheet" href="/css/be-vietnam-pro.css?v=20261028" type="text/css">
     <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css">
     <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css">
@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css">
     <link rel="stylesheet" href="/css/style.css" type="text/css">
     <link rel="stylesheet" href="/css/admin.css" type="text/css">
+    <link rel="stylesheet" href="/css/vietnamese-ui-fix.css?v=20261028" type="text/css">
     <sitemesh:write property="head"/>
 </head>
 <body>

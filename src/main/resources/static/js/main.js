@@ -105,7 +105,9 @@
   /*--------------------------
         Select
     ----------------------------*/
-  $("select").niceSelect();
+  // select có class "no-nice" giữ nguyên (nice-select kích hoạt change bằng jQuery .trigger()
+  // nên không đánh thức được addEventListener("change") của JS thuần)
+  $("select").not(".no-nice").niceSelect();
 
   /*-------------------
 		Radio Btn

@@ -32,7 +32,7 @@
 .shop-redesign #catalogTags a { padding:6px 10px; border-radius:999px; background:#f2f4f7; color:#697284; font-size:11px; transition:.15s; }
 .shop-redesign #catalogTags a:hover, .shop-redesign #catalogTags a.is-selected { background:#202b3c; color:#fff; }
 .shop-results-heading { display:flex; justify-content:space-between; align-items:flex-end; margin:2px 0 22px; }
-.shop-results-heading h3 { color:#172033; font-size:30px; font-weight:900; letter-spacing:-.7px; margin:0 0 7px; }
+.shop-results-heading h3 { color:#172033; font-size:30px; font-weight:900; letter-spacing:0; margin:0 0 7px; }
 .shop-results-heading p { color:#7c8493; font-size:13px; margin:0; }
 .shop-toolbar { padding:13px 16px; margin-bottom:20px; border:1px solid #e9ebef; border-radius:12px; background:#fff; }
 .shop-toolbar .row { align-items:center; }
@@ -68,3 +68,35 @@
 .shop-redesign #catalogPagination .catalog-page-ellipsis { color:#8b93a3; padding:0 2px; }
 @media (max-width: 991px) { .shop-redesign .shop-filter-panel { margin-bottom:25px; } .shop-results-heading h3 { font-size:25px; } .shop-redesign #catalogGrid .product__item__pic { height:230px; } }
 @media (max-width: 575px) { .shop-redesign { padding:25px 0 50px; } .shop-redesign .shop-filter-panel { padding:17px 15px; } .shop-results-heading { margin-bottom:16px; } .shop-results-heading h3 { font-size:23px; } .shop-results-heading p { font-size:12px; } .shop-toolbar .shop__product__option__right { justify-content:flex-start; margin-top:12px; } .shop-toolbar .shop__product__option__right p { display:none; } .shop-redesign #catalogGrid .product__item__pic { height:190px; } .shop-redesign #catalogPagination .catalog-page-btn { min-width:35px; height:36px; padding:0 9px; } .shop-redesign #catalogPagination .catalog-page-nav span { display:none; } }
+
+
+/* ===== Nút "Tất cả" của các bộ lọc: cùng kích thước, canh giữa, luôn nằm đầu nhóm ===== */
+.shop-redesign #catalogPriceRanges { display:flex; flex-direction:column; list-style:none; margin:0; padding:0; }
+.shop-redesign #catalogPriceRanges li:last-child { order:-1; margin-bottom:8px; }
+.shop-redesign #catalogPriceRanges a[data-min=""][data-max=""],
+.shop-redesign #catalogSizes label:first-child,
+.shop-redesign #catalogColors a[data-color=""] {
+    display:flex !important; align-items:center; justify-content:center; box-sizing:border-box;
+    width:100% !important; height:36px !important; min-width:0; margin:0; padding:0 12px !important;
+    border:1px solid #e5e8ee !important; border-radius:8px !important; outline:none !important; transform:none !important;
+    background:#fff !important; color:#697284; font-size:11px !important; font-weight:800; line-height:1;
+    letter-spacing:.4px; text-transform:uppercase; text-decoration:none !important; cursor:pointer;
+}
+.shop-redesign #catalogPriceRanges a[data-min=""][data-max=""].is-selected,
+.shop-redesign #catalogSizes label:first-child:has(input:checked),
+.shop-redesign #catalogColors a[data-color=""].is-selected {
+    background:#202b3c !important; border-color:#202b3c !important; color:#fff !important;
+}
+.shop-redesign #catalogPriceRanges a[data-min=""][data-max=""]:hover:not(.is-selected),
+.shop-redesign #catalogSizes label:first-child:hover:not(:has(input:checked)),
+.shop-redesign #catalogColors a[data-color=""]:hover:not(.is-selected) { border-color:#202b3c !important; color:#202b3c; }
+
+/* Size: lưới 3 cột đều nhau, "Tất cả" trải hết hàng đầu */
+.shop-redesign #catalogSizes { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.shop-redesign #catalogSizes label { width:100%; min-width:0; height:36px; margin:0; }
+.shop-redesign #catalogSizes label:first-child { grid-column:1 / -1; }
+
+/* Màu: "Tất cả" một hàng riêng, các chấm màu bên dưới cách đều và thẳng hàng */
+.shop-redesign #catalogColors { gap:12px !important; padding:0 0 4px; }
+.shop-redesign #catalogColors a[data-color=""] { flex:0 0 100%; margin-bottom:2px; }
+.shop-redesign #catalogColors a:not([data-color=""]) { flex:0 0 auto; box-sizing:border-box; width:28px !important; height:28px !important; padding:0 !important; border-radius:50% !important; }

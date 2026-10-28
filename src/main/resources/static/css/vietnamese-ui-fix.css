@@ -1,0 +1,94 @@
+/* ============================================================================
+   VIETNAMESE UI FIX - StoreChain (v3 - 2026-10-28)
+   Muc dich:
+   1) Khong nen/trien chu tieng Viet co dau (letter-spacing am gay ra khoang
+      trong vo ly giua cac ky tu co dau: "ch ất", "ri êng", "Số ng"...).
+   2) Dam bao mau chu LUON khac mau nen (tuong phan doc duoc) o moi khu vuc.
+   File nay duoc nap SAU CUNG trong moi trang nen co do uu tien cao nhat,
+   dong thoi phong truong hop trinh duyet giu (cache) ban CSS cu.
+   ============================================================================ */
+
+/* ---------------- 1. Typography tieng Viet ---------------- */
+
+/* Khong dung letter-spacing am cho tieu de tieng Viet */
+.home-redesign .home-hero h1,
+.home-redesign .home-section-heading h2,
+.home-redesign .home-category-card h3,
+.home-redesign .home-editorial h2,
+.home-redesign .home-bottom-note h2,
+.shop-redesign .shop-results-heading h3 {
+  letter-spacing: 0;
+}
+
+.home-redesign .home-hero h1 em,
+.home-redesign .home-section-heading h2 em,
+.home-redesign .home-editorial h2 em,
+.home-redesign .home-bottom-note h2 em {
+  letter-spacing: 0;
+}
+
+/* Dau thanh (square/flex) phu hop voi tieng Viet co dau nhieu tang */
+.home-redesign .home-hero h1 { line-height: 1.08; }
+.home-redesign .home-section-heading h2 { line-height: 1.22; }
+.home-redesign .home-editorial h2 { line-height: 1.25; }
+.home-redesign .home-bottom-note h2 { line-height: 1.2; }
+
+/* Chu serif cho phan nhan (em): dung Playfair Display co du glyph tieng Viet,
+   tranh loi Georgia thieu chu Viet lam dut khoang trong */
+.home-redesign .home-hero h1 em,
+.home-redesign .home-section-heading h2 em,
+.home-redesign .home-editorial h2 em,
+.home-redesign .home-bottom-note h2 em {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* Font chu chinh: dam bao luon co font ho tro tieng Viet du */
+.home-redesign,
+.home-redesign button,
+.home-redesign input,
+.home-redesign select,
+.home-redesign textarea,
+body.store-layout,
+body.store-layout button,
+body.store-layout input,
+body.store-layout select,
+body.store-layout textarea {
+  font-family: 'Be Vietnam Pro', 'Noto Sans', Arial, sans-serif;
+}
+
+/* ---------------- 2. Tuong phan mau chu / mau nen ---------------- */
+
+/* HERO (nen sang) -> chu toi, dam bao tuong phan */
+.home-redesign .home-hero h1 { color: #20211f; }
+.home-redesign .home-hero h1 em { color: #5f742c; }
+.home-redesign .home-hero__copy > p { color: #585b53; }
+.home-redesign .home-eyebrow { color: #5f6259; }
+
+/* SECTION TIEU DE (nen sang) -> chu toi */
+.home-redesign .home-section-heading h2 { color: #20211f; }
+.home-redesign .home-section-heading h2 em { color: #6b7f32; }
+
+/* EDITORIAL (nen olive dam #242620) -> chu SANG tuong phan cao.
+   Day la khu vuc truoc day chu gan nhu trung mau nen. */
+.home-redesign .home-editorial h2 { color: #ffffff; }
+.home-redesign .home-editorial h2 em { color: #d5f06b; }
+.home-redesign .home-editorial__copy .home-eyebrow { color: #daded0; }
+.home-redesign .home-editorial__copy p { color: #c8cabf; }
+.home-redesign .home-editorial__index { color: #a6a89c; }
+.home-redesign .home-editorial__index span { color: #d5f06b; }
+
+/* THE DANH MUC (chu tren anh, co gradient toi phia duoi) -> chu trang */
+.home-redesign .home-category-card,
+.home-redesign .home-category-card h3,
+.home-redesign .home-category-card small,
+.home-redesign .home-category-card__link { color: #ffffff; }
+.home-redesign .home-category-card__number { color: rgba(255, 255, 255, .92); }
+
+/* BOTTOM NOTE (nen sang #f1f2e9) -> chu toi */
+.home-redesign .home-bottom-note h2 { color: #20211f; }
+.home-redesign .home-bottom-note h2 em { color: #6b7f32; }
+
+/* NUT: chu luon tuong phan voi nen nut */
+.home-redesign .home-btn--dark { color: #ffffff; background: #22241f; }
+.home-redesign .home-btn--light { color: #252720; background: #d5f06b; }
+.home-redesign .home-scroll { color: #272923; background: #d5f06b; }

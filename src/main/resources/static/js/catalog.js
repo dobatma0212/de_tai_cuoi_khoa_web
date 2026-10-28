@@ -49,10 +49,7 @@
         var kw = params.get("keyword");
         if (kw) {
             state.keyword = kw.trim();
-<<<<<<< HEAD
             $("catalogSearch").value = state.keyword;
-=======
->>>>>>> origin/main
         }
         loadCategories();
         bindEvents();
@@ -68,11 +65,14 @@
             loadProducts();
         });
 
-        $("catalogSort").addEventListener("change", function () {
-            state.sort = this.value;
+        // Dùng jQuery .on("change") để nhận cả sự kiện do nice-select kích hoạt (nếu còn áp vào select)
+        var onSort = function () {
+            state.sort = $("catalogSort").value;
             state.page = 0;
             loadProducts();
-        });
+        };
+        if (window.jQuery) window.jQuery($("catalogSort")).on("change", onSort);
+        else $("catalogSort").addEventListener("change", onSort);
 
         // Tim yêu thích, thêm giỏ, mở chi tiết: dùng chung với trang chủ
         ScShop.bindCards($("catalogGrid"));
@@ -116,12 +116,9 @@
             loadProducts();
         });
 
-<<<<<<< HEAD
         var resetButton = $("catalogResetFilters");
         if (resetButton) resetButton.addEventListener("click", resetFilters);
 
-=======
->>>>>>> origin/main
         // Tag = từ khóa tìm kiếm nhanh
         $("catalogTags").addEventListener("click", function (e) {
             var a = e.target.closest("a[data-tag]");
@@ -194,7 +191,6 @@
         params.append("page", state.page);
         params.append("pageSize", state.pageSize);
 
-<<<<<<< HEAD
         // Chỉ hiển thị thẻ danh mục khi chưa có bất kỳ bộ lọc nào được áp dụng.
         // Trước đây điều kiện chỉ kiểm tra keyword/category nên lọc giá, size, màu
         // bị bỏ qua khi người dùng vừa mở trang shop.
@@ -202,6 +198,8 @@
             || state.minPrice != null || state.maxPrice != null);
         var showingCards = !hasFilters;
         var title = $("catalogCategoryTitle");
+        // Sắp xếp chỉ có nghĩa khi đang xem danh sách sản phẩm, màn hình chọn danh mục thì ẩn
+        $("catalogSortWrap").style.display = showingCards ? "none" : "";
         if (showingCards) {
             $("categoryCardGrid").style.display = "";
             title.style.display = "none";
@@ -214,17 +212,6 @@
         }
         $("categoryCardGrid").style.display = "none";
         updateFilterUi();
-=======
-        var showingCards = state.categoryId === 0 && !state.keyword;
-        var title = $("catalogCategoryTitle");
-        if (showingCards) {
-            title.style.display = "none";
-            $("catalogGrid").innerHTML = "";
-            $("catalogCount").textContent = "Khám phá theo danh mục";
-            renderCategoryCards();
-            return;
-        }
->>>>>>> origin/main
         // Tiêu đề danh mục đang xem + nút quay lại
         var cat = categories.find(function (c) { return c.id === state.categoryId; });
         title.style.display = "";
@@ -254,7 +241,6 @@
             });
     }
 
-<<<<<<< HEAD
     function updateFilterUi() {
         var reset = $("catalogResetFilters");
         if (reset) {
@@ -301,30 +287,22 @@
         loadProducts();
     }
 
-=======
->>>>>>> origin/main
     function renderProducts(pageData) {
         var list = pageData.content || [];
         var total = pageData.totalElements || 0;
         var from = total === 0 ? 0 : (pageData.page * pageData.pageSize) + 1;
         var to = Math.min((pageData.page + 1) * pageData.pageSize, total);
         $("catalogCount").textContent = "Hiển thị " + from + "–" + to + " trên " + total + " sản phẩm";
-<<<<<<< HEAD
         var meta = $("catalogPaginationMeta");
         if (meta) meta.textContent = total > 0
             ? "Trang " + ((pageData.page || 0) + 1) + " / " + (pageData.totalPages || 1) + " · " + total + " sản phẩm phù hợp"
             : "Không có sản phẩm phù hợp với bộ lọc hiện tại";
-=======
->>>>>>> origin/main
 
         if (!list.length) {
             $("catalogGrid").innerHTML =
                 '<div class="col-12"><p class="text-muted">Không có sản phẩm nào phù hợp.</p></div>';
             $("catalogPaginationRow").style.display = "none";
-<<<<<<< HEAD
             $("catalogPagination").innerHTML = "";
-=======
->>>>>>> origin/main
             return;
         }
 
@@ -337,7 +315,6 @@
     }
 
     function renderPagination(pageData) {
-<<<<<<< HEAD
         var total = Number(pageData.totalPages || 0);
         var current = Number(pageData.page || 0);
         var container = $("catalogPagination");
@@ -360,35 +337,6 @@
         });
         html += '<button type="button" class="catalog-page-btn catalog-page-nav" data-page="' + (current + 1) + '"'
             + (current >= total - 1 ? ' disabled aria-disabled="true"' : '') + ' aria-label="Trang sau"><span>Sau</span> ›</button>';
-=======
-        var total = pageData.totalPages || 0;
-        var current = pageData.page || 0;
-        var container = $("catalogPagination");
-        var row = $("catalogPaginationRow");
-        if (!container || !row) return;
-        if (total <= 1) {
-            row.style.display = "none";
-            container.innerHTML = "";
-            return;
-        }
-        row.style.display = "";
-        var pages = [];
-        for (var i = 0; i < total; i++) {
-            if (i === 0 || i === total - 1 || (i >= current - 1 && i <= current + 1)) {
-                pages.push(i);
-            }
-        }
-        var html = "";
-        var last = -1;
-        pages.forEach(function (p) {
-            if (last !== -1 && p - last > 1) {
-                html += "<span>...</span>";
-            }
-            html += '<button type="button" class="catalog-page-btn' + (p === current ? " active" : "") + '"' +
-                ' data-page="' + p + '"' + (p === current ? " disabled" : "") + ">" + (p + 1) + "</button>";
-            last = p;
-        });
->>>>>>> origin/main
         container.innerHTML = html;
     }
 

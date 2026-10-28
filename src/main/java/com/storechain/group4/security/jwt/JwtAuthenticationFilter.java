@@ -47,10 +47,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
+            if (isDatabaseFailure(e)) {
+                // DB quá tải / mất kết nối: KHÔNG coi là "chưa đăng nhập" (sẽ trả 401 và
+                // front-end tự đăng xuất người dùng) mà báo 503 để client thử lại sau.
+                log.error("Không truy cập được CSDL khi xác thực người dùng: {}", e.getMessage());
+                response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(
+                        "{\"success\":false,\"message\":\"Hệ thống đang bận kết nối cơ sở dữ liệu, vui lòng thử lại sau ít phút.\"}");
+                return;
+            }
             log.error("Không thể thiết lập xác thực người dùng: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private static boolean isDatabaseFailure(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof org.springframework.dao.DataAccessException
+                    || t instanceof org.springframework.transaction.TransactionException
+                    || t instanceof java.sql.SQLException) {
+                return true;
+            }
+            if (t.getCause() == t) break;
+        }
+        return false;
     }
 
     private String parseJwt(HttpServletRequest request) {
