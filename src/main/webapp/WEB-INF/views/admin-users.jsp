@@ -1000,10 +1000,9 @@
                     <span class="text-white mr-3 font-weight-bold">
                         <i class="fa fa-user-circle mr-1 text-danger"></i> ${displayName} ${badgeHtml}
                     </span>
-                    <button class="btn btn-sm btn-outline-light" onclick="logout()"><i class="fa fa-sign-out"></i> Đăng xuất</button>
                 `;
                 authContainer.html(authHtml);
-                mobileAuthContainer.html(`<a href="#" onclick="logout()">Đăng xuất (${escapeHtml(currentUser.username)})</a>`);
+                mobileAuthContainer.html(''); // đã bỏ nút Đăng xuất
 
                 // Manager không thể tạo/gán quyền ADMIN
                 if (!isCurrentAdmin) {

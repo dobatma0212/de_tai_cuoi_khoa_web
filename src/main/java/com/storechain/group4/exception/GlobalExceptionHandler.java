@@ -104,6 +104,13 @@ public class GlobalExceptionHandler {
                 "Không thể thực hiện vì dữ liệu đang được dùng ở nơi khác (mã trùng, đang nằm trong đơn hàng/giỏ hàng...)."));
     }
 
+    /** Trình duyệt tự xin /favicon.ico (hoặc file tĩnh không tồn tại): trả 404 thay vì báo lỗi 500 */
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Void> handleNoResource(org.springframework.web.servlet.resource.NoResourceFoundException ex) {
+        log.debug("Không tìm thấy tài nguyên tĩnh: {}", ex.getResourcePath());
+        return ResponseEntity.notFound().build();
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unhandled Exception: ", ex);

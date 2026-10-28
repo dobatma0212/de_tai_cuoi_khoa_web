@@ -38,24 +38,34 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            fixPromotionsTable();
-            cleanupObsoleteRoles();
-            fixLegacySchema();
-            initRoles();
-            initDefaultAdmin();
-            initDefaultManager();
-            initDefaultCategories();
-            initDefaultTransporters();
-            initDefaultShops();
-            initDefaultEmployee();
-            initDefaultShopCategories();
-            initBranchStocks();
-            initDefaultProducts();
-            initDefaultPromotions();
-        });
+        // Mỗi bước chạy trong transaction riêng (thay vì 1 transaction lớn): tránh giữ
+        // metadata lock khi chạy ALTER TABLE, tránh timeout/mất kết nối DB cloud và
+        // lỗi "Application exception overridden by rollback exception".
+        runStep("fixPromotionsTable", this::fixPromotionsTable);
+        runStep("cleanupObsoleteRoles", this::cleanupObsoleteRoles);
+        fixLegacySchema();
+        runStep("initRoles", this::initRoles);
+        runStep("initDefaultAdmin", this::initDefaultAdmin);
+        runStep("initDefaultManager", this::initDefaultManager);
+        runStep("initDefaultCategories", this::initDefaultCategories);
+        runStep("initDefaultTransporters", this::initDefaultTransporters);
+        runStep("initDefaultShops", this::initDefaultShops);
+        runStep("initDefaultEmployee", this::initDefaultEmployee);
+        runStep("initDefaultShopCategories", this::initDefaultShopCategories);
+        initBranchStocks();
+        runStep("initDefaultProducts", this::initDefaultProducts);
+        runStep("initDefaultPromotions", this::initDefaultPromotions);
     }
 
+    /** Chạy một bước khởi tạo trong transaction riêng; lỗi chỉ ghi log để app vẫn khởi động được */
+    private void runStep(String name, Runnable step) {
+        try {
+            new org.springframework.transaction.support.TransactionTemplate(transactionManager)
+                    .executeWithoutResult(status -> step.run());
+        } catch (Exception e) {
+            log.error("Bước khởi tạo dữ liệu '{}' thất bại: {}", name, e.getMessage(), e);
+        }
+    }
     private void fixPromotionsTable() {
         try {
             @SuppressWarnings("unchecked")
@@ -262,8 +272,19 @@ public class DataInitializer implements CommandLineRunner {
      *    trong khi entity dùng shop_categories -> xóa FK legacy.
      */
     private void fixLegacySchema() {
-        runStandaloneMigration("ALTER TABLE shops MODIFY `name` VARCHAR(150) NULL",
-                "Bỏ qua sửa cột legacy shops.name");
+        if (columnExists("shops", "name")) {
+            runStandaloneMigration("ALTER TABLE shops MODIFY `name` VARCHAR(150) NULL",
+                    "Bỏ qua sửa cột legacy shops.name");
+        }
+        // Bảng product_views ở schema cũ còn giữ cột legacy first_viewed_at / last_viewed_at NOT NULL
+        if (columnExists("product_views", "first_viewed_at")) {
+            runStandaloneMigration("ALTER TABLE product_views MODIFY `first_viewed_at` DATETIME(6) NULL DEFAULT NULL",
+                    "Bỏ qua nới lỏng cột legacy product_views.first_viewed_at");
+        }
+        if (columnExists("product_views", "last_viewed_at")) {
+            runStandaloneMigration("ALTER TABLE product_views MODIFY `last_viewed_at` DATETIME(6) NULL DEFAULT NULL",
+                    "Bỏ qua nới lỏng cột legacy product_views.last_viewed_at");
+        }
 
         try {
             @SuppressWarnings("unchecked")
@@ -573,16 +594,18 @@ public class DataInitializer implements CommandLineRunner {
         // Ghép sản phẩm cũ (category_id NULL hoặc 0) vào danh mục theo category_group cũ.
         // Mỗi lệnh chạy trong transaction riêng: nếu cột category_group đã bị xóa khỏi DB
         // thì chỉ bỏ qua lệnh đó mà không làm hỏng transaction chính của ứng dụng.
-        runStandaloneMigration(
-                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Bộ áo quần' " +
-                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
-                "AND p.category_group IN ('CLOTHING', 'Bộ áo quần')",
-                "Bỏ qua ghép sản phẩm theo category_group (CLOTHING)");
-        runStandaloneMigration(
-                "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Phụ kiện' " +
-                "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
-                "AND p.category_group IN ('ACCESSORY', 'Phụ kiện')",
-                "Bỏ qua ghép sản phẩm theo category_group (ACCESSORY)");
+        if (columnExists("products", "category_group")) {
+            runStandaloneMigration(
+                    "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Bộ áo quần' " +
+                    "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                    "AND p.category_group IN ('CLOTHING', 'Bộ áo quần')",
+                    "Bỏ qua ghép sản phẩm theo category_group (CLOTHING)");
+            runStandaloneMigration(
+                    "UPDATE products p JOIN shop_categories sc ON sc.shop_id = p.shop_id AND sc.name = 'Phụ kiện' " +
+                    "SET p.category_id = sc.category_id WHERE (p.category_id IS NULL OR p.category_id = 0) " +
+                    "AND p.category_group IN ('ACCESSORY', 'Phụ kiện')",
+                    "Bỏ qua ghép sản phẩm theo category_group (ACCESSORY)");
+        }
         // Sản phẩm còn lại: gán vào danh mục đầu tiên của chi nhánh
         runStandaloneMigration(
                 "UPDATE products p JOIN (" +
@@ -590,6 +613,17 @@ public class DataInitializer implements CommandLineRunner {
                 ") t ON t.shop_id = p.shop_id " +
                 "SET p.category_id = t.cid WHERE p.category_id IS NULL OR p.category_id = 0",
                 "Bỏ qua gán danh mục cho sản phẩm chưa phân loại");
+    }
+
+    /** Kiểm tra cột có tồn tại trong bảng hiện tại không (tránh chạy SQL gây WARN từ Hibernate) */
+    private boolean columnExists(String table, String column) {
+        try {
+            Object n = entityManager.createNativeQuery("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND COLUMN_NAME = :c")
+                    .setParameter("t", table).setParameter("c", column).getSingleResult();
+            return ((Number) n).intValue() > 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** Chạy 1 câu SQL migration trong transaction độc lập (REQUIRES_NEW), lỗi thì chỉ ghi log rồi bỏ qua */

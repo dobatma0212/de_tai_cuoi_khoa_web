@@ -1233,9 +1233,6 @@
                         <i class="fa fa-user-circle text-danger mr-1"></i>
                         <strong>${currentUser.fullName || currentUser.username}</strong>
                     </span>
-                    <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
-                        <i class="fa fa-sign-out mr-1"></i> Đăng xuất
-                    </button>
                 `;
                 authContainer.html(authHtml);
             } else {
@@ -1294,7 +1291,7 @@
                     showToast('Đăng nhập thành công với vai trò Quản trị viên!', 'success');
                     loadCategoriesList();
                     loadStats();
-                    loadProducts();
+                    loadProducts(true);
                 },
                 error: function (xhr) {
                     submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
@@ -1394,9 +1391,12 @@
         }
 
         // ============ Tải danh sách sản phẩm ============
-        function loadProducts() {
+        let productRequestSeq = 0;
+        // silent = true: giữ nguyên bảng hiện tại (không hiện vòng quay), chỉ thay dữ liệu khi tải xong
+        function loadProducts(silent) {
             const tbody = $('#product-table-body');
-            tbody.html(`
+            const seq = ++productRequestSeq;
+            if (!silent) tbody.html(`
                 <tr>
                     <td colspan="10" class="text-center py-5 text-muted">
                         <i class="fa fa-spinner fa-spin fa-2x mb-3 text-danger"></i>
@@ -1434,6 +1434,7 @@
                 headers: getAuthHeaders(),
                 data: params,
                 success: function (res) {
+                    if (seq !== productRequestSeq) return; // bỏ qua phản hồi cũ
                     if (res.data && res.data.content) {
                         renderTable(res.data.content);
                         totalElements = res.data.totalElements;
@@ -1445,6 +1446,7 @@
                     }
                 },
                 error: function (xhr) {
+                    if (seq !== productRequestSeq) return;
                     if (xhr.status === 401 || xhr.status === 403) {
                         tbody.html(`
                             <tr>
@@ -1536,7 +1538,7 @@
                 }
 
                 const row = `
-                    <tr>
+                    <tr data-id="${p.id}">
                         <td><strong>#${p.id}</strong></td>
                         <td>${imgHtml}</td>
                         <td>
@@ -2123,7 +2125,7 @@
                     $('#productModal').modal('hide');
                     showToast(res.message || (isEdit ? 'Cập nhật sản phẩm thành công!' : 'Thêm mới sản phẩm thành công!'), 'success');
                     loadStats();
-                    loadProducts();
+                    loadProducts(true);
                 },
                 error: function (xhr) {
                     submitBtn.prop('disabled', false).html('<i class="fa fa-check mr-1"></i> Lưu thông tin sản phẩm');
@@ -2141,7 +2143,7 @@
                 headers: getAuthHeaders(),
                 success: function (res) {
                     showToast('Đã cập nhật nhãn website!', 'success');
-                    loadProducts();
+                    loadProducts(true);
                 },
                 error: function (xhr) {
                     showToast(xhr.responseJSON?.message || 'Không thể đổi nhãn', 'danger');
@@ -2162,7 +2164,7 @@
                 success: function (res) {
                     showToast(`Đã chuyển trạng thái sang: ${nextStatus === 'active' ? 'Đang mở bán' : nextStatus === 'draft' ? 'Bản nháp' : 'Ngừng kinh doanh'}`, 'success');
                     loadStats();
-                    loadProducts();
+                    loadProducts(true);
                 },
                 error: function (xhr) {
                     showToast(xhr.responseJSON?.message || 'Không thể đổi trạng thái', 'danger');
@@ -2430,22 +2432,31 @@
         function executeDelete() {
             if (!deletingId) return;
 
-            const btn = $('#btn-confirm-delete');
-            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Đang xóa...');
+            const id = deletingId;
+            deletingId = null;
+            $('#deleteProductModal').modal('hide');
+
+            // Cập nhật giao diện ngay: làm mờ dòng và trừ tổng, không chờ máy chủ
+            const row = $(`#product-table-body tr[data-id="${id}"]`);
+            row.css({ opacity: 0.35, pointerEvents: 'none' });
 
             $.ajax({
-                url: `${API_BASE}/${deletingId}`,
+                url: `${API_BASE}/${id}`,
                 type: 'DELETE',
                 headers: getAuthHeaders(),
                 success: function (res) {
-                    btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
-                    $('#deleteProductModal').modal('hide');
+                    row.fadeOut(150, function () { $(this).remove(); });
+                    totalElements = Math.max(0, totalElements - 1);
+                    $('#filter-result-count').text(`Tìm thấy ${totalElements} sản phẩm`);
+                    const total = parseInt($('#stat-total-products').text().replace(/\D/g, ''), 10);
+                    if (!isNaN(total)) $('#stat-total-products').text(Math.max(0, total - 1));
                     showToast(res.message || 'Đã xóa sản phẩm thành công!', 'success');
+                    // Đồng bộ lại ngầm (không vòng quay) để bù sản phẩm của trang kế và số liệu chính xác
                     loadStats();
-                    loadProducts();
+                    loadProducts(true);
                 },
                 error: function (xhr) {
-                    btn.prop('disabled', false).html('<i class="fa fa-trash mr-1"></i> Xác nhận Xóa');
+                    row.css({ opacity: 1, pointerEvents: '' });
                     showToast(xhr.responseJSON?.message || 'Không thể xóa sản phẩm!', 'danger');
                 }
             });

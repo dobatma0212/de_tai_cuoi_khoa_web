@@ -916,9 +916,6 @@
                         <i class="fa fa-user-circle text-danger mr-1"></i>
                         <strong>${currentUser.fullName || currentUser.username}</strong>
                     </span>
-                    <button class="btn btn-sm btn-outline-light" onclick="handleLogout()">
-                        <i class="fa fa-sign-out mr-1"></i> Đăng xuất
-                    </button>
                 `;
                 authContainer.html(authHtml);
             } else {

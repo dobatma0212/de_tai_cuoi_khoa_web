@@ -63,6 +63,10 @@ public class ProductServiceImpl implements ProductService {
     private final OrderItemRepository orderItemRepository;
     private final PromotionRepository promotionRepository;
     private final CloudinaryService cloudinaryService;
+    private final com.storechain.group4.repository.FavoriteRepository favoriteRepository;
+    private final com.storechain.group4.repository.ProductViewRepository productViewRepository;
+    private final com.storechain.group4.repository.StockMovementRepository stockMovementRepository;
+    private final com.storechain.group4.repository.StockReceiptItemRepository stockReceiptItemRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -95,8 +99,26 @@ public class ProductServiceImpl implements ProductService {
         Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), sort);
 
-        return productRepository.searchProductsAdmin(kw, sId, cId, st, minPrice, maxPrice, inStock, pageable)
-                .map(this::toProductDto);
+        Page<Product> result = productRepository.searchProductsAdmin(kw, sId, cId, st, minPrice, maxPrice, inStock, pageable);
+        List<Long> ids = result.getContent().stream().map(Product::getId).toList();
+        // Gộp truy vấn cho cả trang (thay vì 4 truy vấn cho mỗi sản phẩm)
+        java.util.Map<Long, List<BranchStock>> stocksByProduct = new java.util.HashMap<>();
+        java.util.Map<Long, Object[]> ratingByProduct = new java.util.HashMap<>();
+        if (!ids.isEmpty()) {
+            for (BranchStock bs : branchStockRepository.findByProductIdInWithShop(ids)) {
+                stocksByProduct.computeIfAbsent(bs.getProduct().getId(), k -> new ArrayList<>()).add(bs);
+            }
+            for (Object[] row : reviewRepository.ratingSummaryByProductIds(ids)) {
+                ratingByProduct.put(((Number) row[0]).longValue(), row);
+            }
+        }
+        return result.map(p -> {
+            List<BranchStock> stocks = stocksByProduct.getOrDefault(p.getId(), List.of());
+            Object[] rating = ratingByProduct.get(p.getId());
+            Double avg = rating == null ? 0.0 : ((Number) rating[1]).doubleValue();
+            long count = rating == null ? 0L : ((Number) rating[2]).longValue();
+            return toProductDto(p, stocks, avg, count);
+        });
     }
 
     @Override
@@ -369,6 +391,12 @@ public class ProductServiceImpl implements ProductService {
             orderItemRepository.save(oi);
         });
 
+        // 5b. Dọn yêu thích, lượt xem; gỡ liên kết lịch sử kho/phiếu nhập (giữ snapshot)
+        favoriteRepository.deleteByProductId(id);
+        productViewRepository.deleteByProductId(id);
+        stockMovementRepository.detachProduct(id);
+        stockReceiptItemRepository.detachProduct(id);
+
         // 6. Xóa sản phẩm
         productRepository.delete(product);
 
@@ -636,11 +664,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private ProductResponseDto toProductDto(Product p) {
+        return toProductDto(p, branchStockRepository.findByProductId(p.getId()),
+                reviewRepository.averageRatingByProductId(p.getId()), reviewRepository.countByProductId(p.getId()));
+    }
+
+    private ProductResponseDto toProductDto(Product p, List<BranchStock> branchStocks, Double avgRating, long reviewCount) {
         // Aggregate tổng tồn kho từ tất cả các chi nhánh
-        int totalAggregatedStock = branchStockRepository.sumStockByProductId(p.getId());
+        int totalAggregatedStock = branchStocks.stream().mapToInt(BranchStock::getStock).sum();
 
         // Bảng phân bổ tồn kho từng chi nhánh
-        List<BranchStock> branchStocks = branchStockRepository.findByProductId(p.getId());
         List<BranchAllocationDto> allocations = new ArrayList<>();
         for (BranchStock bs : branchStocks) {
             allocations.add(BranchAllocationDto.builder()
@@ -682,8 +714,8 @@ public class ProductServiceImpl implements ProductService {
                 .color(p.getColor())
                 .variants(variants)
                 .branchAllocations(allocations)
-                .avgRating(round1(reviewRepository.averageRatingByProductId(p.getId())))
-                .reviewCount(reviewRepository.countByProductId(p.getId()))
+                .avgRating(round1(avgRating))
+                .reviewCount(reviewCount)
                 .isNew(p.isNew())
                 .isBestSeller(p.isBestSeller())
                 .isFeatured(p.isFeatured())
