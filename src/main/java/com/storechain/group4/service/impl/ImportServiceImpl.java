@@ -173,6 +173,7 @@ public class ImportServiceImpl implements ImportService {
                 item.getSize(), item.getQuantity()));
         bs.setUpdatedAt(now);
         branchStockRepository.save(bs);
+        productRepository.syncStockFromBranches(product.getId());
 
         movementRepository.save(StockMovement.builder()
                 .shop(shop)
@@ -208,6 +209,7 @@ public class ImportServiceImpl implements ImportService {
                 item.getSize(), item.getQuantity()));
         bs.setUpdatedAt(now);
         branchStockRepository.save(bs);
+        productRepository.syncStockFromBranches(product.getId());
 
         movementRepository.save(StockMovement.builder()
                 .shop(shop)

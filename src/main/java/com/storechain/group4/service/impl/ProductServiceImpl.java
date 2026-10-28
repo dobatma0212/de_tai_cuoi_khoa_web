@@ -31,6 +31,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.JpaSort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -96,7 +97,10 @@ public class ProductServiceImpl implements ProductService {
             default -> "id";
         };
 
-        Sort sort = "asc".equalsIgnoreCase(sortDir) ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = "stock".equals(safeSortBy)
+                ? JpaSort.unsafe(direction, "COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0)")
+                : Sort.by(direction, safeSortBy);
         Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), sort);
 
         Page<Product> result = productRepository.searchProductsAdmin(kw, sId, cId, st, minPrice, maxPrice, inStock, pageable);
@@ -128,7 +132,7 @@ public class ProductServiceImpl implements ProductService {
         long activeProducts = productRepository.countByStatus("active");
         long draftProducts = productRepository.countByStatus("draft");
         long inactiveProducts = productRepository.countByStatus("inactive");
-        long outOfStockProducts = productRepository.countByStockLessThanEqual(0);
+        long outOfStockProducts = productRepository.countOutOfStockProducts();
         long totalStock = productRepository.sumAllStock();
         long totalShops = productRepository.countDistinctShops();
         long totalCategories = productRepository.countDistinctCategories();

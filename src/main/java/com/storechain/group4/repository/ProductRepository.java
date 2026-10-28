@@ -4,6 +4,7 @@ import com.storechain.group4.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -53,6 +54,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query(value = "SELECT p FROM Product p JOIN FETCH p.shop s JOIN FETCH p.category c WHERE " +
             "(:keyword IS NULL OR :keyword = '' OR " +
             "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(p.baseSku, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(p.brand, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(COALESCE(p.slug, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "AND (:shopId IS NULL OR p.shop.id = :shopId) " +
@@ -60,10 +63,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "AND (:status IS NULL OR :status = '' OR p.status = :status) " +
             "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
             "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
-            "AND (:inStock IS NULL OR (:inStock = true AND p.stock > 0) OR (:inStock = false AND p.stock <= 0))",
+            "AND (:inStock IS NULL OR " +
+            "(:inStock = true AND COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0) > 0) OR " +
+            "(:inStock = false AND COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0) <= 0))",
             countQuery = "SELECT COUNT(p) FROM Product p WHERE " +
             "(:keyword IS NULL OR :keyword = '' OR " +
             "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(p.baseSku, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(COALESCE(p.brand, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(COALESCE(p.slug, '')) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
             "AND (:shopId IS NULL OR p.shop.id = :shopId) " +
@@ -71,7 +78,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             "AND (:status IS NULL OR :status = '' OR p.status = :status) " +
             "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
             "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
-            "AND (:inStock IS NULL OR (:inStock = true AND p.stock > 0) OR (:inStock = false AND p.stock <= 0))")
+            "AND (:inStock IS NULL OR " +
+            "(:inStock = true AND COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0) > 0) OR " +
+            "(:inStock = false AND COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0) <= 0))")
     Page<Product> searchProductsAdmin(
             @Param("keyword") String keyword,
             @Param("shopId") Long shopId,
@@ -87,8 +96,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     long countByStockLessThanEqual(int stock);
 
-    @Query("SELECT COALESCE(SUM(p.stock), 0) FROM Product p")
+    @Query("SELECT COUNT(p) FROM Product p WHERE COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0) <= 0")
+    long countOutOfStockProducts();
+
+    @Query("SELECT COALESCE(SUM(b.stock), 0) FROM BranchStock b")
     long sumAllStock();
+
+    @Modifying
+    @Query("UPDATE Product p SET p.stock = COALESCE((SELECT SUM(b.stock) FROM BranchStock b WHERE b.product = p), 0) WHERE p.id = :productId")
+    void syncStockFromBranches(@Param("productId") Long productId);
 
     @Query("SELECT COUNT(DISTINCT p.shop.id) FROM Product p")
     long countDistinctShops();
