@@ -45,4 +45,8 @@ public interface BranchStockRepository extends JpaRepository<BranchStock, Long> 
     List<BranchStock> findByShopIdWithProduct(@Param("shopId") Long shopId);
 
     void deleteByShopId(Long shopId);
+
+    /** Tồn kho theo chi nhánh của nhiều sản phẩm cùng lúc (kèm shop) - tránh N+1 khi hiển thị danh sách */
+    @Query("SELECT b FROM BranchStock b JOIN FETCH b.shop WHERE b.product.id IN :productIds")
+    List<BranchStock> findByProductIdInWithShop(@Param("productIds") java.util.Collection<Long> productIds);
 }

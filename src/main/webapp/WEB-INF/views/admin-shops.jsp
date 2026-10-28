@@ -1177,7 +1177,6 @@
 
                 authInfoEl.innerHTML = `
                     <span class="text-white mr-3"><i class="fa fa-user-circle text-danger mr-1"></i> <strong>${escapeHtml(user.fullName || user.username)}</strong></span>
-                    <button class="btn btn-sm btn-outline-light" onclick="handleLogout()"><i class="fa fa-sign-out mr-1"></i> Đăng xuất</button>
                 `;
             } else {
                 displayNameEl.innerHTML = `<i class="fa fa-user-circle"></i> Chưa đăng nhập`;
