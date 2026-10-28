@@ -89,24 +89,36 @@
 
     // ============ Sản phẩm đã xem ============
 
-    /** Ghi nhận lượt xem rồi hiển thị các sản phẩm đã xem khác (không gồm sản phẩm này) */
+    /** Ghi nhận lượt xem và render dữ liệu sản phẩm gần đây cho cả khách và tài khoản. */
     function trackViewAndShowRecent() {
-        if (!isLoggedIn()) return;
         var grid = $("pdRecentGrid");
+        var box = $("pdRecentBox");
+        if (!grid || !box || !window.ScShop) return;
         ScShop.bindCards(grid);
-        ScShop.authFetch("/api/user/recently-viewed/" + productId, { method: "POST" })
-            .catch(function () { })
-            .then(function () { return ScShop.authFetch("/api/user/recently-viewed?limit=9"); })
-            .then(function (list) {
-                var others = (list || []).filter(function (p) { return p.id !== productId; }).slice(0, 4);
-                if (!others.length) return;
-                grid.innerHTML = others.map(function (p) {
-                    return ScShop.cardHtml(p, "col-lg-3 col-md-4 col-sm-6");
-                }).join("");
-                ScShop.applyBackgrounds(grid);
-                $("pdRecentBox").style.display = "block";
-            }).catch(function () { });
+        ScShop.recordView(productId).then(function () {
+            return ScShop.getRecentlyViewed(9);
+        }).then(function (list) {
+            var currentId = Number(productId);
+            var others = (list || []).filter(function (p) { return Number(p.id) !== currentId; }).slice(0, 4);
+            if (!others.length) {
+                box.style.display = "none";
+                grid.innerHTML = "";
+                return;
+            }
+            grid.innerHTML = others.map(function (p) {
+                return ScShop.cardHtml(p, "col-lg-3 col-md-4 col-sm-6");
+            }).join("");
+            ScShop.applyBackgrounds(grid);
+            box.style.display = "block";
+        }).catch(function (err) {
+            if (window.console) console.warn("Không hiển thị được sản phẩm đã xem:", err);
+            box.style.display = "none";
+        });
     }
+
+    window.addEventListener("pageshow", function (e) {
+        if (e.persisted && productId) trackViewAndShowRecent();
+    });
 
     /** Hiển thị số sản phẩm trong giỏ lên icon giỏ hàng ở header */
     function updateCartBadge() {
@@ -312,6 +324,23 @@
             picker.appendChild(star);
         }
         $("btnSubmitReview").addEventListener("click", submitReview);
+        $("reviewFiles").addEventListener("change", updateFileInfo);
+    }
+
+    /** Hiển thị số tệp / tên tệp đã chọn cạnh nút "Thêm ảnh / video" */
+    function updateFileInfo() {
+        var files = $("reviewFiles").files;
+        var info = $("reviewFileInfo");
+        if (!files || !files.length) {
+            info.textContent = "Tùy chọn · ảnh hoặc video minh họa";
+            info.classList.remove("has-files");
+            info.removeAttribute("title");
+            return;
+        }
+        var names = Array.prototype.map.call(files, function (f) { return f.name; }).join(", ");
+        info.textContent = "Đã chọn " + files.length + " tệp: " + names;
+        info.title = names;
+        info.classList.add("has-files");
     }
 
     function submitReview() {
@@ -328,6 +357,10 @@
         }
         var files = $("reviewFiles").files;
         var uploadsLeft = files.length;
+        // Khóa nút trong lúc gửi để không đăng trùng
+        var submitBtn = $("btnSubmitReview");
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang đăng...';
         var media = [];
 
         var sendReview = function () {
@@ -349,6 +382,7 @@
                 setTimeout(function () { alertEl.style.display = "none"; }, 4000);
                 $("reviewComment").value = "";
                 $("reviewFiles").value = "";
+                updateFileInfo();
                 pickedRating = 0;
                 Array.prototype.forEach.call($("starPicker").querySelectorAll(".star-pick"), function (s) {
                     s.classList.remove("on");
@@ -359,6 +393,8 @@
             }).catch(function (err) {
                 alertEl.textContent = err.message || "Không gửi được đánh giá.";
                 alertEl.style.display = "block";
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Đăng đánh giá';
             });
         };
 

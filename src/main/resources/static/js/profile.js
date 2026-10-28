@@ -154,7 +154,9 @@
 
     function loadViewedTab() {
         ScShop.loadFavIds().then(function () {
-            return ScShop.authFetch("/api/user/recently-viewed?limit=24");
+            // Dùng getRecentlyViewed để được GỘP lịch sử server + localStorage:
+            // những lượt xem chưa kịp đồng bộ lên tài khoản vẫn hiển thị thay vì trống.
+            return ScShop.getRecentlyViewed(24);
         }).then(function (list) {
             renderProductGrid("viewedGrid", list, "Bạn chưa xem sản phẩm nào.");
         }).catch(function (err) {
@@ -187,6 +189,24 @@
     }
 
     // ============ Thông tin cá nhân ============
+    // Đồng bộ tên / email / avatar mới nhất vào phiên đăng nhập để header hiển thị đúng
+    function syncSessionUser(u) {
+        if (!window.ScAuth) return;
+        var s = window.ScAuth.getSession();
+        if (!s) return;
+        var target = s.user && typeof s.user === "object" ? s.user : s;
+        var avatar = u.avatarUrl || "";
+        var changed = target.fullName !== u.fullName || target.email !== u.email
+            || (target.avatarUrl || "") !== avatar;
+        if (!changed) return;
+        target.fullName = u.fullName;
+        target.email = u.email;
+        target.avatarUrl = avatar;
+        localStorage.setItem("sc_auth", JSON.stringify(s));
+        localStorage.setItem("user_info", JSON.stringify(s));
+        window.ScAuth.updateHeaderAuthUI();
+    }
+
     function loadProfile() {
         api("GET", "/me").then(function (res) {
             var u = res.data;
@@ -199,7 +219,10 @@
             $("pRole").textContent = u.roleDescription || u.roleName || "";
             if (u.avatarUrl) {
                 $("pAvatar").src = u.avatarUrl;
+            } else {
+                $("pAvatar").src = "/img/icon/user.png";
             }
+            syncSessionUser(u);
             loadProfileForShop(u);
         }).catch(function (err) {
             showAlert($("infoAlert"), err.message, "error");

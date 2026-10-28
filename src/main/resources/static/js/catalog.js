@@ -49,6 +49,7 @@
         var kw = params.get("keyword");
         if (kw) {
             state.keyword = kw.trim();
+            $("catalogSearch").value = state.keyword;
         }
         loadCategories();
         bindEvents();
@@ -64,11 +65,14 @@
             loadProducts();
         });
 
-        $("catalogSort").addEventListener("change", function () {
-            state.sort = this.value;
+        // Dùng jQuery .on("change") để nhận cả sự kiện do nice-select kích hoạt (nếu còn áp vào select)
+        var onSort = function () {
+            state.sort = $("catalogSort").value;
             state.page = 0;
             loadProducts();
-        });
+        };
+        if (window.jQuery) window.jQuery($("catalogSort")).on("change", onSort);
+        else $("catalogSort").addEventListener("change", onSort);
 
         // Tim yêu thích, thêm giỏ, mở chi tiết: dùng chung với trang chủ
         ScShop.bindCards($("catalogGrid"));
@@ -111,6 +115,9 @@
             state.page = 0;
             loadProducts();
         });
+
+        var resetButton = $("catalogResetFilters");
+        if (resetButton) resetButton.addEventListener("click", resetFilters);
 
         // Tag = từ khóa tìm kiếm nhanh
         $("catalogTags").addEventListener("click", function (e) {
@@ -184,15 +191,27 @@
         params.append("page", state.page);
         params.append("pageSize", state.pageSize);
 
-        var showingCards = state.categoryId === 0 && !state.keyword;
+        // Chỉ hiển thị thẻ danh mục khi chưa có bất kỳ bộ lọc nào được áp dụng.
+        // Trước đây điều kiện chỉ kiểm tra keyword/category nên lọc giá, size, màu
+        // bị bỏ qua khi người dùng vừa mở trang shop.
+        var hasFilters = !!(state.keyword || state.categoryId || state.size || state.color
+            || state.minPrice != null || state.maxPrice != null);
+        var showingCards = !hasFilters;
         var title = $("catalogCategoryTitle");
+        // Sắp xếp chỉ có nghĩa khi đang xem danh sách sản phẩm, màn hình chọn danh mục thì ẩn
+        $("catalogSortWrap").style.display = showingCards ? "none" : "";
         if (showingCards) {
+            $("categoryCardGrid").style.display = "";
             title.style.display = "none";
             $("catalogGrid").innerHTML = "";
             $("catalogCount").textContent = "Khám phá theo danh mục";
+            $("catalogPaginationRow").style.display = "none";
             renderCategoryCards();
+            updateFilterUi();
             return;
         }
+        $("categoryCardGrid").style.display = "none";
+        updateFilterUi();
         // Tiêu đề danh mục đang xem + nút quay lại
         var cat = categories.find(function (c) { return c.id === state.categoryId; });
         title.style.display = "";
@@ -222,17 +241,68 @@
             });
     }
 
+    function updateFilterUi() {
+        var reset = $("catalogResetFilters");
+        if (reset) {
+            var active = !!(state.keyword || state.categoryId || state.size || state.color
+                || state.minPrice != null || state.maxPrice != null);
+            reset.disabled = !active;
+            reset.classList.toggle("is-active", active);
+        }
+        var priceLinks = $("catalogPriceRanges");
+        if (priceLinks) {
+            priceLinks.querySelectorAll("a[data-min]").forEach(function (a) {
+                var min = a.getAttribute("data-min") === "" ? null : Number(a.getAttribute("data-min"));
+                var max = a.getAttribute("data-max") === "" ? null : Number(a.getAttribute("data-max"));
+                var selected = min === state.minPrice && max === state.maxPrice;
+                a.classList.toggle("is-selected", selected);
+                a.setAttribute("aria-current", selected ? "true" : "false");
+            });
+        }
+        var colors = $("catalogColors");
+        if (colors) colors.querySelectorAll("a[data-color]").forEach(function (a) {
+            var selected = (a.getAttribute("data-color") || "") === state.color;
+            a.classList.toggle("is-selected", selected);
+            a.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+        var tags = $("catalogTags");
+        if (tags) tags.querySelectorAll("a[data-tag]").forEach(function (a) {
+            var selected = (a.getAttribute("data-tag") || "") === state.keyword;
+            a.classList.toggle("is-selected", selected);
+            a.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+    }
+
+    function resetFilters() {
+        state.keyword = "";
+        state.categoryId = 0;
+        state.size = "";
+        state.color = "";
+        state.minPrice = null;
+        state.maxPrice = null;
+        state.page = 0;
+        $("catalogSearch").value = "";
+        var allSize = document.querySelector('input[name="catalogSize"][value=""]');
+        if (allSize) allSize.checked = true;
+        loadProducts();
+    }
+
     function renderProducts(pageData) {
         var list = pageData.content || [];
         var total = pageData.totalElements || 0;
         var from = total === 0 ? 0 : (pageData.page * pageData.pageSize) + 1;
         var to = Math.min((pageData.page + 1) * pageData.pageSize, total);
         $("catalogCount").textContent = "Hiển thị " + from + "–" + to + " trên " + total + " sản phẩm";
+        var meta = $("catalogPaginationMeta");
+        if (meta) meta.textContent = total > 0
+            ? "Trang " + ((pageData.page || 0) + 1) + " / " + (pageData.totalPages || 1) + " · " + total + " sản phẩm phù hợp"
+            : "Không có sản phẩm phù hợp với bộ lọc hiện tại";
 
         if (!list.length) {
             $("catalogGrid").innerHTML =
                 '<div class="col-12"><p class="text-muted">Không có sản phẩm nào phù hợp.</p></div>';
             $("catalogPaginationRow").style.display = "none";
+            $("catalogPagination").innerHTML = "";
             return;
         }
 
@@ -245,33 +315,28 @@
     }
 
     function renderPagination(pageData) {
-        var total = pageData.totalPages || 0;
-        var current = pageData.page || 0;
+        var total = Number(pageData.totalPages || 0);
+        var current = Number(pageData.page || 0);
         var container = $("catalogPagination");
         var row = $("catalogPaginationRow");
         if (!container || !row) return;
-        if (total <= 1) {
-            row.style.display = "none";
-            container.innerHTML = "";
-            return;
-        }
+        if (total <= 1) { row.style.display = "none"; container.innerHTML = ""; return; }
         row.style.display = "";
         var pages = [];
         for (var i = 0; i < total; i++) {
-            if (i === 0 || i === total - 1 || (i >= current - 1 && i <= current + 1)) {
-                pages.push(i);
-            }
+            if (i === 0 || i === total - 1 || (i >= current - 2 && i <= current + 2)) pages.push(i);
         }
-        var html = "";
+        var html = '<button type="button" class="catalog-page-btn catalog-page-nav" data-page="' + (current - 1) + '"'
+            + (current <= 0 ? ' disabled aria-disabled="true"' : '') + ' aria-label="Trang trước">‹ <span>Trước</span></button>';
         var last = -1;
         pages.forEach(function (p) {
-            if (last !== -1 && p - last > 1) {
-                html += "<span>...</span>";
-            }
-            html += '<button type="button" class="catalog-page-btn' + (p === current ? " active" : "") + '"' +
-                ' data-page="' + p + '"' + (p === current ? " disabled" : "") + ">" + (p + 1) + "</button>";
+            if (last !== -1 && p - last > 1) html += '<span class="catalog-page-ellipsis" aria-hidden="true">…</span>';
+            html += '<button type="button" class="catalog-page-btn' + (p === current ? ' active' : '') + '" data-page="' + p + '"'
+                + (p === current ? ' disabled aria-current="page"' : '') + '>' + (p + 1) + '</button>';
             last = p;
         });
+        html += '<button type="button" class="catalog-page-btn catalog-page-nav" data-page="' + (current + 1) + '"'
+            + (current >= total - 1 ? ' disabled aria-disabled="true"' : '') + ' aria-label="Trang sau"><span>Sau</span> ›</button>';
         container.innerHTML = html;
     }
 

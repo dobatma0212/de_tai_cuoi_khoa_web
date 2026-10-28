@@ -51,6 +51,11 @@
         });
     });
 
+    // Quay lại trang bằng nút Back (trang được khôi phục từ bộ nhớ đệm): làm mới "đã xem gần đây"
+    window.addEventListener("pageshow", function (e) {
+        if (e.persisted && $("homeRecentGrid")) loadRecent();
+    });
+
     function loadList() {
         var seq = ++requestSeq;
         var grid = $("homeGrid");
@@ -95,13 +100,21 @@
     }
 
     function loadRecent() {
-        if (!ScShop.isLoggedIn()) return;
-        ScShop.authFetch("/api/user/recently-viewed?limit=8").then(function (list) {
-            if (!list || !list.length) return;
-            var grid = $("homeRecentGrid");
+        var grid = $("homeRecentGrid");
+        var section = $("homeRecentSection");
+        if (!grid || !section || !ScShop.getRecentlyViewed) return;
+        ScShop.getRecentlyViewed(8).then(function (list) {
+            if (!list || !list.length) {
+                section.style.display = "none";
+                grid.innerHTML = "";
+                return;
+            }
             grid.innerHTML = list.map(function (p) { return ScShop.cardHtml(p, "col-lg-3 col-md-4 col-sm-6"); }).join("");
             ScShop.applyBackgrounds(grid);
-            $("homeRecentSection").style.display = "block";
-        }).catch(function () { });
+            section.style.display = "block";
+        }).catch(function (err) {
+            if (window.console) console.warn("Không tải được sản phẩm đã xem:", err);
+            section.style.display = "none";
+        });
     }
 })();

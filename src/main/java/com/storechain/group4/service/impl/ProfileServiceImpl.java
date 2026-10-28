@@ -54,8 +54,9 @@ public class ProfileServiceImpl implements ProfileService {
         user.setFullName(request.getFullName().trim());
         user.setPhone(request.getPhone() != null && !request.getPhone().isBlank()
                 ? request.getPhone().trim() : null);
-        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
-            user.setAvatarUrl(request.getAvatarUrl().trim());
+        if (request.getAvatarUrl() != null) {
+            // Chuỗi rỗng nghĩa là người dùng muốn gỡ ảnh đại diện
+            user.setAvatarUrl(request.getAvatarUrl().isBlank() ? null : request.getAvatarUrl().trim());
         }
 
         User updated = userRepository.save(user);

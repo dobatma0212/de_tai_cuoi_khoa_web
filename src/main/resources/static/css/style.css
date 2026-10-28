@@ -33,7 +33,7 @@
 html,
 body {
 	height: 100%;
-	font-family: "Nunito Sans", sans-serif;
+	font-family: "Be Vietnam Pro", sans-serif;
 	-webkit-font-smoothing: antialiased;
 }
 
@@ -46,7 +46,7 @@ h6 {
 	margin: 0;
 	color: #111111;
 	font-weight: 400;
-	font-family: "Nunito Sans", sans-serif;
+	font-family: "Be Vietnam Pro", sans-serif;
 }
 
 h1 {
@@ -75,7 +75,7 @@ h6 {
 
 p {
 	font-size: 15px;
-	font-family: "Nunito Sans", sans-serif;
+	font-family: "Be Vietnam Pro", sans-serif;
 	color: #3d3d3d;
 	font-weight: 400;
 	line-height: 25px;
@@ -3849,3 +3849,8 @@ ol {
 		height: 250px;
 	}
 }
+/* Vietnamese font fallback and contrast safety for legacy pages; avoid overriding component colors globally. */
+html[lang="vi"], html[lang="vi"] body, html[lang="vi"] button, html[lang="vi"] input, html[lang="vi"] select, html[lang="vi"] textarea {
+  font-family: "Be Vietnam Pro", "Noto Sans", Arial, sans-serif;
+}
+html[lang="vi"] input::placeholder, html[lang="vi"] textarea::placeholder { opacity: 1; }

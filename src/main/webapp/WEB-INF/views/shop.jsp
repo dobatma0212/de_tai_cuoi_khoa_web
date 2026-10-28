@@ -12,7 +12,9 @@
 
     <!-- Google Font -->
 
-    <!-- Css Styles -->
+    <link rel="stylesheet" href="/css/be-vietnam-pro.css?v=20261028" type="text/css">
+    <link rel="stylesheet" href="/css/shop-redesign.css?v=20261028" type="text/css">
+    <link rel="stylesheet" href="/css/vietnamese-ui-fix.css?v=20261028" type="text/css">
 </head>
 <body>
 <!-- Breadcrumb Section Begin -->
@@ -34,11 +36,12 @@
     <!-- Breadcrumb Section End -->
 
     <!-- Shop Section Begin -->
-    <section class="shop spad">
+    <section class="shop spad shop-redesign">
         <div class="container">
             <div class="row">
                 <div class="col-lg-3">
-                    <div class="shop__sidebar">
+                    <aside class="shop__sidebar shop-filter-panel">
+                        <div class="shop-filter-heading"><div><span class="shop-eyebrow">TÌM KIẾM CỦA BẠN</span><h5>Bộ lọc sản phẩm</h5></div><button type="button" id="catalogResetFilters" class="shop-reset-btn" disabled>Đặt lại</button></div>
                         <div class="shop__sidebar__search">
                             <form id="catalogSearchForm">
                                 <input type="text" id="catalogSearch" placeholder="Tìm kiếm sản phẩm...">
@@ -122,10 +125,11 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </aside>
                 </div>
                 <div class="col-lg-9">
-                    <div class="shop__product__option">
+                    <div class="shop-results-heading"><div><span class="shop-eyebrow">STORECHAIN COLLECTION</span><h3>Khám phá sản phẩm</h3><p>Tìm đúng phong cách của bạn với bộ lọc và sắp xếp nhanh.</p></div></div>
+                    <div class="shop__product__option shop-toolbar">
                         <div class="row">
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <div class="shop__product__option__left">
@@ -133,9 +137,9 @@
                                 </div>
                             </div>
                             <div class="col-lg-6 col-md-6 col-sm-6">
-                                <div class="shop__product__option__right">
+                                <div class="shop__product__option__right" id="catalogSortWrap" style="display:none;">
                                     <p>Sắp xếp theo:</p>
-                                    <select id="catalogSort">
+                                    <select id="catalogSort" class="no-nice">
                                         <option value="">Mới nhất</option>
                                         <option value="priceAsc">Giá thấp → cao</option>
                                         <option value="priceDesc">Giá cao → thấp</option>
@@ -155,6 +159,7 @@
                     <div class="row" id="catalogGrid">
                         <!-- Sản phẩm được render động bằng /js/catalog.js (danh mục toàn hãng) -->
                     </div>
+                    <div class="shop-pagination-meta" id="catalogPaginationMeta">Chọn trang để xem thêm sản phẩm</div>
                     <div class="row" id="catalogPaginationRow" style="display:none;">
                         <div class="col-lg-12">
                             <div class="product__pagination" id="catalogPagination"></div>
@@ -190,7 +195,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart-api.js"></script>
-    <script src="/js/sc-shop-ui.js"></script>
+    <script src="/js/sc-shop-ui.js?v=20261028"></script>
     <script src="/js/catalog.js"></script>
 </body>
 </html>

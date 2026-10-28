@@ -142,14 +142,14 @@
             if (desktopLink) {
                 desktopLink.innerHTML =
                     adminBtnHtml +
-                    '<a href="/profile.html" style="color: inherit; text-decoration: none;"><i class="fa fa-user-circle-o" aria-hidden="true"></i> Xin chào, ' + escapeHtml(displayName) + "</a>" +
+                    '<a href="/profile.html" class="header-user">' + avatarHtml(user, session, displayName) + "<span>" + escapeHtml(displayName) + "</span></a>" +
                     ' <span class="auth-logout-link" id="btnLogoutDesktop" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 desktopLink.removeAttribute("href");
             }
             if (mobileLink) {
                 mobileLink.innerHTML =
                     adminBtnHtml +
-                    '<a href="/profile.html" style="color: inherit; text-decoration: none;">Xin chào, ' + escapeHtml(displayName) + "</a>" +
+                    '<a href="/profile.html" class="header-user">' + avatarHtml(user, session, displayName) + "<span>" + escapeHtml(displayName) + "</span></a>" +
                     ' <span class="auth-logout-link" id="btnLogoutMobile" style="margin-left: 6px; cursor: pointer; color: #888;">(Đăng xuất)</span>';
                 mobileLink.removeAttribute("href");
             }
@@ -168,6 +168,25 @@
                 mobileLink.setAttribute("href", "/login.html");
             }
         }
+    }
+
+    function escapeAttr(str) {
+        return escapeHtml(str).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    // Avatar tròn đứng trước tên; không có ảnh (hoặc ảnh lỗi) thì hiện chữ cái đầu
+    function avatarHtml(user, session, displayName) {
+        var url = (user && user.avatarUrl) || (session && session.avatarUrl) || "";
+        var initial = escapeHtml((displayName || "U").trim().charAt(0).toUpperCase() || "U");
+        var hasUrl = /^(https?:)?\/\//i.test(url) || url.indexOf("/") === 0;
+        var initialSpan = '<span class="header-avatar header-avatar--initial"' +
+            (hasUrl ? ' style="display:none"' : "") + ">" + initial + "</span>";
+        if (!hasUrl) {
+            return initialSpan;
+        }
+        return '<img class="header-avatar" src="' + escapeAttr(url) + '" alt=""' +
+            ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-flex\'">' +
+            initialSpan;
     }
 
     function escapeHtml(str) {

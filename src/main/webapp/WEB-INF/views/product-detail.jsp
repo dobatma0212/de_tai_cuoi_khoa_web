@@ -90,8 +90,102 @@
             color: #fff;
         }
 
+        .buy-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
         .stock-badge {
             font-size: 13px;
+        }
+
+        /* Form bình luận: khung, nút tải ảnh/video và nút đăng đồng bộ với nút Mua hàng / Yêu thích */
+        .review-form-box {
+            padding: 20px 22px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .review-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .review-upload {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px 12px;
+            min-width: 0;
+        }
+
+        .review-upload-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .review-upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            padding: 11px 20px;
+            border: 1.5px solid #e53637;
+            border-radius: 6px;
+            background: #fff;
+            color: #e53637;
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+
+        .review-upload-btn:hover,
+        .review-upload-input:focus + .review-upload-btn {
+            background: #e53637;
+            color: #fff;
+        }
+
+        .review-file-info {
+            font-size: 13px;
+            color: #777;
+            max-width: 340px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .review-file-info.has-files {
+            color: #198754;
+            font-weight: 700;
+        }
+
+        .review-submit {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Hai nút cùng chiều cao */
+        .review-upload-btn,
+        .review-submit {
+            height: 46px;
+            padding-top: 0;
+            padding-bottom: 0;
+            box-sizing: border-box;
+        }
+
+        .review-submit {
+            padding-left: 26px;
+            padding-right: 26px;
         }
 
         .stars {
@@ -247,20 +341,21 @@
                 </div>
 
                 <!-- Form thêm đánh giá -->
-                <div id="reviewFormBox" style="display:none;" class="address-card mb-4">
+                <div id="reviewFormBox" style="display:none;" class="review-form-box mb-4">
                     <h6 class="font-weight-bold mb-2">Viết đánh giá của bạn</h6>
                     <div class="mb-2" id="starPicker"></div>
                     <textarea id="reviewComment" class="form-control mb-1" rows="3"
                               maxlength="2000" placeholder="Nhận xét của bạn về sản phẩm (tối thiểu 50 ký tự)..."></textarea>
                     <small id="reviewCounter" class="d-block mb-2 text-muted">0/50 ký tự tối thiểu</small>
-                    <div class="row align-items-center">
-                        <div class="col-md-7">
-                            <label class="profile-info-label">Kèm ảnh/video minh họa (tùy chọn)</label>
-                            <input type="file" id="reviewFiles" class="form-control-file" multiple accept="image/*,video/mp4,video/webm">
+                    <div class="review-actions">
+                        <div class="review-upload">
+                            <input type="file" id="reviewFiles" class="review-upload-input" multiple accept="image/*,video/mp4,video/webm">
+                            <label for="reviewFiles" class="review-upload-btn"><i class="fa fa-camera"></i> Thêm ảnh / video</label>
+                            <span id="reviewFileInfo" class="review-file-info">Tùy chọn · ảnh hoặc video minh họa</span>
                         </div>
-                        <div class="col-md-5 text-right">
-                            <button type="button" id="btnSubmitReview" class="btn-store">Gửi đánh giá</button>
-                        </div>
+                        <button type="button" id="btnSubmitReview" class="buy-btn review-submit">
+                            <i class="fa fa-paper-plane"></i> Đăng đánh giá
+                        </button>
                     </div>
                     <div class="alert auth-alert mt-2" id="reviewAlert" style="display:none;"></div>
                 </div>
@@ -292,7 +387,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart-api.js"></script>
-    <script src="/js/sc-shop-ui.js"></script>
+    <script src="/js/sc-shop-ui.js?v=20261028"></script>
     <script src="/js/product-detail.js"></script>
 </body>
 </html>
