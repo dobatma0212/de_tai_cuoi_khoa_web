@@ -111,7 +111,9 @@
                 (it.size ? '<div><small class="text-muted">Size: ' + escapeHtml(it.size) + "</small></div>" : "") +
                 (it.color ? '<div><small class="text-muted">Màu: ' + escapeHtml(it.color) + "</small></div>" : "") +
                 '<div><small class="text-muted">Male Fashion — ' +
-                formatVnd(it.price) + "</small></div>" +
+                (it.onFlashSale && it.originalPrice && Number(it.originalPrice) > Number(it.price)
+                    ? '<b style="color:#e53637;">' + formatVnd(it.price) + '</b> <del class="text-muted">' + formatVnd(it.originalPrice) + '</del> <span class="badge badge-danger" style="font-size:10px;"><i class="fa fa-bolt"></i> -' + (it.discountPercent || "") + "%</span>"
+                    : formatVnd(it.price)) + "</small></div>" +
                 "</div>" +
                 '<div class="text-right">' +
                 '<div class="qty-box">' +

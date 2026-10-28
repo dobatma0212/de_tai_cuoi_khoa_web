@@ -271,13 +271,18 @@ public class DataInitializer implements CommandLineRunner {
      * Sửa schema legacy còn sót từ mô hình cũ (ddl-auto=update chỉ thêm cột mới,
      * không tự xóa/sửa cột cũ nên làm hỏng INSERT):
      * 1. shops.name (cột cũ, NOT NULL) chặn INSERT vì entity giờ map shop_name -> cho phép NULL.
-     * 2. products.category_id còn khóa ngoại trỏ về bảng categories (danh mục toàn hãng cũ)
+     * 2. shops.user_id (cột cũ, NOT NULL) chặn INSERT khi tạo chi nhánh chưa gán quản lý -> cho phép NULL.
+     * 3. products.category_id còn khóa ngoại trỏ về bảng categories (danh mục toàn hãng cũ)
      *    trong khi entity dùng shop_categories -> xóa FK legacy.
      */
     private void fixLegacySchema() {
         if (columnExists("shops", "name")) {
             runStandaloneMigration("ALTER TABLE shops MODIFY `name` VARCHAR(150) NULL",
                     "Bỏ qua sửa cột legacy shops.name");
+        }
+        if (columnExists("shops", "user_id")) {
+            runStandaloneMigration("ALTER TABLE shops MODIFY `user_id` BIGINT NULL",
+                    "Bỏ qua nới lỏng cột shops.user_id thành nullable");
         }
         // Bảng product_views ở schema cũ còn giữ cột legacy first_viewed_at / last_viewed_at NOT NULL
         if (columnExists("product_views", "first_viewed_at")) {

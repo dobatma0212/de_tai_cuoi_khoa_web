@@ -595,7 +595,10 @@
                 '<h6 class="font-weight-bold mb-1">' + escapeHtml(p.name) +
                 (p.representative ? ' <span class="badge-representative">Đại diện danh mục</span>' : "") +
                 ' <span class="badge-status ' + st[0] + '">' + st[1] + "</span>" + labels + "</h6>" +
-                '<div style="color:#e53637;font-weight:700;">' + formatVnd(p.price) + "</div>" +
+                '<div style="color:#e53637;font-weight:700;">' + formatVnd(p.price) +
+                (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price)
+                    ? ' <del class="text-muted" style="font-weight:400;font-size:12px;">' + formatVnd(p.originalPrice) + '</del> <span class="badge badge-danger" style="font-size:10px;"><i class="fa fa-bolt"></i> -' + (p.discountPercent || "") + '%</span>'
+                    : "") + "</div>" +
                 '<small class="text-muted d-block">SKU: ' + escapeHtml(p.baseSku || "—") +
                 (p.brand ? " · Thương hiệu: " + escapeHtml(p.brand) : "") +
                 (p.collectionName ? " · Bộ sưu tập: " + escapeHtml(p.collectionName) : "") + "</small>" +

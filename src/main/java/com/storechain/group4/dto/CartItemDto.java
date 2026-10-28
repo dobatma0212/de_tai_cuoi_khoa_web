@@ -20,6 +20,10 @@ public class CartItemDto {
     private Long shopId;
     private String shopName;
     private BigDecimal price;
+    private BigDecimal originalPrice;
+    private boolean onFlashSale;
+    private String flashSaleName;
+    private Integer discountPercent;
     private String size;
     private String color;
     private int quantity;

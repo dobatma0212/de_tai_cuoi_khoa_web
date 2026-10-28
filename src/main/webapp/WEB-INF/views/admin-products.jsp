@@ -1558,7 +1558,9 @@
                             ${p.collectionName ? `<div class="small text-muted mt-1"><i class="fa fa-folder-o mr-1"></i>${p.collectionName}</div>` : ''}
                         </td>
                         <td>
-                            <span class="badge-price">${priceFormatted}</span>
+                            ${p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price)
+                                ? `<span class="badge-price text-danger">${priceFormatted}</span><div class="small text-muted mt-1"><del>${formatVND(p.originalPrice)}</del> <span class="badge badge-danger" style="font-size:10px;"><i class="fa fa-bolt"></i> -${p.discountPercent || ''}%</span></div>`
+                                : `<span class="badge-price">${priceFormatted}</span>`}
                         </td>
                         <td>
                             <div class="stock-aggregate-box ${stockClass}" onclick="viewQuickStockAllocation(${p.id})" title="Bấm để xem phân bổ tồn kho chi nhánh">
@@ -2014,7 +2016,7 @@
                     $('#prod-category').val(p.categoryId);
                     $('#prod-brand').val(p.brand || 'Male Fashion');
                     $('#prod-collection').val(p.collectionName || '');
-                    $('#prod-price').val(p.price);
+                    $('#prod-price').val(p.originalPrice != null ? p.originalPrice : p.price);
                     $('#prod-colors').val(p.color || '');
                     $('#prod-sizes').val(p.sizes || '');
                     $('#prod-image-url').val(p.imageUrl || '');
@@ -2334,7 +2336,9 @@
                                     <span class="badge-brand"><i class="fa fa-certificate mr-1"></i>${p.brand || 'Male Fashion'}</span>
                                     <span class="badge-cat"><i class="fa fa-tag mr-1"></i>${p.categoryName || 'Chưa phân loại'}</span>
                                 </div>
-                                <h3 class="text-danger font-weight-bold my-2">${formatVND(p.price)}</h3>
+                                ${p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price)
+                                    ? `<h3 class="text-danger font-weight-bold my-2">${formatVND(p.price)} <small class="text-muted ml-2" style="text-decoration:line-through;font-size:15px;">${formatVND(p.originalPrice)}</small> <span class="badge badge-danger ml-2" style="font-size:12px;vertical-align:middle;"><i class="fa fa-bolt"></i> Flash Sale -${p.discountPercent || ''}%</span></h3>`
+                                    : `<h3 class="text-danger font-weight-bold my-2">${formatVND(p.price)}</h3>`}
                                 <div class="my-2">
                                     ${p.isNew ? '<span class="badge-tag tag-new">HÀNG MỚI (NEW)</span>' : ''}
                                     ${p.isBestSeller ? '<span class="badge-tag tag-bestseller">BÁN CHẠY (HOT)</span>' : ''}

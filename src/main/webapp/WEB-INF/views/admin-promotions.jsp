@@ -1789,7 +1789,7 @@
 
                         if (isFlash) {
                             const prodCount = (p.products && p.products.length) || (p.productIds && p.productIds.length) || 0;
-                            const isAll = (allAvailableProducts.length > 0 && prodCount >= allAvailableProducts.length);
+                            const isAll = (prodCount === 0) || (allAvailableProducts.length > 0 && prodCount >= allAvailableProducts.length);
                             html += `
                                 <div class="detail-row">
                                     <span class="detail-label">Phạm vi Flash Sale:</span>
@@ -1809,7 +1809,7 @@
                                                     <img src="${prod.imageUrl || '/img/product/product-1.jpg'}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; margin-right: 10px; border: 1px solid #eee;" onerror="this.src='/img/product/product-1.jpg'">
                                                     <div class="flex-grow-1 text-truncate">
                                                         <div class="font-weight-bold text-dark text-truncate" style="font-size: 13px;">${prod.name}</div>
-                                                        <div class="small text-muted">Giá gốc: ${formatCurrency(prod.price)} ${prod.categoryName ? ' | ' + prod.categoryName : ''}</div>
+                                                        <div class="small text-muted">Giá gốc: <del>${formatCurrency(prod.price)}</del> <strong class="text-danger ml-1">→ ${formatCurrency(p.discountType === 'PERCENTAGE' ? Math.max(0, prod.price - (p.maxDiscountAmount > 0 ? Math.min(prod.price * p.discountValue / 100, p.maxDiscountAmount) : (prod.price * p.discountValue / 100))) : Math.max(0, prod.price - p.discountValue))}</strong> ${prod.categoryName ? ' | ' + prod.categoryName : ''}</div>
                                                     </div>
                                                 </div>
                                             `).join('')}

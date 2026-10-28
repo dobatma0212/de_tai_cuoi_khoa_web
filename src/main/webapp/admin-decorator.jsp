@@ -32,6 +32,9 @@
         <div class="loader"></div>
     </div>
 
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="toast-container-custom"></div>
+
 <!-- Offcanvas Menu Begin -->
     <div class="offcanvas-menu-overlay"></div>
     <div class="offcanvas-menu-wrapper">

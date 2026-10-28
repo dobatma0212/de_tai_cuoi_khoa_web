@@ -3,16 +3,20 @@ package com.storechain.group4.service.impl;
 import com.storechain.group4.dto.ProductPageDto;
 import com.storechain.group4.dto.ProductResponseDto;
 import com.storechain.group4.model.Product;
+import com.storechain.group4.model.Promotion;
 import com.storechain.group4.repository.BranchStockRepository;
 import com.storechain.group4.repository.ProductRepository;
 import com.storechain.group4.repository.ProductReviewRepository;
+import com.storechain.group4.repository.PromotionRepository;
 import com.storechain.group4.repository.ShopCategoryRepository;
 import com.storechain.group4.service.CatalogService;
+import com.storechain.group4.service.PromotionCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +31,8 @@ public class CatalogServiceImpl implements CatalogService {
     private final ShopCategoryRepository shopCategoryRepository;
     private final com.storechain.group4.repository.OrderItemRepository orderItemRepository;
     private final com.storechain.group4.repository.FavoriteRepository favoriteRepository;
+    private final PromotionRepository promotionRepository;
+    private final PromotionCalculator promotionCalculator;
 
     @Override
     @Transactional(readOnly = true)
@@ -36,13 +42,16 @@ public class CatalogServiceImpl implements CatalogService {
         String kw = keyword == null ? "" : keyword.trim();
         List<Product> products = productRepository.searchAllProducts(kw);
         Stats stats = loadStats();
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
 
         // Lọc trong bộ nhớ (khối lượng dữ liệu demo nhỏ nên chấp nhận được)
         List<Product> filtered = products.stream()
                 .filter(p -> categoryId == null || categoryId <= 0
                         || (p.getCategory() != null && p.getCategory().getId().equals(categoryId)))
-                .filter(p -> minPrice == null || p.getPrice().compareTo(minPrice) >= 0)
-                .filter(p -> maxPrice == null || p.getPrice().compareTo(maxPrice) <= 0)
+                .filter(p -> minPrice == null
+                        || promotionCalculator.resolveEffectivePrice(activeFlashSales, p).compareTo(minPrice) >= 0)
+                .filter(p -> maxPrice == null
+                        || promotionCalculator.resolveEffectivePrice(activeFlashSales, p).compareTo(maxPrice) <= 0)
                 .filter(p -> size == null || size.isBlank()
                         || sizeMatches(p.getSizes(), size.trim()))
                 .filter(p -> color == null || color.isBlank()
@@ -51,9 +60,11 @@ public class CatalogServiceImpl implements CatalogService {
                 .collect(Collectors.toList());
 
         if ("priceAsc".equals(sort)) {
-            filtered.sort((a, b) -> a.getPrice().compareTo(b.getPrice()));
+            filtered.sort((a, b) -> promotionCalculator.resolveEffectivePrice(activeFlashSales, a)
+                    .compareTo(promotionCalculator.resolveEffectivePrice(activeFlashSales, b)));
         } else if ("priceDesc".equals(sort)) {
-            filtered.sort((a, b) -> b.getPrice().compareTo(a.getPrice()));
+            filtered.sort((a, b) -> promotionCalculator.resolveEffectivePrice(activeFlashSales, b)
+                    .compareTo(promotionCalculator.resolveEffectivePrice(activeFlashSales, a)));
         } else if ("name".equals(sort)) {
             filtered.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
         } else if ("bestseller".equals(sort)) {
@@ -73,7 +84,7 @@ public class CatalogServiceImpl implements CatalogService {
         int to = Math.min(from + safePageSize, filtered.size());
 
         List<ProductResponseDto> content = filtered.subList(from, to)
-                .stream().map(p -> toCatalogDto(p, stats)).collect(Collectors.toList());
+                .stream().map(p -> toCatalogDto(p, stats, activeFlashSales)).collect(Collectors.toList());
 
         return ProductPageDto.builder()
                 .content(content)
@@ -90,8 +101,9 @@ public class CatalogServiceImpl implements CatalogService {
         if (keyword == null || keyword.isBlank()) {
             return List.of();
         }
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
         return productRepository.suggestAllByName(keyword.trim())
-                .stream().limit(8).map(this::toCatalogDto).toList();
+                .stream().limit(8).map(p -> toCatalogDto(p, null, activeFlashSales)).toList();
     }
 
     @Override
@@ -146,7 +158,8 @@ public class CatalogServiceImpl implements CatalogService {
     public ProductResponseDto getProduct(Long productId) {
         Product p = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
-        ProductResponseDto dto = toCatalogDto(p);
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
+        ProductResponseDto dto = toCatalogDto(p, null, activeFlashSales);
         dto.setAvgRating(round1(reviewRepository.averageRatingByProductId(productId)));
         dto.setReviewCount(reviewRepository.countByProductId(productId));
         return dto;
@@ -161,6 +174,7 @@ public class CatalogServiceImpl implements CatalogService {
     public ProductPageDto topProducts(String type, int page, int pageSize) {
         String t = type == null ? "new" : type.trim().toLowerCase(java.util.Locale.ROOT);
         Stats stats = loadStats();
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
         List<Product> all = new java.util.ArrayList<>(productRepository.searchAllProducts(""));
 
         switch (t) {
@@ -184,7 +198,7 @@ public class CatalogServiceImpl implements CatalogService {
         int to = Math.min(from + safePageSize, top.size());
 
         List<ProductResponseDto> content = top.subList(from, to).stream()
-                .map(p -> toCatalogDto(p, stats)).collect(Collectors.toList());
+                .map(p -> toCatalogDto(p, stats, activeFlashSales)).collect(Collectors.toList());
         return ProductPageDto.builder()
                 .content(content)
                 .page(safePage)
@@ -198,7 +212,8 @@ public class CatalogServiceImpl implements CatalogService {
     @Transactional(readOnly = true)
     public List<ProductResponseDto> toCards(List<Product> products) {
         Stats stats = loadStats();
-        return products.stream().map(p -> toCatalogDto(p, stats)).collect(Collectors.toList());
+        List<Promotion> activeFlashSales = promotionRepository.findActiveFlashSales(LocalDateTime.now());
+        return products.stream().map(p -> toCatalogDto(p, stats, activeFlashSales)).collect(Collectors.toList());
     }
 
     /** Số liệu thống kê gộp theo sản phẩm, nạp một lần cho cả danh sách (tránh N+1) */
@@ -253,11 +268,7 @@ public class CatalogServiceImpl implements CatalogService {
     }
 
     /** DTO catalog: tồn kho = tổng của các chi nhánh, không gắn với chi nhánh cụ thể */
-    private ProductResponseDto toCatalogDto(Product p) {
-        return toCatalogDto(p, null);
-    }
-
-    private ProductResponseDto toCatalogDto(Product p, Stats stats) {
+    private ProductResponseDto toCatalogDto(Product p, Stats stats, List<Promotion> activeFlashSales) {
         ProductResponseDto dto = ProductResponseDto.builder()
                 .id(p.getId())
                 .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
@@ -274,6 +285,7 @@ public class CatalogServiceImpl implements CatalogService {
                 .status(p.getStatus())
                 .createdAt(p.getCreatedAt())
                 .build();
+        promotionCalculator.applyFlashSaleToDto(dto, p.getPrice(), activeFlashSales);
         if (stats != null) {
             dto.setSoldCount(stats.sold.getOrDefault(p.getId(), 0L));
             dto.setFavoriteCount(stats.favorites.getOrDefault(p.getId(), 0L));
