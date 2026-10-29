@@ -453,6 +453,10 @@
         .progress-mini .progress-bar {
             background-color: #e53637;
         }
+        .product-picker-item {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -752,7 +756,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="fa fa-search"></i></span>
                                         </div>
-                                        <input type="text" id="product-picker-search" class="form-control" placeholder="Tìm tên sản phẩm..." oninput="filterProductPicker()">
+                                        <input type="text" id="product-picker-search" class="form-control" placeholder="Tìm tên sản phẩm..." oninput="filterProductPicker()" onkeydown="if(event.key==='Enter'){event.preventDefault();filterProductPicker();}">
                                     </div>
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-outline-dark" onclick="selectAllProducts(true)"><i class="fa fa-check-square-o mr-1"></i> Chọn hết</button>
@@ -1036,6 +1040,7 @@
                     showToast('Đăng nhập thành công với vai trò ' + userObj.role, 'success');
                     loadStats();
                     loadPromotions();
+                    loadAvailableProducts();
                 },
                 error: function (xhr) {
                     submitBtn.prop('disabled', false).html('<i class="fa fa-sign-in mr-1"></i> Đăng nhập ngay');
@@ -1113,6 +1118,26 @@
         function formatDate(str) {
             if (!str) return '-';
             return str.replace('T', ' ').substring(0, 16);
+        }
+
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function normalizeSearchText(str) {
+            if (!str) return '';
+            return String(str)
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd')
+                .trim();
         }
 
         function setDefaultDateTimes() {
@@ -1196,21 +1221,24 @@
                 const isChecked = selectedIds.includes(prod.id) ? 'checked' : '';
                 const img = prod.imageUrl || '/img/product/product-1.jpg';
                 const catName = prod.categoryName ? ` | ${prod.categoryName}` : '';
+                const rawSearchText = `${prod.name || ''} ${prod.categoryName || ''} #${prod.id}`.toLowerCase();
                 html += `
-                    <div class="product-picker-item d-flex align-items-center p-2 border-bottom" data-id="${prod.id}" data-name="${(prod.name || '').toLowerCase()}" style="cursor: pointer;" onclick="toggleProductItemCheckbox(event, ${prod.id})">
+                    <div class="product-picker-item p-2 border-bottom" data-id="${prod.id}" data-name="${escapeHtml(rawSearchText)}" style="cursor: pointer;" onclick="toggleProductItemCheckbox(event, ${prod.id})">
                         <div class="custom-control custom-checkbox mr-3">
                             <input type="checkbox" class="custom-control-input prod-checkbox" id="prod-check-${prod.id}" value="${prod.id}" ${isChecked} onchange="updateSelectedProductCount()">
                             <label class="custom-control-label" for="prod-check-${prod.id}"></label>
                         </div>
                         <img src="${img}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; margin-right: 10px; border: 1px solid #eee;" onerror="this.src='/img/product/product-1.jpg'">
                         <div class="flex-grow-1 text-truncate">
-                            <div class="font-weight-bold text-dark text-truncate" style="font-size: 13px;">${prod.name}</div>
-                            <div class="small text-muted">${formatCurrency(prod.price)}${catName} <span class="badge badge-light border ml-1">Kho: ${prod.stock || 0}</span></div>
+                            <div class="font-weight-bold text-dark text-truncate" style="font-size: 13px;">${escapeHtml(prod.name)}</div>
+                            <div class="small text-muted">${formatCurrency(prod.price)}${escapeHtml(catName)} <span class="badge badge-light border ml-1">Kho: ${prod.stock || 0}</span></div>
                         </div>
                     </div>
                 `;
             });
+            html += `<div id="product-picker-no-result" class="text-muted small p-3 text-center" style="display: none;">Không tìm thấy sản phẩm nào khớp với từ khóa.</div>`;
             container.html(html);
+            filterProductPicker();
             updateSelectedProductCount();
         }
 
@@ -1224,15 +1252,30 @@
         }
 
         function filterProductPicker() {
-            const query = $('#product-picker-search').val().trim().toLowerCase();
+            const rawQuery = ($('#product-picker-search').val() || '').trim().toLowerCase();
+            const normQuery = normalizeSearchText(rawQuery);
+            let matchedCount = 0;
+
             $('.product-picker-item').each(function () {
-                const name = $(this).attr('data-name') || '';
-                if (!query || name.includes(query)) {
+                const name = ($(this).attr('data-name') || '').toLowerCase();
+                const normName = normalizeSearchText(name);
+                const isMatch = !rawQuery || name.includes(rawQuery) || (normQuery && normName.includes(normQuery));
+                if (isMatch) {
                     $(this).show();
+                    matchedCount++;
                 } else {
                     $(this).hide();
                 }
             });
+
+            const noResultEl = $('#product-picker-no-result');
+            if (noResultEl.length) {
+                if ($('.product-picker-item').length > 0 && matchedCount === 0) {
+                    noResultEl.show();
+                } else {
+                    noResultEl.hide();
+                }
+            }
         }
 
         function selectAllProducts(checkAll) {
@@ -1501,7 +1544,9 @@
             $('#type-voucher').prop('checked', true);
 
             $('#scope-all-products').prop('checked', true);
+            $('#product-picker-search').val('');
             $('.prod-checkbox').prop('checked', false);
+            filterProductPicker();
             toggleFlashScope();
             updateSelectedProductCount();
 
@@ -1548,6 +1593,8 @@
                                     $('#scope-all-products').prop('checked', true);
                                     $('.prod-checkbox').prop('checked', false);
                                 }
+                                $('#product-picker-search').val('');
+                                filterProductPicker();
                                 toggleFlashScope();
                                 updateSelectedProductCount();
                             };

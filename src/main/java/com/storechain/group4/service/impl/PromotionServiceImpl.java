@@ -445,14 +445,22 @@ public class PromotionServiceImpl implements PromotionService {
     @Transactional(readOnly = true)
     public List<ProductOptionDto> getProductOptions() {
         return productRepository.findAll().stream()
-                .map(p -> ProductOptionDto.builder()
-                        .id(p.getId())
-                        .name(p.getName())
-                        .price(p.getPrice())
-                        .imageUrl(p.getImageUrl())
-                        .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
-                        .stock(p.getStock())
-                        .build())
+                .map(p -> {
+                    String catName = null;
+                    try {
+                        if (p.getCategory() != null) {
+                            catName = p.getCategory().getName();
+                        }
+                    } catch (Exception ignored) {}
+                    return ProductOptionDto.builder()
+                            .id(p.getId())
+                            .name(p.getName())
+                            .price(p.getPrice())
+                            .imageUrl(p.getImageUrl())
+                            .categoryName(catName)
+                            .stock(p.getStock())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
