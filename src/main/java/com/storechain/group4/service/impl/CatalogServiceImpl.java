@@ -68,13 +68,15 @@ public class CatalogServiceImpl implements CatalogService {
         } else if ("name".equals(sort)) {
             filtered.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
         } else if ("bestseller".equals(sort)) {
-            filtered.sort(bySold(stats).thenComparing(newestFirst()));
+            filtered.sort(java.util.Comparator.comparing(Product::isBestSeller).reversed()
+                    .thenComparing(bySold(stats)).thenComparing(newestFirst()));
         } else if ("rating".equals(sort)) {
             filtered.sort(byRating(stats).thenComparing(newestFirst()));
         } else if ("favorite".equals(sort)) {
             filtered.sort(byFavorite(stats).thenComparing(newestFirst()));
         } else {
-            filtered.sort(newestFirst()); // mặc định: mới nhất
+            filtered.sort(java.util.Comparator.comparing(Product::isNew).reversed()
+                    .thenComparing(newestFirst())); // mặc định: ưu tiên nhãn NEW rồi mới nhất
         }
 
         int safePageSize = pageSize <= 0 ? 12 : pageSize;
@@ -178,7 +180,8 @@ public class CatalogServiceImpl implements CatalogService {
         List<Product> all = new java.util.ArrayList<>(productRepository.searchAllProducts(""));
 
         switch (t) {
-            case "bestseller" -> all.sort(bySold(stats).thenComparing(newestFirst()));
+            case "bestseller" -> all.sort(java.util.Comparator.comparing(Product::isBestSeller).reversed()
+                    .thenComparing(bySold(stats)).thenComparing(newestFirst()));
             case "toprated" -> {
                 all.removeIf(p -> stats.ratingCount.getOrDefault(p.getId(), 0L) == 0L);
                 all.sort(byRating(stats).thenComparing(newestFirst()));
@@ -187,7 +190,8 @@ public class CatalogServiceImpl implements CatalogService {
                 all.removeIf(p -> stats.favorites.getOrDefault(p.getId(), 0L) == 0L);
                 all.sort(byFavorite(stats).thenComparing(newestFirst()));
             }
-            default -> all.sort(newestFirst());
+            default -> all.sort(java.util.Comparator.comparing(Product::isNew).reversed()
+                    .thenComparing(newestFirst()));
         }
 
         List<Product> top = all.size() > HOME_LIST_LIMIT ? all.subList(0, HOME_LIST_LIMIT) : all;
@@ -281,6 +285,9 @@ public class CatalogServiceImpl implements CatalogService {
                 .sizes(p.getSizes())
                 .sizesList(parseSizes(p.getSizes()))
                 .color(p.getColor())
+                .isNew(p.isNew())
+                .isBestSeller(p.isBestSeller())
+                .isFeatured(p.isFeatured())
                 .representative(p.isRepresentative())
                 .status(p.getStatus())
                 .createdAt(p.getCreatedAt())

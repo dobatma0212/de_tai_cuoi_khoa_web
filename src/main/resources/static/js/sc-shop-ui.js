@@ -104,6 +104,13 @@
             "padding:0;cursor:pointer;transition:transform .15s,color .15s}" +
             ".sc-fav-btn:hover{transform:scale(1.1);color:#e53637}" +
             ".sc-fav-btn.on{color:#e53637}" +
+            ".sc-badge-stack{position:absolute;top:12px;left:12px;z-index:3;display:flex;flex-direction:column;align-items:flex-start;gap:5px;pointer-events:none}" +
+            ".sc-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:4px;font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;line-height:1.2;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.22)}" +
+            ".sc-badge--out{background:#111827;color:#fff}" +
+            ".sc-badge--sale{background:linear-gradient(135deg,#e53637,#b91c1c);color:#fff}" +
+            ".sc-badge--new{background:linear-gradient(135deg,#dc2626,#e11d48);color:#fff}" +
+            ".sc-badge--hot{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff}" +
+            ".sc-badge--outfit{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff}" +
             ".sc-stat{font-size:12px;color:#777;display:block;margin-top:2px}" +
             ".sc-stat .fa-star{color:#f7941d}";
         document.head.appendChild(st);
@@ -113,6 +120,29 @@
         var count = Number(p.reviewCount || 0);
         if (!count) return "";
         return '<i class="fa fa-star"></i> ' + esc(p.avgRating) + " (" + count + ")";
+    }
+
+    /** Tạo cụm huy hiệu hiển thị trên góc ảnh sản phẩm */
+    function badgesHtml(p, inStock) {
+        injectStyle();
+        var badges = [];
+        if (!inStock) {
+            badges.push('<span class="sc-badge sc-badge--out">Hết hàng</span>');
+        } else {
+            if (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price)) {
+                badges.push('<span class="sc-badge sc-badge--sale"><i class="fa fa-bolt"></i> -' + (p.discountPercent || "") + "%</span>");
+            }
+            if (p.isNew) {
+                badges.push('<span class="sc-badge sc-badge--new">NEW</span>');
+            }
+            if (p.isBestSeller) {
+                badges.push('<span class="sc-badge sc-badge--hot"><i class="fa fa-fire"></i> HOT</span>');
+            }
+            if (p.isFeatured) {
+                badges.push('<span class="sc-badge sc-badge--outfit"><i class="fa fa-star"></i> OUTFIT</span>');
+            }
+        }
+        return badges.length ? '<div class="sc-badge-stack">' + badges.join("") + "</div>" : "";
     }
 
     /** HTML một thẻ sản phẩm. colClass là class cột bootstrap bọc ngoài. */
@@ -129,7 +159,7 @@
             '<div class="product__item sc-card" data-id="' + p.id + '">' +
             '<div class="product__item__pic set-bg" data-setbg="' +
             esc(p.imageUrl || "/img/product/product-1.jpg") + '">' +
-            (!inStock ? '<span class="label">Hết hàng</span>' : (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price) ? '<span class="label" style="background:#e53637;color:#fff;"><i class="fa fa-bolt"></i> -' + (p.discountPercent || "") + "%</span>" : "")) +
+            badgesHtml(p, inStock) +
             '<button type="button" class="sc-fav-btn' + (isFav(p.id) ? " on" : "") + '" data-id="' + p.id + '" ' +
             'aria-pressed="' + (isFav(p.id) ? "true" : "false") + '" title="Thêm vào yêu thích">' +
             '<i class="fa ' + (isFav(p.id) ? "fa-heart" : "fa-heart-o") + '"></i></button>' +
@@ -339,7 +369,7 @@
         paymentHtml: paymentHtml, canRetryPayment: canRetryPayment, startPayment: startPayment,
         token: token, isLoggedIn: isLoggedIn, esc: esc, vnd: vnd, authFetch: authFetch,
         loadFavIds: loadFavIds, isFav: isFav, toggleFav: toggleFav, paintHeart: paintHeart,
-        cardHtml: cardHtml, applyBackgrounds: applyBackgrounds, bindCards: bindCards,
+        badgesHtml: badgesHtml, cardHtml: cardHtml, applyBackgrounds: applyBackgrounds, bindCards: bindCards,
         recordView: recordView, getRecentlyViewed: getRecentlyViewed, updateCartBadge: updateCartBadge
     };
 })(window);

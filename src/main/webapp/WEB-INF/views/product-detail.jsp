@@ -27,12 +27,31 @@
             margin-bottom: 24px;
         }
 
+        .pd-image-wrap {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        .pd-image-wrap .sc-badge-stack {
+            top: 14px;
+            left: 14px;
+            gap: 6px;
+        }
+
+        .pd-image-wrap .sc-badge {
+            font-size: 12px;
+            padding: 5px 12px;
+        }
+
         .pd-image {
             width: 100%;
             max-height: 480px;
             object-fit: contain;
             border-radius: 8px;
             background: #fafafa;
+            display: block;
         }
 
         .pd-name {
@@ -292,7 +311,10 @@
             <div id="pdMain" class="pd-card" style="display:none;">
                 <div class="row">
                     <div class="col-lg-6 mb-4">
-                        <img id="pdImage" src="/img/product/product-1.jpg" class="pd-image" alt="product">
+                        <div class="pd-image-wrap">
+                            <div id="pdImageBadges"></div>
+                            <img id="pdImage" src="/img/product/product-1.jpg" class="pd-image" alt="product">
+                        </div>
                     </div>
                     <div class="col-lg-6">
                         <small class="text-muted text-uppercase" id="pdCategory"></small>
@@ -387,7 +409,7 @@
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart-api.js"></script>
-    <script src="/js/sc-shop-ui.js?v=20261028"></script>
-    <script src="/js/product-detail.js"></script>
+    <script src="/js/sc-shop-ui.js?v=20261029"></script>
+    <script src="/js/product-detail.js?v=20261029"></script>
 </body>
 </html>

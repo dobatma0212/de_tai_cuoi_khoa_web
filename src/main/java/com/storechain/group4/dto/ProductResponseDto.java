@@ -1,6 +1,7 @@
 package com.storechain.group4.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -75,10 +76,28 @@ public class ProductResponseDto {
     private Long favoriteCount;
 
     /** Nhãn website */
+    @JsonProperty("isNew")
     private boolean isNew;
+    @JsonProperty("isBestSeller")
     private boolean isBestSeller;
+    @JsonProperty("isFeatured")
     private boolean isFeatured;
     private boolean representative;
+
+    @JsonProperty("isNew")
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @JsonProperty("isBestSeller")
+    public boolean isBestSeller() {
+        return isBestSeller;
+    }
+
+    @JsonProperty("isFeatured")
+    public boolean isFeatured() {
+        return isFeatured;
+    }
 
     /** Trạng thái: draft (Bản nháp), active (Đang mở bán), inactive (Ngừng kinh doanh) */
     private String status;

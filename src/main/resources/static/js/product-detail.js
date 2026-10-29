@@ -151,6 +151,9 @@
         $("breadcrumbShopLink").href = shopUrl;
         $("backToShop").href = shopUrl;
         $("pdImage").src = p.imageUrl || "/img/product/product-1.jpg";
+        if ($("pdImageBadges") && window.ScShop && ScShop.badgesHtml) {
+            $("pdImageBadges").innerHTML = ScShop.badgesHtml(p, (p.stock || 0) > 0);
+        }
         $("pdCategory").textContent = p.categoryName || "";
         $("pdName").textContent = p.name;
         if (p.onFlashSale && p.originalPrice && Number(p.originalPrice) > Number(p.price)) {
